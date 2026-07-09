@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+admin/node_modules/
+
+# Next.js build
+admin/.next/
+admin/out/
+admin/build/
+
+# Env local files
+admin/.env.local
+admin/.env*.local
+.env.local
+.env*.local
+
+# TS Build Info
+admin/*.tsbuildinfo
+admin/next-env.d.ts
+
+# Misc
+.DS_Store
+*.pem
+npm-debug.log*

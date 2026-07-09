@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+:root {
+  --green: #1B4332;
+  --gold: #E3BA45;
+  --gold-light: #F0C84A;
+  --gold-dark: #C9A82C;
+}
+
+body {
+  font-family: Inter, -apple-system, sans-serif;
+  background-color: #f8f5f0;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #1B4332; border-radius: 3px; }
