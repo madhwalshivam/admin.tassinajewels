@@ -53,10 +53,10 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   /* Hide all default sections inside content_for_layout on the home page */
-  .template-index .main-content > *:not(.tj-video-hero):not(#tj-products-section):not(#tj-categories-section):not(#tj-bestsellers-section):not(.tj-campaign-section):not(.tj-promises-bar):not(#tj-reels-section):not(#tj-quick-categories-section):not(#tj-reviews-section):not(.tj-deal-outer-section):not(#tj-hero-banner):not(#tj-trust-bar):not(#tj-best-quality-outer) {
+  .template-index .main-content > *:not(.tj-video-hero):not(#tj-product-detail-page):not(#tj-categories-directory-section):not(#tj-products-section):not(#tj-categories-section):not(#tj-bestsellers-section):not(.tj-campaign-section):not(.tj-promises-bar):not(#tj-reels-section):not(#tj-quick-categories-section):not(#tj-reviews-section):not(.tj-deal-outer-section):not(#tj-hero-banner):not(#tj-trust-bar):not(#tj-best-quality-outer):not(#tj-trending-outer):not(.tj-new-arrivals-section) {
     display: none !important;
   }
-  .template-index .main-content > section:not(.tj-video-hero):not(#tj-products-section):not(#tj-categories-section):not(#tj-bestsellers-section):not(.tj-campaign-section):not(.tj-promises-bar):not(#tj-reels-section):not(#tj-quick-categories-section):not(#tj-reviews-section):not(.tj-deal-outer-section):not(#tj-hero-banner):not(#tj-trust-bar):not(#tj-best-quality-outer) {
+  .template-index .main-content > section:not(.tj-video-hero):not(#tj-product-detail-page):not(#tj-categories-directory-section):not(#tj-products-section):not(#tj-categories-section):not(#tj-bestsellers-section):not(.tj-campaign-section):not(.tj-promises-bar):not(#tj-reels-section):not(#tj-quick-categories-section):not(#tj-reviews-section):not(.tj-deal-outer-section):not(#tj-hero-banner):not(#tj-trust-bar):not(#tj-best-quality-outer):not(#tj-trending-outer):not(.tj-new-arrivals-section) {
     display: none !important;
   }
   .template-index .main-content > .breadcrumb-nav {
@@ -384,59 +384,77 @@
 
   .tj-custom-header {
     background: #ffffff;
-    border-bottom: 1px solid #eaeaea;
+    border-bottom: 1px solid rgba(27,67,50,0.06);
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     z-index: 100;
     height: 84px;
-    box-shadow: 0 4px 20px rgba(27,67,50,0.03);
+    box-shadow: 0 4px 30px rgba(27,67,50,0.02);
     display: flex;
     align-items: center;
+    transition: all 0.3s ease;
   }
   .tj-header-container {
-    max-width: 1280px;
+    max-width: 1340px;
     width: 100%;
     margin: 0 auto;
-    padding: 0 24px;
+    padding: 0 28px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 16px;
   }
   .tj-logo-wrap {
     display: flex;
     align-items: center;
+    flex: 0 0 160px;
   }
   .tj-logo-img {
-    height: 64px;
+    height: 52px;
     width: auto;
     object-fit: contain;
   }
   .tj-nav-links {
     display: flex;
-    gap: 28px;
+    gap: 32px;
     align-items: center;
+    justify-content: center;
+    flex: 1;
+    margin: 0 12px;
   }
   .tj-nav-links a {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--green);
+    font-size: 11px;
+    font-weight: 500;
+    color: #2b2b2b;
     text-transform: uppercase;
-    letter-spacing: 1.2px;
+    letter-spacing: 1.4px;
     transition: color 0.25s ease;
     position: relative;
     padding: 8px 0;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+  }
+  .tj-dropdown-arrow {
+    transition: transform 0.25s ease;
+    opacity: 0.6;
+    color: var(--green);
+  }
+  .tj-nav-item:hover .tj-dropdown-arrow {
+    transform: rotate(180deg);
+    opacity: 1;
   }
   .tj-nav-links a::after {
     content: '';
     position: absolute;
-    bottom: 0;
+    bottom: -1px;
     left: 50%;
     width: 0;
-    height: 2px;
+    height: 1.5px;
     background: var(--gold);
-    transition: all 0.25s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     transform: translateX(-50%);
   }
   .tj-nav-links a:hover {
@@ -445,69 +463,52 @@
   .tj-nav-links a:hover::after {
     width: 100%;
   }
+  .tj-nav-links a.active {
+    color: var(--gold);
+  }
+  .tj-nav-links a.active::after {
+    width: 100%;
+  }
   .tj-header-actions {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 20px;
+    flex: 0 0 350px;
   }
   .tj-search-bar {
     position: relative;
-    width: 220px;
+    width: 200px;
+    transition: width 0.3s ease;
+  }
+  .tj-search-bar:focus-within {
+    width: 240px;
   }
   .tj-search-bar input {
     width: 100%;
     padding: 8px 16px 8px 36px;
     border-radius: 30px;
-    border: 1px solid #e2e8f0;
-    background: #f8fafc;
+    border: 1px solid transparent;
+    background: #f4f6f5;
     font-size: 12px;
     font-family: var(--font-sans);
     outline: none;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
+    color: #1a1a1a;
   }
   .tj-search-bar input:focus {
-    border-color: var(--green);
     background: #ffffff;
-    box-shadow: 0 0 0 3px rgba(27,67,50,0.06);
+    border-color: rgba(27,67,50,0.15);
+    box-shadow: 0 2px 12px rgba(27,67,50,0.04);
   }
   .tj-search-icon {
     position: absolute;
     left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    width: 15px;
-    height: 15px;
-    color: #94a3b8;
-  }
-  /* ---- SEARCH DROPDOWN ---- */
-  .tj-search-bar {
-    position: relative;
-    width: 220px;
-  }
-  .tj-search-bar input {
-    width: 100%;
-    padding: 8px 36px 8px 36px;
-    border-radius: 30px;
-    border: 1px solid #e2e8f0;
-    background: #f8fafc;
-    font-size: 12px;
-    font-family: var(--font-sans);
-    outline: none;
-    transition: all 0.3s;
-  }
-  .tj-search-bar input:focus {
-    border-color: var(--green);
-    background: #ffffff;
-    box-shadow: 0 0 0 3px rgba(27,67,50,0.06);
-  }
-  .tj-search-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 15px;
-    height: 15px;
-    color: #94a3b8;
+    width: 16px;
+    height: 16px;
+    color: #7b8a82;
     pointer-events: none;
   }
   .tj-search-clear {
@@ -596,15 +597,115 @@
   @media (max-width: 1024px) {
     body { padding-top: 74px; }
     .tj-custom-header { height: 74px; }
+    .tj-header-container { padding: 0 16px; }
     .tj-nav-links { display: none; }
-    .tj-search-bar { width: 140px; }
+    .tj-logo-img { height: 44px; }
+    
+    /* Mobile Search Toggle Trigger */
+    .tj-mobile-search-trigger {
+      display: flex !important;
+    }
+    
+    /* Position mobile search bar as full-width overlay */
+    .tj-search-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      z-index: 102;
+      display: none;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+    }
+    .tj-custom-header.mobile-search-active {
+      z-index: 100060 !important;
+    }
+    .tj-custom-header.mobile-search-active .tj-search-bar {
+      display: flex;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      height: 60px;
+      background: #ffffff;
+      z-index: 100061;
+      align-items: center;
+      gap: 10px;
+      padding: 0 14px;
+      box-shadow: 0 2px 14px rgba(27,67,50,0.10);
+    }
+    .tj-search-close-mobile {
+      display: flex !important;
+    }
+    
+    .tj-search-bar input {
+      flex: 1;
+      width: 100% !important;
+      background: #f4f6f5 !important;
+      padding: 10px 16px 10px 38px !important;
+      font-size: 13px !important;
+      border: 1px solid transparent !important;
+      border-radius: 30px !important;
+    }
+    .tj-search-icon {
+      left: 48px !important;
+    }
+    .tj-search-clear {
+      right: 16px !important;
+    }
+    
+    /* Full-screen dropdown list on mobile */
+    .tj-search-results {
+      position: fixed;
+      top: 74px;
+      left: 0;
+      right: 0;
+      width: 100vw;
+      height: calc(100vh - 74px);
+      max-height: none;
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+      border-bottom: none;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+    }
+    /* When search overlay is active, sit results directly under the 60px search bar */
+    .tj-custom-header.mobile-search-active .tj-search-results {
+      position: fixed;
+      top: 60px;
+      left: 0;
+      right: 0;
+      width: 100vw;
+      height: calc(100vh - 60px);
+      max-height: none;
+      border-radius: 0;
+      z-index: 100060;
+      padding: 4px 0 24px;
+    }
+    
+    /* Hide login label on mobile actions */
+    #tj-nav-account-btn span {
+      display: none !important;
+    }
+    .tj-header-actions {
+      gap: 12px;
+      flex: 0 0 auto;
+    }
   }
+
   @media (max-width: 600px) {
-    .tj-search-bar { width: 110px; }
-    .tj-search-bar input { font-size: 11px; padding: 7px 28px 7px 28px; }
     .tj-custom-header { height: 64px; }
     body { padding-top: 64px; }
-    .tj-logo-img { height: 44px; }
+    .tj-logo-img { height: 38px; }
+    
+    .tj-search-results {
+      top: 64px;
+      height: calc(100vh - 64px);
+    }
   }
 
   /* ---- HERO CAROUSEL ---- */
@@ -840,6 +941,65 @@
     display: none !important;
   }
 
+  /* Categories Bottom Sheet Grid */
+  .tj-cat-sheet-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px 12px;
+    padding: 24px 20px;
+    justify-items: center;
+    align-content: start;
+  }
+  @media (max-width: 480px) {
+    .tj-cat-sheet-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px 8px;
+      padding: 16px 12px;
+    }
+  }
+
+  /* Drawer/Overlay transition styles handled inline to bypass CSS caching */
+
+  /* Pagination Styling */
+  .tj-pagination-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--green);
+    background: #ffffff;
+    color: var(--green);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    outline: none;
+  }
+  .tj-pagination-btn:hover {
+    border-color: var(--gold);
+    background: rgba(27,67,50,0.02);
+  }
+  .tj-pagination-btn.active {
+    background: var(--green);
+    color: var(--gold);
+    border-color: var(--green);
+  }
+  .tj-pagination-btn:disabled {
+    border-color: #eae6e0;
+    color: #ccc;
+    cursor: not-allowed;
+    background: #ffffff;
+  }
+  .tj-pagination-ellipsis {
+    color: var(--green);
+    font-size: 12px;
+    margin: 0 4px;
+    font-weight: 600;
+  }
+
   /* Product Card */
   .tj-product-card {
     background: var(--white);
@@ -1004,6 +1164,7 @@
   }
 
   .tj-no-products {
+    grid-column: 1 / -1;
     text-align: center;
     padding: 80px 24px;
     background: var(--white);
@@ -1305,7 +1466,7 @@
   .tj-footer a:hover { color: var(--white); }
   .tj-footer-grid {
     display: grid;
-    grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+    grid-template-columns: 1.6fr 1fr 1.2fr;
     gap: 48px;
     max-width: 1280px;
     margin: 0 auto;
@@ -1377,6 +1538,7 @@
     .tj-products-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
     .tj-footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
     .tj-bottom-nav { display: flex; }
+    #tj-nav-wishlist-btn { display: none !important; }
     .tj-fab-container { bottom: 80px; right: 16px; }
     .tj-form-row { grid-template-columns: 1fr; }
     .tj-section { padding: 60px 16px; }
@@ -2757,77 +2919,185 @@
     .tj-promises-container { flex-direction: column; gap: 12px; }
   }
 
-  /* ---- CATEGORIES DIRECTORY PAGE ---- */
-  .tj-categories-directory-grid {
+  /* ---- CATEGORIES POPUP MODAL ---- */
+  .tj-cat-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    background: rgba(10, 25, 18, 0.65);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .tj-cat-modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .tj-cat-modal-container {
+    background: #FAF9F6;
+    width: 95%;
+    max-width: 720px;
+    border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(10, 25, 18, 0.25);
+    border: 1px solid rgba(227, 186, 69, 0.2);
+    overflow: hidden;
+    transform: scale(0.95);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .tj-cat-modal-overlay.active .tj-cat-modal-container {
+    transform: scale(1);
+  }
+  .tj-cat-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 32px 18px;
+    border-bottom: 1px solid rgba(27, 67, 50, 0.08);
+    background: #ffffff;
+  }
+  .tj-cat-modal-title {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    font-weight: 700;
+    color: #1B4332;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .tj-cat-modal-close {
+    background: rgba(27, 67, 50, 0.05);
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    color: #1B4332;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+  .tj-cat-modal-close:hover {
+    background: rgba(27, 67, 50, 0.1);
+    transform: rotate(90deg);
+  }
+  .tj-cat-modal-body {
+    padding: 32px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 200px;
+    background: #FAF9F6;
+  }
+  .tj-cat-modal-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 24px;
-    padding: 24px 0 40px;
+    padding-bottom: 8px;
   }
-  @media (max-width: 1024px) {
-    .tj-categories-directory-grid {
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-    }
-  }
-  @media (max-width: 768px) {
-    .tj-categories-directory-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-      padding: 16px 0 32px;
-    }
-  }
-  .tj-category-directory-card {
+  .tj-cat-modal-card {
     background: #ffffff;
     border-radius: 16px;
     overflow: hidden;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.04);
-    transition: all 0.3s ease;
-    border: 1px solid rgba(27,67,50,0.05);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(27, 67, 50, 0.05);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     display: flex;
     flex-direction: column;
-    height: 320px;
+    height: 100%;
   }
-  .tj-category-directory-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(27,67,50,0.08);
-    border-color: var(--gold);
+  .tj-cat-modal-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 28px rgba(27, 67, 50, 0.12);
+    border-color: #E3BA45;
   }
-  .tj-category-directory-img-wrap {
+  .tj-cat-modal-card-img-wrap {
     width: 100%;
-    height: 250px;
+    aspect-ratio: 16 / 10;
     overflow: hidden;
-    background: #fdfdfd;
     position: relative;
+    background: #FAF9F6;
   }
-  .tj-category-directory-img {
+  .tj-cat-modal-card-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.5s ease;
+    display: block;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .tj-category-directory-card:hover .tj-category-directory-img {
+  .tj-cat-modal-card:hover .tj-cat-modal-card-img {
     transform: scale(1.06);
   }
-  .tj-category-directory-info {
-    padding: 12px;
-    text-align: center;
+  .tj-cat-modal-card-info {
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     background: #ffffff;
     flex-grow: 1;
+  }
+  .tj-cat-modal-card-name {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 600;
+    color: #1B4332;
+    margin: 0;
+    text-transform: capitalize;
+    letter-spacing: 0.5px;
+    transition: color 0.3s ease;
+  }
+  .tj-cat-modal-card:hover .tj-cat-modal-card-name {
+    color: #E3BA45;
+  }
+  .tj-cat-modal-card-arrow {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-top: 1px solid rgba(27,67,50,0.04);
-  }
-  .tj-category-directory-name {
-    font-size: 13px;
-    font-weight: 700;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(27, 67, 50, 0.04);
     color: #1B4332;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-family: var(--font-sans);
+    transition: all 0.3s ease;
   }
+  .tj-cat-modal-card:hover .tj-cat-modal-card-arrow {
+    background: #1B4332;
+    color: #E3BA45;
+    transform: translateX(3px);
+  }
+  @media (max-width: 640px) {
+    .tj-cat-modal-header {
+      padding: 18px 24px 14px;
+    }
+    .tj-cat-modal-title {
+      font-size: 18px;
+    }
+    .tj-cat-modal-body {
+      padding: 20px;
+    }
+    .tj-cat-modal-grid {
+      gap: 16px;
+    }
+    .tj-cat-modal-card-info {
+      padding: 12px 14px;
+    }
+    .tj-cat-modal-card-name {
+      font-size: 12px;
+    }
+    .tj-cat-modal-card-arrow {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
 
 
   /* ══ GLOBAL: ARROWS VISIBILITY BY SCREEN SIZE ══ */
@@ -2906,6 +3176,159 @@
     40% { transform: scale(1.0); }
   }
 
+  /* ---- PRODUCT DETAILS PAGE (PDP) ---- */
+  .tj-pdp-breadcrumb a {
+    color: #666;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  .tj-pdp-breadcrumb a:hover {
+    color: #1B4332;
+  }
+  .tj-pdp-thumb {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    background: #ffffff;
+    transition: all 0.25s ease;
+    flex-shrink: 0;
+  }
+  .tj-pdp-thumb.active {
+    border-color: #E3BA45;
+    transform: scale(1.03);
+  }
+  .tj-pdp-thumb:hover {
+    border-color: rgba(227, 186, 69, 0.5);
+  }
+  .tj-pdp-variant-badge {
+    padding: 8px 16px;
+    background: #ffffff;
+    border: 1px solid rgba(27, 67, 50, 0.1);
+    color: #1B4332;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .tj-pdp-variant-badge.active {
+    background: #1B4332;
+    color: #E3BA45;
+    border-color: #1B4332;
+  }
+  .tj-pdp-variant-badge:hover:not(.active) {
+    border-color: #E3BA45;
+  }
+  /* PDP Back Arrow (premium circular) */
+  .tj-pdp-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 1px solid rgba(27,67,50,0.12);
+    color: #1B4332;
+    cursor: pointer;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 14px rgba(27,67,50,0.12);
+    transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+  }
+  .tj-pdp-back-btn:hover {
+    background: #1B4332;
+    color: #E3BA45;
+    box-shadow: 0 8px 20px rgba(27,67,50,0.22);
+    transform: translateY(-2px) scale(1.05);
+  }
+  .tj-pdp-back-btn:active { transform: scale(0.92); }
+  .tj-pdp-back-btn svg { width: 20px; height: 20px; }
+  /* Show only the single large product image — hide thumbnail strip */
+  #tj-product-detail-page #tj-pdp-thumbnails { display: none !important; }
+  @media (max-width: 600px) {
+    .tj-pdp-back-btn { width: 40px; height: 40px; margin-bottom: 12px; }
+    .tj-pdp-back-btn svg { width: 18px; height: 18px; }
+  }
+
+  /* ============================================
+     PRODUCT DETAILS PAGE — RESPONSIVE ONLY
+     (scoped to #tj-product-detail-page; overrides
+      inline styles via !important, no HTML changes)
+     ============================================ */
+  #tj-product-detail-page { overflow-x: hidden; }
+  #tj-product-detail-page * { box-sizing: border-box; }
+  #tj-product-detail-page img { max-width: 100%; }
+
+  /* Laptop / small desktop: tighten the two-column gap */
+  @media (max-width: 1200px) {
+    #tj-product-detail-page .tj-pdp-main-grid { gap: 32px !important; }
+  }
+
+  /* Tablet: stack gallery above info, unstick gallery */
+  @media (max-width: 900px) {
+    #tj-product-detail-page { padding: 24px 16px 48px !important; }
+    #tj-product-detail-page .tj-pdp-main-grid {
+      grid-template-columns: 1fr !important;
+      gap: 24px !important;
+      margin-bottom: 36px !important;
+    }
+    #tj-product-detail-page .tj-pdp-gallery-wrap {
+      position: static !important;
+      top: auto !important;
+    }
+    #tj-product-detail-page .tj-pdp-main-image-wrap {
+      max-width: 520px;
+      margin: 0 auto;
+    }
+    #tj-product-detail-page #tj-pdp-title { font-size: 24px !important; }
+    #tj-product-detail-page #tj-pdp-price { font-size: 28px !important; }
+    /* Features & Care two-column -> single column */
+    #tj-product-detail-page .tj-pdp-features-row {
+      grid-template-columns: 1fr !important;
+    }
+  }
+
+  /* Mobile: full-width single column, reduced padding, smaller type */
+  @media (max-width: 600px) {
+    #tj-product-detail-page { padding: 18px 14px 44px !important; }
+    #tj-product-detail-page .tj-pdp-breadcrumb {
+      margin-bottom: 16px !important;
+      white-space: normal;
+      word-break: break-word;
+    }
+    #tj-product-detail-page .tj-pdp-main-image-wrap {
+      max-width: 100%;
+      border-radius: 12px !important;
+      cursor: default !important;
+    }
+    #tj-product-detail-page #tj-pdp-title { font-size: 20px !important; }
+    #tj-product-detail-page #tj-pdp-price { font-size: 25px !important; }
+    #tj-product-detail-page .tj-pdp-thumb { width: 58px; height: 58px; }
+    /* Price/MOQ card padding */
+    #tj-product-detail-page .tj-pdp-info-card { padding: 18px !important; }
+    /* Meta 2x2 grid tighter */
+    #tj-product-detail-page .tj-pdp-meta-grid { gap: 12px !important; }
+    /* Action buttons stay in a comfortable row */
+    #tj-product-detail-page .tj-pdp-actions button:first-child { padding: 14px !important; font-size: 12px !important; }
+    #tj-product-detail-page .tj-pdp-actions #tj-pdp-wishlist-btn { width: 48px !important; height: 48px !important; }
+    /* Detail/spec cards padding down */
+    #tj-product-detail-page .tj-pdp-spec-card { padding: 20px !important; }
+    /* Related section heading */
+    #tj-product-detail-page .tj-pdp-related-heading { font-size: 18px !important; }
+  }
+
+  /* Very small phones */
+  @media (max-width: 380px) {
+    #tj-product-detail-page #tj-pdp-title { font-size: 18px !important; }
+    #tj-product-detail-page #tj-pdp-price { font-size: 22px !important; }
+    #tj-product-detail-page .tj-pdp-actions { flex-wrap: wrap; }
+    #tj-product-detail-page .tj-pdp-actions button:first-child { flex: 1 1 100% !important; }
+    #tj-product-detail-page .tj-pdp-actions #tj-pdp-wishlist-btn { width: 100% !important; }
+  }
+
   </style>
 </head>
 
@@ -2964,26 +3387,43 @@
 
         <!-- Navigation Links -->
         <nav class="tj-nav-links">
+          <a href="javascript:void(0)" onclick="navigateToCategoryPage()">Collections</a>
           <a href="#tj-products-section" onclick="filterByCategory('mens')">Mens</a>
           <a href="#tj-products-section" onclick="filterByCategory('womens')">Womens</a>
           <a href="#tj-products-section" onclick="filterByCategory('rings')">Rings</a>
           <a href="#tj-products-section" onclick="filterByCategory('necklace')">Necklace</a>
-          <a href="javascript:void(0)" onclick="handleAccountNav()">Login</a>
         </nav>
 
         <!-- Search & Wishlist & Mobile Toggle -->
         <div class="tj-header-actions">
+          <!-- Mobile Search Trigger Button -->
+          <button type="button" class="tj-mobile-search-trigger" onclick="toggleMobileSearch(true)" title="Search" style="background:none;border:none;cursor:pointer;display:none;align-items:center;justify-content:center;padding:6px;color:#1B4332;">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </button>
+
           <div class="tj-search-bar" id="tj-search-wrapper">
+            <!-- Mobile Back Button -->
+            <button type="button" class="tj-search-close-mobile" onclick="toggleMobileSearch(false)" title="Close Search" style="background:none;border:none;cursor:pointer;display:none;align-items:center;justify-content:center;padding:4px;color:#1B4332;flex-shrink:0;">
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            </button>
             <svg class="tj-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             <input type="text" id="tj-nav-search-input" placeholder="Search" autocomplete="off">
             <button class="tj-search-clear" id="tj-search-clear" title="Clear">✕</button>
             <div class="tj-search-results" id="tj-search-results"></div>
           </div>
+          
           <!-- Wishlist icon -->
           <button onclick="showWishlist()" title="Wishlist" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:6px;position:relative;color:#1B4332;transition:color 0.2s;" id="tj-nav-wishlist-btn">
             <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
             <span id="tj-wishlist-count" style="position:absolute;top:0;right:0;background:#e63946;color:#fff;font-size:9px;font-weight:700;width:14px;height:14px;border-radius:50%;display:none;align-items:center;justify-content:center;"></span>
           </button>
+
+          <!-- Account/Login Link -->
+          <a href="javascript:void(0)" onclick="handleAccountNav()" style="display:flex;align-items:center;gap:6.5px;text-decoration:none;padding:6px;color:#1B4332;transition:color 0.2s;" id="tj-nav-account-btn">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            <span style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1.2px;color:#1B4332;">Login</span>
+          </a>
+
           <!-- Hamburger menu toggle -->
           <button class="tj-menu-toggle" id="tj-menu-toggle" aria-label="Toggle Menu" onclick="toggleMobileMenu()">
             <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -3001,16 +3441,16 @@
           <button class="tj-drawer-close" onclick="toggleMobileMenu()">✕</button>
         </div>
         <nav class="tj-drawer-links">
+          <a href="javascript:void(0)" onclick="toggleMobileMenu(); navigateToCategoryPage()">Collections</a>
           <a href="#tj-products-section" onclick="toggleMobileMenu(); filterByCategory('mens')">Mens</a>
           <a href="#tj-products-section" onclick="toggleMobileMenu(); filterByCategory('womens')">Womens</a>
           <a href="#tj-products-section" onclick="toggleMobileMenu(); filterByCategory('rings')">Rings</a>
           <a href="#tj-products-section" onclick="toggleMobileMenu(); filterByCategory('necklace')">Necklace</a>
           <a href="javascript:void(0)" onclick="toggleMobileMenu(); handleAccountNav()">Login</a>
-          
         </nav>
         <div class="tj-drawer-footer">
-          <p>WhatsApp: +8615986738500</p>
-          <p>WeChat ID: 15986738500</p>
+          <p>WhatsApp: <a href="https://wa.me/8615986738500" style="color:inherit; text-decoration:none;">+86 15986738500</a></p>
+          <p>WeChat: <a href="javascript:void(0)" onclick="toggleMobileMenu(); openWeChatModal()" style="color:inherit; text-decoration:none;">15986738500</a></p>
         </div>
       </div>
     </div>
@@ -3658,6 +4098,10 @@
             Loading products...
           </div>
           <div style="display: flex; gap: 10px; align-items: center;">
+            <button class="tj-filter-drawer-toggle" id="tj-filter-drawer-toggle" onclick="toggleFilterDrawer()" style="display: none; padding: 8px 16px; font-size: 11px; font-weight: 600; color: #1B4332; border: 1px solid #eae6e0; border-radius: 8px; background: #ffffff; cursor: pointer; align-items: center; gap: 8px; font-family: var(--font-sans);">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+              Filters
+            </button>
             <div class="tj-sort-wrapper" style="position: relative;">
               <select id="tj-sort-select" onchange="handleSortChange(this.value)" style="appearance: none; -webkit-appearance: none; background: #ffffff; border: 1px solid #eae6e0; border-radius: 8px; padding: 8px 30px 8px 12px; font-size: 11px; color: #1B4332; font-weight: 600; outline: none; cursor: pointer; min-width: 150px; font-family: var(--font-sans);">
                 <option value="default">Sort by: Default</option>
@@ -3678,31 +4122,203 @@
         </div>
         {% endcomment %}
 
-        <!-- Products Grid -->
-        <div class="tj-slider-wrapper">
-          <button class="tj-arrow-btn prev" onclick="scrollSection('tj-products-grid', 'left')" aria-label="Previous">
-            <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-          </button>
-          <div class="tj-products-grid" id="tj-products-grid">
-            <!-- Skeleton loading -->
-            {% for i in (1..8) %}
-            <div class="tj-product-card">
-              <div class="tj-skeleton" style="height:260px;"></div>
-              <div style="padding:20px;">
-                <div class="tj-skeleton" style="height:10px;width:40%;margin-bottom:8px;"></div>
-                <div class="tj-skeleton" style="height:14px;margin-bottom:12px;"></div>
-                <div class="tj-skeleton" style="height:16px;width:30%;margin-bottom:16px;"></div>
-                <div class="tj-skeleton" style="height:36px;border-radius:4px;"></div>
+        <!-- Sidebar overlay for mobile -->
+        <div class="tj-sidebar-overlay" id="tj-sidebar-overlay" onclick="toggleFilterDrawer()" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 99999;"></div>
+
+        <!-- Catalog Layout Container -->
+        <div class="tj-catalog-layout-container">
+          <!-- Sidebar Filters -->
+          <aside class="tj-catalog-sidebar" id="tj-catalog-sidebar">
+            <!-- Dynamically populated filters -->
+          </aside>
+
+          <!-- Catalog Main Column -->
+          <div class="tj-catalog-main-col">
+            <!-- Products Grid -->
+            <div class="tj-slider-wrapper">
+              <button class="tj-arrow-btn prev" onclick="scrollSection('tj-products-grid', 'left')" aria-label="Previous">
+                <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+              </button>
+              <div class="tj-products-grid" id="tj-products-grid">
+                <!-- Skeleton loading -->
+                {% for i in (1..8) %}
+                <div class="tj-product-card">
+                  <div class="tj-skeleton" style="height:260px;"></div>
+                  <div style="padding:20px;">
+                    <div class="tj-skeleton" style="height:10px;width:40%;margin-bottom:8px;"></div>
+                    <div class="tj-skeleton" style="height:14px;margin-bottom:12px;"></div>
+                    <div class="tj-skeleton" style="height:16px;width:30%;margin-bottom:16px;"></div>
+                    <div class="tj-skeleton" style="height:36px;border-radius:4px;"></div>
+                  </div>
+                </div>
+                {% endfor %}
               </div>
+              <button class="tj-arrow-btn next" onclick="scrollSection('tj-products-grid', 'right')" aria-label="Next">
+                <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+              </button>
             </div>
-            {% endfor %}
+            <!-- Pagination Container -->
+            <div id="tj-products-pagination" style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 36px; padding-bottom: 24px; flex-wrap: wrap;"></div>
           </div>
-          <button class="tj-arrow-btn next" onclick="scrollSection('tj-products-grid', 'right')" aria-label="Next">
-            <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-          </button>
         </div>
       </section>
       <!-- ===== END PRODUCTS SECTION ===== -->
+
+      <!-- ===== PRODUCT DETAIL PAGE SECTION (inspired by Amazon) ===== -->
+      <section class="tj-section" id="tj-product-detail-page" style="display: none; background: #FAF9F6; min-height: 85vh; padding: 30px 16px 60px;">
+        <div style="max-width: 1280px; margin: 0 auto;">
+          <!-- Back Arrow (Product Details Page) -->
+          <button class="tj-pdp-back-btn" onclick="tjGoBack()" aria-label="Go back" title="Go back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5m7-7-7 7 7 7"/></svg>
+          </button>
+          <!-- Breadcrumb Navigation -->
+          <div class="tj-pdp-breadcrumb" id="tj-pdp-breadcrumb" style="font-size: 12px; color: #666; margin-bottom: 24px; font-family: var(--font-sans);">
+            <!-- Dynamic breadcrumb (Home > Category > Product Name) -->
+          </div>
+
+          <!-- Product Main Block (Gallery + Info) -->
+          <div class="tj-pdp-main-grid" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; margin-bottom: 48px; align-items: start;">
+            
+            <!-- Left Side: Image Gallery -->
+            <div class="tj-pdp-gallery-wrap" style="position: sticky; top: 100px;">
+              <!-- Main Large Image with zoom support -->
+              <div class="tj-pdp-main-image-wrap" id="tj-pdp-main-image-wrap" style="width:100%; aspect-ratio: 1; border-radius: 16px; overflow: hidden; background: #ffffff; border: 1px solid rgba(27,67,50,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.02); position: relative; cursor: zoom-in;">
+                <img id="tj-pdp-main-image" src="" alt="" style="width:100%; height:100%; object-fit: cover; transition: transform 0.15s ease-out; transform-origin: center center;">
+              </div>
+              
+              <!-- Thumbnails Grid -->
+              <div class="tj-pdp-thumbnails" id="tj-pdp-thumbnails" style="display: flex; gap: 12px; margin-top: 16px; overflow-x: auto; padding-bottom: 4px;">
+                <!-- Dynamically loaded thumbnails -->
+              </div>
+            </div>
+
+            <!-- Right Side: Product Details & Sticky Action Section -->
+            <div class="tj-pdp-details-wrap" style="font-family: var(--font-sans);">
+              <div style="border-bottom: 1px solid rgba(27,67,50,0.08); padding-bottom: 20px; margin-bottom: 24px;">
+                <span id="tj-pdp-category-badge" style="font-size: 10px; font-weight: 700; color: #E3BA45; text-transform: uppercase; letter-spacing: 1.5px; display: inline-block; margin-bottom: 8px;"></span>
+                <h1 id="tj-pdp-title" style="font-family: var(--font-serif); font-size: 28px; color: #1B4332; font-weight: 700; margin: 0 0 12px; line-height: 1.25;"></h1>
+                
+                <!-- Rating Info -->
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <span id="tj-pdp-stars" style="color: #E3BA45; font-size: 16px;">★★★★★</span>
+                  <span style="font-size: 12px; color: #666; font-weight: 500;">(Wholesale Verified Masterpiece)</span>
+                </div>
+              </div>
+
+              <!-- Price & MOQ Section -->
+              <div class="tj-pdp-info-card" style="background: #ffffff; border-radius: 16px; padding: 24px; border: 1px solid rgba(27,67,50,0.05); box-shadow: 0 8px 30px rgba(0,0,0,0.02); margin-bottom: 24px;">
+                <div style="display: flex; align-items: flex-end; gap: 12px; margin-bottom: 16px;">
+                  <span id="tj-pdp-price" style="font-size: 32px; font-weight: 700; color: #1B4332;"></span>
+                  <span id="tj-pdp-compare-price" style="font-size: 16px; color: #999; text-decoration: line-through; display: none;"></span>
+                  <span id="tj-pdp-discount-badge" style="font-size: 12px; font-weight: 700; color: #e63946; background: #fee; padding: 2px 8px; border-radius: 4px; display: none;"></span>
+                </div>
+
+                <div class="tj-pdp-meta-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-top: 1px solid rgba(0,0,0,0.04); padding-top: 16px; margin-bottom: 24px;">
+                  <div>
+                    <span style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px;">Minimum Order Quantity</span>
+                    <span id="tj-pdp-moq" style="font-size: 14px; font-weight: 600; color: #1B4332;"></span>
+                  </div>
+                  <div>
+                    <span style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px;">Material Details</span>
+                    <span id="tj-pdp-material" style="font-size: 14px; font-weight: 600; color: #1B4332;"></span>
+                  </div>
+                  <div>
+                    <span style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px;">Average Weight</span>
+                    <span id="tj-pdp-weight" style="font-size: 14px; font-weight: 600; color: #1B4332;"></span>
+                  </div>
+                  <div>
+                    <span style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px;">Availability</span>
+                    <span style="font-size: 14px; font-weight: 600; color: #0f9d58; display: flex; align-items: center; gap: 4px;">
+                      <span style="width: 8px; height: 8px; border-radius: 50%; background: #0f9d58; display: inline-block;"></span>
+                      In Stock / Wholesale Ready
+                    </span>
+                  </div>
+                </div>
+
+                <div class="tj-pdp-actions" style="display: flex; gap: 12px;">
+                  <button id="tj-pdp-book-btn" style="flex: 1; padding: 16px; background: #1B4332; color: #E3BA45; border: none; border-radius: 12px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; cursor: pointer; transition: all 0.25s ease;" onmouseover="this.style.background='#132F23'" onmouseout="this.style.background='#1B4332'">Book Wholesale Order</button>
+                  <button id="tj-pdp-wishlist-btn" style="width: 52px; height: 52px; border: 2px solid #eae6e0; background: #ffffff; border-radius: 12px; cursor: pointer; font-size: 20px; color: #ccc; display: flex; align-items: center; justify-content: center; transition: all 0.25s ease;">♥</button>
+                </div>
+              </div>
+
+              <!-- Short Description -->
+              <div style="margin-bottom: 24px;">
+                <h4 style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #999; margin: 0 0 8px;">Overview</h4>
+                <p id="tj-pdp-short-desc" style="font-size: 14px; color: #4a5568; line-height: 1.6; margin: 0;"></p>
+              </div>
+
+              <!-- Available Variants / Custom Options -->
+              <div id="tj-pdp-variants-wrap" style="margin-bottom: 24px; display: none;">
+                <h4 style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #999; margin: 0 0 10px;">Available Options</h4>
+                <div id="tj-pdp-variants" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Product Tabs / Detailed Sections (inspired by premium descriptions) -->
+          <div style="border-top: 1px solid rgba(27,67,50,0.08); padding-top: 40px; margin-bottom: 48px; display: grid; grid-template-columns: 1fr; gap: 32px;">
+            
+            <!-- Description Section -->
+            <div class="tj-pdp-spec-card" style="background: #ffffff; border-radius: 16px; padding: 32px; border: 1px solid rgba(27,67,50,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.01);">
+              <h3 style="font-family: var(--font-serif); font-size: 20px; color: #1B4332; margin: 0 0 16px;">Product Specifications & Description</h3>
+              <p id="tj-pdp-full-desc" style="font-size: 14px; color: #4a5568; line-height: 1.8; margin: 0 0 24px; white-space: pre-line;"></p>
+              
+              <!-- Material Details Table -->
+              <div style="max-width: 600px;">
+                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0ede8; font-size: 13px;">
+                  <span style="color: #666; font-weight: 500;">Material Composition</span>
+                  <span id="tj-pdp-table-material" style="font-weight: 600; color: #1B4332;"></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0ede8; font-size: 13px;">
+                  <span style="color: #666; font-weight: 500;">MOQ Requirement</span>
+                  <span id="tj-pdp-table-moq" style="font-weight: 600; color: #1B4332;"></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0ede8; font-size: 13px;">
+                  <span style="color: #666; font-weight: 500;">Shipping Turnaround</span>
+                  <span style="font-weight: 600; color: #1B4332;">7 - 12 Business Days</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Features & Care Instructions -->
+            <div class="tj-pdp-features-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+              <div class="tj-pdp-spec-card" style="background: #ffffff; border-radius: 16px; padding: 32px; border: 1px solid rgba(27,67,50,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.01);">
+                <h3 style="font-family: var(--font-serif); font-size: 18px; color: #1B4332; margin: 0 0 16px;">Key Features</h3>
+                <ul id="tj-pdp-features" style="font-size: 13px; color: #555; line-height: 1.8; padding-left: 20px; margin: 0;">
+                  <!-- Dynamic features list -->
+                </ul>
+              </div>
+              
+              <div class="tj-pdp-spec-card" style="background: #ffffff; border-radius: 16px; padding: 32px; border: 1px solid rgba(27,67,50,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.01);">
+                <h3 style="font-family: var(--font-serif); font-size: 18px; color: #1B4332; margin: 0 0 16px;">Jewellery Care Instructions</h3>
+                <ul style="font-size: 13px; color: #555; line-height: 1.8; padding-left: 20px; margin: 0;">
+                  <li>Avoid direct contact with perfumes, hairsprays, and lotions.</li>
+                  <li>Store in a zip-lock pouch or airtight box when not in use.</li>
+                  <li>Clean gently with a soft microfibre polishing cloth.</li>
+                  <li>Keep away from moisture, water, and extreme heat.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Related Products Section (Same Category Only) -->
+          <div style="border-top: 1px solid rgba(27,67,50,0.08); padding-top: 40px;">
+            <h3 class="tj-pdp-related-heading" style="font-family: var(--font-serif); font-size: 22px; color: #1B4332; text-align: center; margin: 0 0 24px; text-transform: uppercase; letter-spacing: 1px;">Related Masterpieces</h3>
+            <!-- Slider or Grid of Related Products -->
+            <div class="tj-slider-wrapper">
+              <button class="tj-arrow-btn prev" onclick="scrollSection('tj-pdp-related-grid', 'left')" aria-label="Previous">
+                <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+              </button>
+              <div class="tj-products-grid" id="tj-pdp-related-grid">
+                <!-- Dynamically loaded related products -->
+              </div>
+              <button class="tj-arrow-btn next" onclick="scrollSection('tj-pdp-related-grid', 'right')" aria-label="Next">
+                <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <!-- ===== TRUST STATS BAR (replaces reviews) ===== -->
       <section id="tj-trust-bar" style="background:#1B4332; padding:30px 24px;">
@@ -3733,20 +4349,7 @@
             <h2 class="tj-section-title" style="margin:0 0 8px; text-align:left;">Customer Reviews</h2>
             <p class="tj-section-subtitle" style="margin:0; text-align:left;">What our clients say about their experience with us</p>
           </div>
-          <div class="tj-reviews-google-badge">
-            <div class="tj-google-brand">
-              <svg width="24" height="24" viewBox="0 0 24 24" style="margin-right:8px;"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-              <div class="tj-google-text-wrap">
-                <span class="tj-google-rating-val">4.9 / 5.0</span>
-                <span class="tj-google-label">Google Rating</span>
-              </div>
-            </div>
-            <div class="tj-google-stars-wrap">
-              <div class="tj-google-stars">★★★★★</div>
-              <span class="tj-google-review-count">Based on 185+ reviews</span>
-            </div>
-            <button onclick="openReviewModal()" class="tj-form-submit" style="background:#1B4332; color:#E3BA45; border:none; padding:8px 16px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; border-radius:20px; cursor:pointer; font-family:var(--font-sans); margin-left:auto;">Write A Review</button>
-          </div>
+          
         </div>
 
         <div class="tj-reviews-slider-container">
@@ -3830,17 +4433,13 @@
           </p>
         </div>
         <div>
-          <h3 class="tj-footer-heading">Resources</h3>
+          <h3 class="tj-footer-heading">Policy</h3>
           <ul class="tj-footer-links">
-            <li><a href="#tj-products-section" onclick="filterByCategory('mens')">Mens</a></li>
-            <li><a href="#tj-products-section" onclick="filterByCategory('womens')">Womens</a></li>
-            <li><a href="javascript:void(0)" onclick="handleAccountNav()">Login</a></li>
-          </ul>
-        </div>
-        <div>
-          <h3 class="tj-footer-heading">Collections</h3>
-          <ul class="tj-footer-links" id="tj-footer-collections">
-            <!-- Loaded dynamically -->
+            <li><a href="javascript:void(0)" onclick="openPolicyModal('privacy_policy')">Privacy Policy</a></li>
+            <li><a href="javascript:void(0)" onclick="openPolicyModal('refund_policy')">Refund Policy</a></li>
+            <li><a href="javascript:void(0)" onclick="openPolicyModal('shipping_policy')">Shipping Policy</a></li>
+            <li><a href="javascript:void(0)" onclick="openPolicyModal('terms_of_service')">Terms of Service</a></li>
+            <li><a href="javascript:void(0)" onclick="openPolicyModal('contact_us')">Contact Us</a></li>
           </ul>
         </div>
         <div>
@@ -3851,8 +4450,11 @@
               <a href="https://wa.me/8615986738500" style="color:#fff;font-weight:400;">+86 15986738500</a>
             </div>
             <div>
-              <p style="color:#d4b483;font-size:9px;text-transform:uppercase;margin-bottom:2px;">WeChat ID</p>
-              <a href="javascript:void(0)" onclick="copyWeChatId()" style="color:#fff;font-weight:400;">15986738500</a>
+              <p style="color:#d4b483;font-size:9px;text-transform:uppercase;margin-bottom:2px;">WeChat Support</p>
+              <a href="javascript:void(0)" onclick="openWeChatModal()" style="color:#fff;font-weight:400;text-decoration:none;display:flex;align-items:center;gap:6px;">
+                <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24" style="color:#d4b483; flex-shrink:0;"><path d="M8.2 12.2c0-1 .9-1.9 2-1.9s2 .9 2 1.9c0 1-.9 1.9-2 1.9s-2-.9-2-1.9zm5.8 0c0-1 .9-1.9 2-1.9s2 .9 2 1.9c0 1-.9 1.9-2 1.9s-2-.9-2-1.9zm6-5c-2.4 0-4.6.9-6.3 2.5C12.3 8.3 10.4 7.6 8.3 7.6 3.7 7.6 0 10.9 0 15c0 2.4 1.3 4.6 3.4 5.9v2.8l2.9-1.7c.6.2 1.3.3 2 .3 4.6 0 8.3-3.3 8.3-7.4 0-1.6-.6-3.1-1.6-4.3 1.5-.7 3.2-1.1 5-1.1 2.3 0 4.2.8 5.6 2.2V9.8c0-3.6-3.3-6.6-7.4-6.6z"/></svg>
+                15986738500
+              </a>
             </div>
             <div>
               <p style="color:#d4b483;font-size:9px;text-transform:uppercase;margin-bottom:2px;">Email Support</p>
@@ -3863,9 +4465,14 @@
       </div>
       <div class="tj-footer-bottom">
         <p>&copy; {{ 'now' | date: '%Y' }} {{ shop.name }}. All Rights Reserved.</p>
-        <div style="display:flex;gap:16px;">
-          <a href="/pages/privacy-policy" style="color:rgba(227,186,69,0.3);font-size:11px;">Privacy Policy</a>
-          <a href="/pages/terms" style="color:rgba(227,186,69,0.3);font-size:11px;">Terms & Conditions</a>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+          <a href="javascript:void(0)" onclick="openPolicyModal('privacy_policy')" style="color:rgba(227,186,69,0.35);font-size:11px;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='#E3BA45'" onmouseout="this.style.color='rgba(227,186,69,0.35)'">Privacy</a>
+          <a href="javascript:void(0)" onclick="openPolicyModal('terms_of_service')" style="color:rgba(227,186,69,0.35);font-size:11px;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='#E3BA45'" onmouseout="this.style.color='rgba(227,186,69,0.35)'">Terms</a>
+          <a href="javascript:void(0)" onclick="openPolicyModal('contact_us')" style="color:rgba(227,186,69,0.35);font-size:11px;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='#E3BA45'" onmouseout="this.style.color='rgba(227,186,69,0.35)'">Contact</a>
+          <a href="https://admin-tassinajewels.vercel.app/" target="_blank" rel="noopener" style="color:rgba(227,186,69,0.35);font-size:11px;text-decoration:none;transition:color 0.2s;display:inline-flex;align-items:center;gap:4px;" onmouseover="this.style.color='#E3BA45'" onmouseout="this.style.color='rgba(227,186,69,0.35)'">
+            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12H3m0 0l4-4m-4 4l4 4m6-11h5a2 2 0 012 2v10a2 2 0 01-2 2h-5"/></svg>
+            Client Login
+          </a>
         </div>
       </div>
     </footer>
@@ -3973,7 +4580,7 @@
       </div>
       <span>Home</span>
     </a>
-    <a href="javascript:void(0)" class="tj-bottom-nav-item" id="nav-categories" onclick="showCategoriesDrawer(); selectBottomNav('nav-categories');">
+    <a href="javascript:void(0)" class="tj-bottom-nav-item" id="nav-categories" onclick="navigateToCategoryPage(); selectBottomNav('nav-categories');">
       <div class="tj-nav-icon-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
       </div>
@@ -3994,25 +4601,278 @@
     </a>
   </nav>
 
-  <!-- ===== CATEGORIES BOTTOM DRAWER ===== -->
-  <div id="tj-cat-drawer" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:99999; background:#fff; border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,0.18); max-height:80vh; overflow-y:auto; padding:0 0 80px;">
-    <div style="position:sticky; top:0; background:#fff; padding:16px 20px 12px; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between; align-items:center; z-index:1;">
-      <h3 style="font-size:15px; font-weight:700; color:#1B4332; text-transform:uppercase; letter-spacing:1px; font-family:var(--font-serif); margin:0;">Collections</h3>
-      <button onclick="closeCategoriesDrawer()" style="background:none; border:none; font-size:20px; color:#666; cursor:pointer; padding:4px 8px; line-height:1;">✕</button>
+  <!-- ===== CATEGORIES POPUP MODAL ===== -->
+  <div id="tj-cat-modal" class="tj-cat-modal-overlay" onclick="closeCategoriesModal(event)">
+    <div class="tj-cat-modal-container" onclick="event.stopPropagation()">
+      <div class="tj-cat-modal-header">
+        <h3 class="tj-cat-modal-title">Shop by Collections</h3>
+        <button class="tj-cat-modal-close" onclick="closeCategoriesModal()">✕</button>
+      </div>
+      <div class="tj-cat-modal-body">
+        <div id="tj-cat-modal-grid" class="tj-cat-modal-grid">
+          <!-- Loaded dynamically -->
+        </div>
+      </div>
     </div>
-    <div id="tj-cat-drawer-list" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:16px;"><!-- dynamic --></div>
   </div>
-  <div id="tj-cat-drawer-overlay" onclick="closeCategoriesDrawer()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:99998;"></div>
+
+  <!-- ===== POLICY POPUP MODAL ===== -->
+  <div class="tj-modal-overlay" id="tj-policy-modal-overlay">
+    <div class="tj-modal" style="max-width: 700px;">
+      <div class="tj-modal-header">
+        <h2 class="tj-modal-title" id="tj-policy-title">Policy</h2>
+        <button class="tj-modal-close" onclick="closePolicyModal()">✕</button>
+      </div>
+      <div id="tj-policy-content" style="font-size: 14px; color: #4a5568; line-height: 1.7; font-family: var(--font-sans); white-space: pre-line; max-height: 60vh; overflow-y: auto; padding-right: 8px;">
+        Loading policy content...
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== WECHAT POPUP MODAL ===== -->
+  <div class="tj-modal-overlay" id="tj-wechat-modal-overlay">
+    <div class="tj-modal" style="max-width: 400px; text-align: center;">
+      <div class="tj-modal-header">
+        <h2 class="tj-modal-title">Connect on WeChat</h2>
+        <button class="tj-modal-close" onclick="closeWeChatModal()">✕</button>
+      </div>
+      <p style="font-size: 12px; color: #666; margin-bottom: 24px; font-family: var(--font-sans);">Scan the QR code below or copy the ID to add us on WeChat for direct wholesale support.</p>
+      <div style="width: 200px; height: 200px; margin: 0 auto 24px; padding: 12px; border: 1px solid rgba(27,67,50,0.08); border-radius: 12px; background: #faf9f6; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 8px rgba(0,0,0,0.02);">
+        <img id="tj-wechat-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=15986738500" alt="WeChat QR Code" style="width: 100%; height: 100%; object-fit: contain;">
+      </div>
+      <div style="background: #faf9f6; border-radius: 10px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(27,67,50,0.04); margin-bottom: 8px;">
+        <span style="font-size: 13px; font-weight: 600; color: var(--green); font-family: var(--font-sans);" id="tj-wechat-val">15986738500</span>
+        <button onclick="copyWeChatId()" style="background: var(--green); color: var(--gold); border: none; border-radius: 6px; padding: 6px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#132F23'" onmouseout="this.style.background='var(--green)'">Copy ID</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ===== MAIN JAVASCRIPT ===== -->
   <script>
   let db = null;
   let allProducts = [];
   let allCategories = [];
+  let isCategoriesLoading = true;
   let allSubcategories = [];
   let currentCategory = 'all';
   let currentSubcategory = 'all';
   let currentSort = 'default';
+
+  // Navigation and Filter variables
+  let navigationTree = [];
+  let productCategories = [];
+  let productSubcategories = [];
+  let allFilterGroups = [];
+  let allFilterValues = [];
+  let allCategoryFilters = [];
+  let allProductFilterValues = [];
+
+  let activeFilters = {
+    subcategories: [],
+    gender: [],
+    plating: [],
+    material: [],
+    color: [],
+    'stone-type': [],
+    priceMin: null,
+    priceMax: null,
+    availability: 'all'
+  };
+
+  // Inject Custom styles
+  (function() {
+    const style = document.createElement('style');
+    style.textContent = `
+      /* Navigation Hover Dropdowns (Desktop) */
+      .tj-nav-item {
+        position: relative;
+        display: inline-block;
+      }
+      .tj-nav-dropdown-content {
+        display: block;
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translate(-50%, 12px);
+        background-color: rgba(255, 255, 255, 0.98);
+        min-width: 220px;
+        box-shadow: 0 12px 30px rgba(27,67,50,0.08);
+        border: 1px solid rgba(27,67,50,0.06);
+        border-top: 3px solid var(--gold);
+        border-radius: 0 0 12px 12px;
+        padding: 12px 0;
+        z-index: 1000;
+        text-align: left;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .tj-nav-item:hover .tj-nav-dropdown-content {
+        transform: translate(-50%, 0);
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .tj-nav-dropdown-content a {
+        display: block;
+        padding: 9px 24px;
+        font-size: 11px;
+        font-weight: 500;
+        color: #333333;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        text-decoration: none;
+      }
+      .tj-nav-dropdown-content a:hover {
+        background-color: rgba(27, 67, 50, 0.04);
+        color: var(--gold);
+        padding-left: 28px;
+      }
+      /* Remove line indicator inside dropdown links */
+      .tj-nav-dropdown-content a::after {
+        display: none !important;
+      }
+      
+      /* Mobile Accordion Styles */
+      .tj-drawer-item {
+        display: flex;
+        flex-direction: column;
+        border-bottom: 1px solid rgba(27,67,50,0.04);
+      }
+      .tj-drawer-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+      }
+      .tj-drawer-row a {
+        flex: 1;
+        padding: 0 !important;
+      }
+      .tj-drawer-toggle-btn {
+        background: none;
+        border: none;
+        color: var(--green);
+        cursor: pointer;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s ease;
+      }
+      .tj-drawer-toggle-btn.open {
+        transform: rotate(180deg);
+      }
+      .tj-drawer-submenu {
+        display: none;
+        padding-left: 16px;
+        margin-bottom: 12px;
+        flex-direction: column;
+        gap: 12px;
+        border-left: 1.5px solid rgba(27,67,50,0.08);
+      }
+      .tj-drawer-submenu a {
+        font-size: 11px !important;
+        font-weight: 500 !important;
+        color: #555 !important;
+        padding: 2px 0 !important;
+        text-transform: none !important;
+        letter-spacing: 0.5px !important;
+      }
+
+      /* Catalog Layout Styles */
+      .tj-catalog-layout-container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 16px;
+        display: flex;
+        gap: 32px;
+        align-items: start;
+        width: 100%;
+      }
+      .tj-catalog-sidebar {
+        width: 260px;
+        flex-shrink: 0;
+        background: #ffffff;
+        border: 1px solid rgba(27,67,50,0.06);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(27,67,50,0.02);
+        position: sticky;
+        top: 100px;
+      }
+      .tj-catalog-main-col {
+        flex: 1;
+        min-width: 0;
+      }
+      .tj-filter-section-header {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border: none;
+        background: none;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--green);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        border-bottom: 1px solid rgba(27,67,50,0.06);
+      }
+      .tj-filter-section-header .tj-caret-icon {
+        transition: transform 0.2s ease;
+      }
+      .tj-filter-section-header.collapsed .tj-caret-icon {
+        transform: rotate(-90deg);
+      }
+      .tj-filter-section-content {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(27,67,50,0.06);
+      }
+      .tj-filter-section-header.collapsed + .tj-filter-section-content {
+        display: none;
+      }
+      
+      @media (max-width: 768px) {
+        .tj-filter-drawer-toggle {
+          display: flex !important;
+        }
+        .tj-catalog-layout-container {
+          flex-direction: column;
+          gap: 16px;
+        }
+        .tj-catalog-sidebar {
+          position: fixed;
+          top: 0;
+          right: -280px;
+          bottom: 0;
+          width: 280px;
+          height: 100vh;
+          z-index: 100000;
+          box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+          transition: right 0.3s ease;
+          border-radius: 0;
+          border: none;
+          display: flex;
+          flex-direction: column;
+          margin: 0;
+        }
+        .tj-catalog-sidebar.open {
+          right: 0 !important;
+        }
+        .tj-sidebar-mobile-header {
+          display: flex !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  })();
 
   window.handleSortChange = function(val) {
     currentSort = val;
@@ -4025,11 +4885,12 @@
   let _cachedSubcategories = null;
   let _cachedSettings = null;
 
-  // On page reload, flush sessionStorage cache so admin changes appear
+  // On page reload, refresh settings/categories so admin changes appear.
+  // Products stay cached (30-min TTL in loadProducts) so they don't reload repeatedly.
   try {
     const navEntry = performance.getEntriesByType('navigation')[0];
     if (navEntry && navEntry.type === 'reload') {
-      ['tj_c_products','tj_c_categories','tj_c_subcats','tj_c_settings'].forEach(k => sessionStorage.removeItem(k));
+      ['tj_c_categories','tj_c_subcats','tj_c_settings'].forEach(k => sessionStorage.removeItem(k));
     }
   } catch(_e) {}
 
@@ -4192,7 +5053,7 @@
           const img = p.image_url ? formatImageUrl(p.image_url) : '';
           const globalIdx = allProducts.findIndex(ap => ap.id === p.id);
           return `
-            <div class="tj-search-result-item" onclick="closeSearch(); openModalByIndex(${globalIdx});">
+            <div class="tj-search-result-item" onclick="closeSearch(); openProductDetail(${globalIdx});">
               ${img ? `<img class="tj-search-result-img" src="${img}" alt="">` : '<div class="tj-search-result-img"></div>'}
               <div class="tj-search-result-info">
                 <div class="tj-search-result-title">${p.title}</div>
@@ -4395,37 +5256,80 @@
   async function loadFilters() {
     if (!db) return;
     try {
-      const [catRes, subcatRes] = await Promise.all([
+      isCategoriesLoading = true;
+      if (typeof renderCategoriesModalGrid === 'function') {
+        renderCategoriesModalGrid();
+      }
+
+      // Safe multi-table loading via Promise.allSettled
+      const [catRes, fgRes, fvRes, cfRes, pfvRes, pcRes] = await Promise.allSettled([
         db.from('categories').select('*').neq('slug', 'cache_bypass_' + Math.random()).order('display_order'),
-        db.from('subcategories').select('*').neq('slug', 'cache_bypass_' + Math.random()).order('display_order')
+        db.from('filter_groups').select('*').eq('is_enabled', true).order('display_order'),
+        db.from('filter_values').select('*'),
+        db.from('category_filters').select('*'),
+        db.from('product_filter_values').select('*'),
+        db.from('product_categories').select('*')
       ]);
-      const catData = catRes.data || [];
-      const subcatData = subcatRes.data || [];
+      
+      const catData = (catRes.status === 'fulfilled' && !catRes.value.error) ? catRes.value.data : [];
+      const subcatData = [];
+      
+      allFilterGroups = (fgRes.status === 'fulfilled' && !fgRes.value.error) ? fgRes.value.data : [];
+      allFilterValues = (fvRes.status === 'fulfilled' && !fvRes.value.error) ? fvRes.value.data : [];
+      allCategoryFilters = (cfRes.status === 'fulfilled' && !cfRes.value.error) ? cfRes.value.data : [];
+      allProductFilterValues = (pfvRes.status === 'fulfilled' && !pfvRes.value.error) ? pfvRes.value.data : [];
+      productCategories = (pcRes.status === 'fulfilled' && !pcRes.value.error) ? pcRes.value.data : [];
+      productSubcategories = [];
+
       _cachedCategories = catData;
       _cachedSubcategories = subcatData;
 
-      const catResObj = { data: catData };
-      const subcatResObj = { data: subcatData };
+      allCategories = catData;
+      allSubcategories = subcatData;
+      isCategoriesLoading = false;
 
-      if (!catResObj.data) return;
-      allCategories = catResObj.data;
-      
-      // Inject dummy categories if none exist
-      if (allCategories.length === 0) {
-        allCategories = [
-          { id: 'd1', slug: 'rings', name: 'Rings', image_url: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=600&auto=format&fit=cover' },
-          { id: 'd2', slug: 'necklaces', name: 'Necklaces', image_url: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=600&auto=format&fit=cover' },
-          { id: 'd3', slug: 'bracelets', name: 'Bracelets', image_url: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=600&auto=format&fit=cover' },
-          { id: 'd4', slug: 'earrings', name: 'Earrings', image_url: 'https://images.unsplash.com/photo-1635767798638-3e25273a8236?q=80&w=600&auto=format&fit=cover' },
-          { id: 'd5', slug: 'pendants', name: 'Pendants', image_url: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?q=80&w=600&auto=format&fit=cover' },
-          { id: 'd6', slug: 'bangles', name: 'Bangles', image_url: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=600&auto=format&fit=cover' }
-        ];
+      // Build our hierarchical navigation tree (Custom or default fallback)
+      const settingsMap = window.tjStorefrontSettings || {};
+      if (settingsMap.navbar_menu) {
+        try {
+          const parsed = JSON.parse(settingsMap.navbar_menu);
+          if (Array.isArray(parsed)) {
+            // Filter out disabled items
+            navigationTree = parsed
+              .filter(item => item.visible !== false)
+              .map(item => ({
+                id: item.id || item.slug,
+                name: item.name,
+                slug: item.slug,
+                subcategories: (item.subcategories || [])
+                  .filter(sub => sub.visible !== false)
+                  .map(sub => ({
+                    id: sub.id || sub.slug,
+                    name: sub.name,
+                    slug: sub.slug
+                  }))
+              }));
+          } else {
+            navigationTree = buildNavigationTree(allCategories, allSubcategories);
+          }
+        } catch (e) {
+          console.error("Failed to parse navbar_menu storefront setting:", e);
+          navigationTree = buildNavigationTree(allCategories, allSubcategories);
+        }
+      } else {
+        navigationTree = buildNavigationTree(allCategories, allSubcategories);
       }
       
-      allSubcategories = subcatRes.data || [];
+      // Render dynamic navigation menu
+      renderNavigation(navigationTree);
+      
+      // Refresh categories modal grid
+      if (typeof renderCategoriesModalGrid === 'function') {
+        renderCategoriesModalGrid();
+      }
 
-      // Render quick categories bar above banner
-      renderQuickCategories(allCategories);
+      // Render quick categories bar above banner (use navigationTree parent categories)
+      renderQuickCategories(navigationTree);
 
       // Render Shop by Category deals-style section (respects admin setting)
       {
@@ -4455,8 +5359,7 @@
       const selectEl = document.getElementById('tj-category-select');
       if (selectEl) {
         selectEl.innerHTML = '<option value="all">All Collections</option>';
-        
-        allCategories.forEach(cat => {
+        navigationTree.forEach(cat => {
           const opt = document.createElement('option');
           opt.value = cat.slug;
           opt.textContent = cat.name;
@@ -4467,34 +5370,604 @@
       // Populate footer collections
       const footerColEl = document.getElementById('tj-footer-collections');
       if (footerColEl) {
-        footerColEl.innerHTML = allCategories.slice(0, 5).map(cat => `
-          <li><a href="#tj-products-section" onclick="filterByCategory('${cat.slug}')">${cat.name}</a></li>
+        footerColEl.innerHTML = navigationTree.slice(0, 5).map(cat => `
+          <li><a href="#tj-products-section" onclick="navigateToCategory('${cat.slug}')">${cat.name}</a></li>
         `).join('');
       }
     } catch (err) {
       console.error("Error loading filters:", err);
+      isCategoriesLoading = false;
+      allCategories = [];
+      if (typeof renderCategoriesModalGrid === 'function') {
+        renderCategoriesModalGrid(true);
+      }
     }
   }
 
-  // Navigate to category page (loads category filtered view on homepage or client-side)
-  window.navigateToCategory = function(slug) {
-    if (window.location.pathname === '/' || window.location.pathname === '/index' || window.location.pathname.endsWith('theme.liquid')) {
-      const url = new URL(window.location);
-      url.searchParams.delete('page');
-      if (slug === 'all') {
-        url.searchParams.delete('category');
-      } else {
-        url.searchParams.set('category', slug);
+  // ─── CUSTOM NAVIGATION & FILTERING HELPERS ────────────────
+  window.buildNavigationTree = function(catData, subcatData) {
+    const parentCats = catData
+      .filter(c => c.visible !== false)
+      .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+      
+    return parentCats.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      subcategories: []
+    }));
+  };
+
+  window.renderNavigation = function(tree) {
+    // 1. Desktop Nav Rendering
+    const navLinks = document.querySelector('.tj-nav-links');
+    if (navLinks) {
+      navLinks.innerHTML = `
+        <a href="/categories" onclick="event.preventDefault(); navigateToCategoryPage()">Collections</a>
+        ` + tree.map(cat => {
+          if (cat.subcategories && cat.subcategories.length > 0) {
+            return `
+              <div class="tj-nav-item">
+                <a href="${window.tjGetLinkHref(cat.slug)}" onclick="tjHandleLinkClick(event, '${cat.slug}')" class="tj-nav-link-with-arrow">
+                  ${cat.name}
+                  <svg class="tj-dropdown-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-left:4px;display:inline-block;vertical-align:middle;"><path d="m6 9 6 6 6-6"/></svg>
+                </a>
+                <div class="tj-nav-dropdown-content">
+                  ${cat.subcategories.map(sub => `
+                    <a href="${window.tjGetLinkHref(sub.slug)}" onclick="tjHandleLinkClick(event, '${sub.slug}')">${sub.name}</a>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          } else {
+            return `<a href="${window.tjGetLinkHref(cat.slug)}" onclick="tjHandleLinkClick(event, '${cat.slug}')">${cat.name}</a>`;
+          }
+        }).join('');
+    }
+
+    // 2. Mobile Nav Drawer Rendering
+    const drawerLinks = document.querySelector('.tj-drawer-links');
+    if (drawerLinks) {
+      drawerLinks.innerHTML = `
+        <a href="/categories" onclick="event.preventDefault(); toggleMobileMenu(); navigateToCategoryPage()">Collections</a>
+        ` + tree.map(cat => {
+          if (cat.subcategories && cat.subcategories.length > 0) {
+            return `
+              <div class="tj-drawer-item">
+                <div class="tj-drawer-row">
+                  <a href="${window.tjGetLinkHref(cat.slug)}" onclick="toggleMobileMenu(); tjHandleLinkClick(event, '${cat.slug}')">${cat.name}</a>
+                  <button class="tj-drawer-toggle-btn" onclick="toggleMobileSubmenu(event, this)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                </div>
+                <div class="tj-drawer-submenu">
+                  ${cat.subcategories.map(sub => `
+                    <a href="${window.tjGetLinkHref(sub.slug)}" onclick="toggleMobileMenu(); tjHandleLinkClick(event, '${sub.slug}')">${sub.name}</a>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          } else {
+            return `<a href="${window.tjGetLinkHref(cat.slug)}" onclick="toggleMobileMenu(); tjHandleLinkClick(event, '${cat.slug}')">${cat.name}</a>`;
+          }
+        }).join('') + `
+        <a href="javascript:void(0)" onclick="toggleMobileMenu(); handleAccountNav()">Login</a>
+      `;
+    }
+  };
+
+  window.toggleMobileSubmenu = function(e, btn) {
+    e.stopPropagation();
+    const item = btn.closest('.tj-drawer-item');
+    if (!item) return;
+    const submenu = item.querySelector('.tj-drawer-submenu');
+    if (!submenu) return;
+    const isOpen = submenu.style.display === 'flex';
+    submenu.style.display = isOpen ? 'none' : 'flex';
+    btn.classList.toggle('open', !isOpen);
+  };
+
+  window.renderSidebarFilters = function() {
+    const sidebar = document.getElementById('tj-catalog-sidebar');
+    if (!sidebar) return;
+
+    // Build sidebar HTML starting with mobile header
+    let html = `
+      <div class="tj-sidebar-mobile-header" style="display: none; justify-content: space-between; align-items: center; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid rgba(27,67,50,0.1);">
+        <h3 style="font-size: 14px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 1px; margin: 0;">Filters</h3>
+        <button class="tj-drawer-close" onclick="toggleFilterDrawer()" style="background: none; border: none; font-size: 18px; color: var(--green); cursor: pointer; padding: 4px;">✕</button>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span style="font-size: 10px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 1px;">Active Filters</span>
+        <button onclick="clearAllFilters()" style="background: none; border: none; font-size: 10px; font-weight: 600; color: var(--gold); cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; padding: 0;">Clear All</button>
+      </div>
+    `;
+
+    // 1. Availability Filter Section
+    html += `
+      <div class="tj-filter-section">
+        <button class="tj-filter-section-header" onclick="toggleFilterSection(event, this)">
+          Availability
+          <svg class="tj-caret-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="tj-filter-section-content">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #4a5568; cursor: pointer; font-family: var(--font-sans);">
+            <input type="radio" name="availability" value="all" ${activeFilters.availability === 'all' ? 'checked' : ''} onchange="handleAvailabilityChange(this.value)" style="accent-color: var(--green); cursor: pointer;">
+            All Products
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #4a5568; cursor: pointer; font-family: var(--font-sans);">
+            <input type="radio" name="availability" value="in-stock" ${activeFilters.availability === 'in-stock' ? 'checked' : ''} onchange="handleAvailabilityChange(this.value)" style="accent-color: var(--green); cursor: pointer;">
+            In Stock
+          </label>
+        </div>
+      </div>
+    `;
+
+    // 2. Price Range Filter Section
+    html += `
+      <div class="tj-filter-section">
+        <button class="tj-filter-section-header" onclick="toggleFilterSection(event, this)">
+          Price Range
+          <svg class="tj-caret-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="tj-filter-section-content" style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="number" placeholder="Min" value="${activeFilters.priceMin || ''}" onchange="handlePriceFilterChange('priceMin', this.value)" style="width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid #eae6e0; border-radius: 6px; outline: none; font-family: var(--font-sans);">
+            <span style="font-size: 12px; color: #aaa;">to</span>
+            <input type="number" placeholder="Max" value="${activeFilters.priceMax || ''}" onchange="handlePriceFilterChange('priceMax', this.value)" style="width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid #eae6e0; border-radius: 6px; outline: none; font-family: var(--font-sans);">
+          </div>
+        </div>
+      </div>
+    `;
+
+    // 3. Subcategories Filter Section
+    const currentCatObj = navigationTree.find(c => c.slug === currentCategory);
+    if (currentCatObj && currentCatObj.subcategories && currentCatObj.subcategories.length > 0) {
+      html += `
+        <div class="tj-filter-section">
+          <button class="tj-filter-section-header" onclick="toggleFilterSection(event, this)">
+            Subcategory
+            <svg class="tj-caret-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="tj-filter-section-content">
+            ${currentCatObj.subcategories.map(sub => {
+              const isChecked = activeFilters.subcategories.includes(sub.slug) || activeFilters.subcategories.includes(sub.id);
+              const val = sub.id || sub.slug;
+              return `
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #4a5568; cursor: pointer; font-family: var(--font-sans);">
+                  <input type="checkbox" value="${val}" ${isChecked ? 'checked' : ''} onchange="handleFilterChange('subcategories', '${val}', this.checked)" style="accent-color: var(--green); cursor: pointer;">
+                  ${sub.name}
+                </label>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // 4. Dynamic Custom Attributes Filter Groups (Plating, Color, Material, Gender, Stone Type)
+    const activeProducts = allProducts.filter(p => isProductInCategory(p, currentCategory));
+
+    const filterKeys = [
+      { key: 'gender', name: 'Gender' },
+      { key: 'plating', name: 'Plating' },
+      { key: 'material', name: 'Material' },
+      { key: 'color', name: 'Color' },
+      { key: 'stone-type', name: 'Stone Type' }
+    ];
+
+    filterKeys.forEach(fKey => {
+      let options = new Set();
+      
+      if (allProductFilterValues && allProductFilterValues.length > 0) {
+        activeProducts.forEach(p => {
+          allProductFilterValues.forEach(pfv => {
+            if (pfv.product_id === p.id) {
+              const fv = allFilterValues.find(v => v.id === pfv.filter_value_id);
+              if (fv) {
+                const group = allFilterGroups.find(g => g.id === fv.filter_group_id);
+                if (group && group.slug === fKey.key) {
+                  options.add(fv.value);
+                }
+              }
+            }
+          });
+        });
       }
-      window.history.pushState({}, '', url);
+      
+      if (options.size === 0) {
+        const fallbackOptionMap = {
+          gender: ["Men", "Women", "Unisex"],
+          plating: ["18K Gold", "Plated", "Silver Plated", "Rose Gold"],
+          material: ["Stainless Steel", "Sterling Silver", "Copper", "Natural Stone", "Brass", "Zircon"],
+          color: ["Gold", "Silver", "Rose Gold", "Black", "Green", "Blue", "Red", "White"],
+          'stone-type': ["Zircon", "Agate", "Tiger Eye", "Obsidian", "Opal", "Turquoise", "Quartz", "Amethyst", "Lapis Lazuli", "Malachite", "Jade"]
+        };
+        
+        const possibleOptions = fallbackOptionMap[fKey.key] || [];
+        possibleOptions.forEach(opt => {
+          const normOpt = opt.toLowerCase();
+          const matches = activeProducts.some(p => {
+            const text = `${p.title} ${p.description} ${p.material || ''}`.toLowerCase();
+            return text.includes(normOpt);
+          });
+          if (matches) {
+            options.add(opt);
+          }
+        });
+      }
+
+      if (options.size > 0) {
+        html += `
+          <div class="tj-filter-section">
+            <button class="tj-filter-section-header" onclick="toggleFilterSection(event, this)">
+              ${fKey.name}
+              <svg class="tj-caret-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="tj-filter-section-content">
+              ${Array.from(options).map(opt => {
+                const isChecked = (activeFilters[fKey.key] || []).includes(opt);
+                return `
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #4a5568; cursor: pointer; font-family: var(--font-sans);">
+                    <input type="checkbox" value="${opt}" ${isChecked ? 'checked' : ''} onchange="handleFilterChange('${fKey.key}', '${opt}', this.checked)" style="accent-color: var(--green); cursor: pointer;">
+                    ${opt}
+                  </label>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    sidebar.innerHTML = html;
+  };
+
+  window.toggleFilterSection = function(e, btn) {
+    btn.classList.toggle('collapsed');
+  };
+
+  // Inject filter-modal styles once
+  window.tjEnsureFilterModalStyles = function() {
+    if (document.getElementById('tj-fm-style')) return;
+    const s = document.createElement('style');
+    s.id = 'tj-fm-style';
+    s.textContent = `
+      #tj-filter-modal{position:fixed;inset:0;z-index:100050;visibility:hidden;}
+      #tj-filter-modal.open{visibility:visible;}
+      #tj-filter-modal .tj-fm-overlay{position:absolute;inset:0;background:rgba(15,30,22,.45);opacity:0;transition:opacity .25s ease;}
+      #tj-filter-modal.open .tj-fm-overlay{opacity:1;}
+      #tj-filter-modal .tj-fm-sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;max-height:88vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s cubic-bezier(.16,1,.3,1);box-shadow:0 -8px 40px rgba(0,0,0,.2);}
+      #tj-filter-modal.open .tj-fm-sheet{transform:translateY(0);}
+      #tj-filter-modal .tj-fm-grabber{width:40px;height:4px;border-radius:99px;background:#d8d2c8;margin:10px auto 2px;flex-shrink:0;}
+      #tj-filter-modal .tj-fm-head{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 12px;border-bottom:1px solid rgba(27,67,50,.08);flex-shrink:0;}
+      #tj-filter-modal .tj-fm-title{font-family:var(--font-serif);font-size:17px;color:var(--green);letter-spacing:.5px;}
+      #tj-filter-modal .tj-fm-x{background:#f4f1ec;border:none;width:30px;height:30px;border-radius:50%;font-size:13px;color:var(--green);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+      #tj-filter-modal .tj-fm-body{padding:4px 20px 16px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;}
+      #tj-filter-modal .tj-fm-body .tj-sidebar-mobile-header{display:none !important;}
+      #tj-filter-modal .tj-fm-foot{display:flex;gap:12px;padding:14px 20px calc(14px + env(safe-area-inset-bottom));border-top:1px solid rgba(27,67,50,.08);background:#fff;flex-shrink:0;}
+      #tj-filter-modal .tj-fm-clear{flex:1;padding:13px;border:1px solid var(--green);background:#fff;color:var(--green);border-radius:12px;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:1px;cursor:pointer;font-family:var(--font-sans);}
+      #tj-filter-modal .tj-fm-apply{flex:2;padding:13px;border:none;background:var(--green);color:var(--gold);border-radius:12px;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:1px;cursor:pointer;font-family:var(--font-sans);}
+      @media(min-width:769px){
+        #tj-filter-modal .tj-fm-sheet{left:50%;top:50%;right:auto;bottom:auto;transform:translate(-50%,-46%);width:400px;max-height:82vh;border-radius:16px;}
+        #tj-filter-modal.open .tj-fm-sheet{transform:translate(-50%,-50%);}
+        #tj-filter-modal .tj-fm-grabber{display:none;}
+      }
+    `;
+    document.head.appendChild(s);
+  };
+
+  // Robust body-level filter sheet (works regardless of ancestor stacking/overflow)
+  window.toggleFilterDrawer = function() {
+    const existing = document.getElementById('tj-filter-modal');
+    if (existing) {
+      existing.classList.remove('open');
+      document.body.style.overflow = '';
+      setTimeout(() => { if (existing.parentNode) existing.remove(); }, 260);
+      return;
+    }
+    window.tjEnsureFilterModalStyles();
+    if (typeof renderSidebarFilters === 'function') renderSidebarFilters();
+    const sidebar = document.getElementById('tj-catalog-sidebar');
+    const inner = sidebar ? sidebar.innerHTML : '';
+    const modal = document.createElement('div');
+    modal.id = 'tj-filter-modal';
+    modal.innerHTML = `
+      <div class="tj-fm-overlay" onclick="toggleFilterDrawer()"></div>
+      <div class="tj-fm-sheet" role="dialog" aria-label="Filters">
+        <div class="tj-fm-grabber"></div>
+        <div class="tj-fm-head">
+          <span class="tj-fm-title">Filters</span>
+          <button class="tj-fm-x" onclick="toggleFilterDrawer()" aria-label="Close">✕</button>
+        </div>
+        <div class="tj-fm-body" id="tj-fm-body">${inner}</div>
+        <div class="tj-fm-foot">
+          <button class="tj-fm-clear" onclick="clearAllFilters()">Clear All</button>
+          <button class="tj-fm-apply" onclick="toggleFilterDrawer()">Show Results</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    requestAnimationFrame(() => modal.classList.add('open'));
+    document.body.style.overflow = 'hidden';
+  };
+
+  // Keep the open filter sheet in sync after any filter change
+  window.tjRefreshFilterModal = function() {
+    const body = document.getElementById('tj-fm-body');
+    const sidebar = document.getElementById('tj-catalog-sidebar');
+    if (body && sidebar) body.innerHTML = sidebar.innerHTML;
+  };
+
+  window.handleFilterChange = function(key, val, checked) {
+    if (checked) {
+      if (!activeFilters[key].includes(val)) {
+        activeFilters[key].push(val);
+      }
+    } else {
+      activeFilters[key] = activeFilters[key].filter(v => v !== val);
+    }
+    applyFiltersToUrl();
+    loadProducts();
+  };
+
+  window.handleAvailabilityChange = function(val) {
+    activeFilters.availability = val;
+    applyFiltersToUrl();
+    loadProducts();
+  };
+
+  window.handlePriceFilterChange = function(key, val) {
+    const numVal = val ? parseFloat(val) : null;
+    activeFilters[key] = isNaN(numVal) ? null : numVal;
+    applyFiltersToUrl();
+    loadProducts();
+  };
+
+  window.clearAllFilters = function() {
+    activeFilters = {
+      subcategories: [],
+      gender: [],
+      plating: [],
+      material: [],
+      color: [],
+      'stone-type': [],
+      priceMin: null,
+      priceMax: null,
+      availability: 'all'
+    };
+    applyFiltersToUrl();
+    loadProducts();
+    renderSidebarFilters();
+    if (typeof tjRefreshFilterModal === 'function') tjRefreshFilterModal();
+  };
+
+  window.applyFiltersToUrl = function() {
+    const url = new URL(window.location);
+    url.searchParams.delete('p'); // Reset pagination on filter change
+    
+    const keys = ['subcategories', 'gender', 'plating', 'material', 'color', 'stone-type'];
+    keys.forEach(k => {
+      if (activeFilters[k] && activeFilters[k].length > 0) {
+        url.searchParams.set(k, activeFilters[k].join(','));
+      } else {
+        url.searchParams.delete(k);
+      }
+    });
+
+    if (activeFilters.priceMin !== null) {
+      url.searchParams.set('priceMin', activeFilters.priceMin);
+    } else {
+      url.searchParams.delete('priceMin');
+    }
+    
+    if (activeFilters.priceMax !== null) {
+      url.searchParams.set('priceMax', activeFilters.priceMax);
+    } else {
+      url.searchParams.delete('priceMax');
+    }
+
+    if (activeFilters.availability !== 'all') {
+      url.searchParams.set('availability', activeFilters.availability);
+    } else {
+      url.searchParams.delete('availability');
+    }
+
+    window.history.pushState({}, '', url);
+  };
+
+  window.parseFiltersFromUrl = function() {
+    const params = new URLSearchParams(window.location.search);
+    const keys = ['subcategories', 'gender', 'plating', 'material', 'color', 'stone-type'];
+    keys.forEach(k => {
+      const val = params.get(k);
+      activeFilters[k] = val ? val.split(',') : [];
+    });
+
+    const pMin = params.get('priceMin');
+    activeFilters.priceMin = pMin ? parseFloat(pMin) : null;
+    const pMax = params.get('priceMax');
+    activeFilters.priceMax = pMax ? parseFloat(pMax) : null;
+    activeFilters.availability = params.get('availability') || 'all';
+  };
+
+  // ─── POLICY MODALS ────────────────────────────────────────
+  window.openPolicyModal = async function(policyKey) {
+    const overlay = document.getElementById('tj-policy-modal-overlay');
+    const titleEl = document.getElementById('tj-policy-title');
+    const contentEl = document.getElementById('tj-policy-content');
+    if (!overlay || !contentEl || !titleEl) return;
+
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    const titles = {
+      privacy_policy: "Privacy Policy",
+      terms_of_service: "Terms of Service",
+      refund_policy: "Refund & Return Policy",
+      shipping_policy: "Shipping & Delivery Policy",
+      contact_us: "Contact Us"
+    };
+    titleEl.textContent = titles[policyKey] || "Store Policy";
+    contentEl.textContent = "Loading policies...";
+
+    try {
+      let settings = _cachedSettings;
+      if (!settings) {
+        const cachedRaw = sessionStorage.getItem('tj_c_settings');
+        if (cachedRaw) {
+          settings = JSON.parse(cachedRaw);
+        } else {
+          const { data, error } = await db.from('settings').select('*');
+          if (!error && data) {
+            settings = data;
+            try { sessionStorage.setItem('tj_c_settings', JSON.stringify(settings)); } catch(_e) {}
+          }
+        }
+      }
+
+      if (settings) {
+        const keyMap = {
+          privacy_policy: 'privacy_policy',
+          terms_of_service: 'terms_of_service',
+          refund_policy: 'refund_policy',
+          shipping_policy: 'shipping_policy',
+          contact_us: 'contact_us'
+        };
+        const settingObj = settings.find(s => s.key === keyMap[policyKey]);
+        if (settingObj && settingObj.value) {
+          contentEl.textContent = settingObj.value;
+          return;
+        }
+      }
+      
+      const defaultPolicies = {
+        privacy_policy: "Privacy Policy\n\nAt Tassina Jewels, we prioritize the protection of your personal and business data. Information gathered during the inquiry and ordering process is handled securely and in accordance with standard confidentiality guidelines.\n\nWe do not sell, trade, or share your contact details or procurement lists with outside parties. If you have any inquiries regarding data usage, please contact support.",
+        terms_of_service: "Terms & Conditions\n\nWelcome to Tassina Jewels B2B Portal. By accessing this platform and placing wholesale inquiries, you agree to our standard terms of trade.\n\nAll jewelry products displayed are subject to minimum order quantity (MOQ) limits and wholesale packaging specifications. Pricing, shipping duties, and bulk discounts are finalized during direct invoicing.",
+        refund_policy: "Refund & Return Policy\n\nAs a dedicated B2B manufacturer, we maintain strict quality control checks before bulk shipment dispatch. All wholesale transactions are final.\n\nIn the rare event of transit damage or manufacturing defects, claims must be raised with proof (photos/videos) within 7 days of shipment arrival to qualify for store credit or replacement pieces.",
+        shipping_policy: "Shipping & Delivery Policy\n\nWe offer secure worldwide delivery for our B2B partners. Delivery is offered free globally for orders exceeding $500.\n\nDispatch times range from 3-7 business days for stock pieces and 15-20 days for custom catalog designs. Estimated shipping timelines and tracking credentials are provided upon invoice settlement.",
+        contact_us: "Contact Us\n\nWe would love to hear from you. Our wholesale team is available to assist with product enquiries, bulk pricing, and custom catalog requests.\n\nWhatsApp / Business: +86 15986738500\nWeChat: 15986738500\nEmail: Reach us through the email link in the footer.\n\nBusiness Hours: Monday to Saturday, 9:00 AM – 7:00 PM (GMT+8).\nWe typically respond to all wholesale enquiries within 24 hours."
+      };
+      contentEl.textContent = defaultPolicies[policyKey] || "Details not found. Please contact wholesale support.";
+    } catch(e) {
+      console.error(e);
+      contentEl.textContent = "Unable to load policy content. Please try again later.";
+    }
+  };
+
+  window.closePolicyModal = function() {
+    const overlay = document.getElementById('tj-policy-modal-overlay');
+    if (overlay) overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  };
+
+  // ─── WECHAT MODAL ─────────────────────────────────────────
+  window.openWeChatModal = function() {
+    const overlay = document.getElementById('tj-wechat-modal-overlay');
+    if (overlay) {
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+  };
+
+  window.closeWeChatModal = function() {
+    const overlay = document.getElementById('tj-wechat-modal-overlay');
+    if (overlay) {
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+  };
+
+  // ─── CLEAN URL HELPERS ────────────────────────────────────
+  // Strip platform tracking params and normalize legacy links to clean paths
+  window.tjCleanUrl = function() {
+    const url = new URL(window.location.href);
+    let changed = false;
+
+    // Remove tracking/analytics params that clutter the address bar
+    ['spm', 'spm_prev', 'scm', 'pvid'].forEach(p => {
+      if (url.searchParams.has(p)) { url.searchParams.delete(p); changed = true; }
+    });
+
+    // Convert legacy ?category=slug into a clean /categories/slug path
+    const legacyCat = url.searchParams.get('category');
+    const onHomeish = url.pathname === '/' || url.pathname === '/index' || url.pathname.endsWith('theme.liquid');
+    if (legacyCat && onHomeish) {
+      url.searchParams.delete('category');
+      url.pathname = '/categories/' + legacyCat;
+      changed = true;
+    }
+    // Convert legacy ?page=categories into /categories
+    if (url.searchParams.get('page') === 'categories' && onHomeish) {
+      url.searchParams.delete('page');
+      url.pathname = '/categories';
+      changed = true;
+    }
+
+    if (changed) {
+      const clean = url.pathname + (url.search ? url.search : '') + url.hash;
+      window.history.replaceState(window.history.state, '', clean);
+    }
+  };
+
+  const TJ_HOMEISH_RE = /^\/(index)?$/;
+  window.tjIsClientRoutable = function() {
+    const p = window.location.pathname;
+    return TJ_HOMEISH_RE.test(p) || p.startsWith('/categories') || p.startsWith('/product/') || p.endsWith('theme.liquid');
+  };
+
+  // Navigate to category page (clean /categories/<slug> URLs, client-side on storefront)
+  window.navigateToCategory = function(slug) {
+    const target = (slug === 'all' || !slug) ? '/' : '/categories/' + slug;
+    if (window.tjIsClientRoutable()) {
+      window.history.pushState({}, '', target);
       window.renderPageViews();
     } else {
-      if (slug === 'all') {
-        window.location.href = '/';
-      } else {
-        window.location.href = `/?category=${slug}`;
-      }
+      window.location.href = target;
     }
+  };
+
+  // Navigate to Categories Directory (clean /categories URL; opens modal on storefront)
+  window.navigateToCategoryPage = function() {
+    if (window.tjIsClientRoutable()) {
+      window.history.pushState({}, '', '/categories');
+      window.renderPageViews();
+    } else {
+      window.location.href = '/categories';
+    }
+  };
+
+  // Helper to generate clean, SEO-friendly storefront links
+  window.tjGetLinkHref = function(slug) {
+    if (!slug) return 'javascript:void(0)';
+    if (slug.startsWith('/product/') || slug.startsWith('http://') || slug.startsWith('https://') || slug.startsWith('#') || slug.startsWith('/')) {
+      return slug;
+    }
+    return slug === 'all' ? '/' : '/categories/' + slug;
+  };
+
+  // Helper to intercept click events for clean client-side SPA routing
+  window.tjHandleLinkClick = function(e, slug) {
+    if (!slug) return;
+    if (slug.startsWith('http://') || slug.startsWith('https://') || slug.startsWith('tel:') || slug.startsWith('mailto:')) {
+      return;
+    }
+    e.preventDefault();
+    if (slug.startsWith('/product/')) {
+      const prodSlug = slug.replace('/product/', '');
+      const idx = typeof allProducts !== 'undefined' ? allProducts.findIndex(x => (x.slug === prodSlug || x.id === prodSlug)) : -1;
+      if (idx !== -1) {
+        openProductDetail(idx);
+      } else {
+        window.location.href = slug;
+      }
+      return;
+    }
+    if (slug.startsWith('#')) {
+      const el = document.querySelector(slug);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    navigateToCategory(slug);
   };
 
   // Get premium jewelry vector icons for categories
@@ -4527,99 +6000,174 @@
     return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>`;
   };
 
-  window.showCategoriesDrawer = function() {
-    const existing = document.getElementById('tj-categories-drawer-page');
-    if (existing) existing.remove();
-    const overlay = document.createElement('div');
-    overlay.id = 'tj-categories-drawer-page';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:99999;display:flex;justify-content:flex-end;';
-    const drawer = document.createElement('div');
-    drawer.style.cssText = 'background:#fff;width:100%;max-width:420px;height:100%;overflow-y:auto;display:flex;flex-direction:column;box-shadow:-10px 0 30px rgba(0,0,0,0.15);';
-
-    drawer.innerHTML = `
-      <div style="background:#1B4332;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;border-bottom:1px solid rgba(227,186,69,0.2);">
-        <div>
-          <div style="font-family:'Cinzel',serif;color:#E3BA45;font-size:15px;letter-spacing:2px;text-transform:uppercase;font-weight:600;">Collections</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:3px;font-family:var(--font-sans);">Select a category to shop luxury items</div>
-        </div>
-        <button onclick="document.getElementById('tj-categories-drawer-page').remove();document.body.style.overflow='';selectBottomNav('nav-home');" style="background:rgba(255,255,255,0.1);border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">✕</button>
-      </div>
-      <div style="flex:1;padding:16px;display:grid;grid-template-columns:repeat(2, 1fr);gap:12px;background:#FAF9F6;align-content:start;overflow-y:auto;">
-        <!-- All Collections Card -->
-        <div onclick="document.getElementById('tj-categories-drawer-page').remove();document.body.style.overflow='';filterByCategory('all');" class="tj-deal-card" style="flex:none;box-shadow: 0 4px 10px rgba(0,0,0,0.06);display:flex;flex-direction:column;height:100%;">
-          <div class="tj-deal-img-wrapper" style="height:115px;width:100%;position:relative;">
-            <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?q=80&w=600&auto=format&fit=cover" alt="All Collections" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
-          </div>
-          <div class="tj-deal-card-body" style="padding:10px 8px;flex:1;display:flex;flex-direction:column;justify-content:space-between;text-align:center;">
-            <div style="font-size:10px;font-weight:700;color:#1B4332;text-transform:uppercase;letter-spacing:0.5px;font-family:var(--font-sans);line-height:1.2;margin-bottom:8px;">All Collections</div>
-            <button class="tj-deal-card-cta" style="font-size:9px;padding:6px 0;width:100%;margin-top:auto;">Shop All</button>
-          </div>
-        </div>
-        ${allCategories.map(cat => {
-          const imgUrl = cat.image_url ? formatImageUrl(cat.image_url) : getCategoryFallbackImage(cat);
-          return `
-            <div onclick="document.getElementById('tj-categories-drawer-page').remove();document.body.style.overflow='';filterByCategory('${cat.slug}');" class="tj-deal-card" style="flex:none;box-shadow: 0 4px 10px rgba(0,0,0,0.06);display:flex;flex-direction:column;height:100%;">
-              <div class="tj-deal-img-wrapper" style="height:115px;width:100%;position:relative;">
-                <img src="${imgUrl}" alt="${cat.name}" loading="lazy" onerror="this.src='${getCategoryFallbackImage(cat)}'" style="width:100%;height:100%;object-fit:cover;">
-              </div>
-              <div class="tj-deal-card-body" style="padding:10px 8px;flex:1;display:flex;flex-direction:column;justify-content:space-between;text-align:center;">
-                <div style="font-size:10px;font-weight:700;color:#1B4332;text-transform:uppercase;letter-spacing:0.5px;font-family:var(--font-sans);line-height:1.2;margin-bottom:8px;">${cat.name}</div>
-                <button class="tj-deal-card-cta" style="font-size:9px;padding:6px 0;width:100%;margin-top:auto;">Shop Collection</button>
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `;
-
-    overlay.appendChild(drawer);
-    document.body.appendChild(overlay);
+  // Open Categories Popup Modal
+  window.openCategoriesModal = function() {
+    const modal = document.getElementById('tj-cat-modal');
+    if (!modal) return;
+    modal.classList.add('active');
     document.body.style.overflow = 'hidden';
+    window.renderCategoriesModalGrid();
+    window.addEventListener('keydown', handleEscapeKey);
+  };
+
+  // Close Categories Popup Modal
+  window.closeCategoriesModal = function(event) {
+    const modal = document.getElementById('tj-cat-modal');
+    if (!modal) return;
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
     
-    overlay.addEventListener('click', function(e) {
-      if (e.target === this) {
-        overlay.remove();
-        document.body.style.overflow = '';
-        selectBottomNav('nav-home');
-      }
-    });
+    // Restore bottom navigation highlight state
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageParam = urlParams.get('page');
+    if (pageParam === 'wishlist') {
+      selectBottomNav('nav-wishlist');
+    } else if (pageParam === 'account') {
+      selectBottomNav('nav-account');
+    } else {
+      selectBottomNav('nav-home');
+    }
+    
+    window.removeEventListener('keydown', handleEscapeKey);
   };
 
-  window.showCategoriesDirectoryPage = function() {
-    window.showCategoriesDrawer();
-  };
+  function handleEscapeKey(e) {
+    if (e.key === 'Escape') {
+      window.closeCategoriesModal();
+    }
+  }
 
-  window.renderCategoriesDirectory = function() {
-    const grid = document.getElementById('tj-categories-directory-grid');
+  // Render modal content
+  window.renderCategoriesModalGrid = function(hasError = false) {
+    const grid = document.getElementById('tj-cat-modal-grid');
     if (!grid) return;
-    grid.innerHTML = allCategories.map(cat => {
-      const hasUploadedImage = cat.image_url && cat.image_url !== 'null' && cat.image_url.trim() !== '' && !cat.image_url.includes('unsplash.com');
-      const img = hasUploadedImage ? formatImageUrl(cat.image_url) : '';
-      const iconSvg = getCategoryIconSvg(cat);
-      const visualContent = hasUploadedImage 
-        ? `<img class="tj-category-directory-img" src="${img}" alt="${cat.name}" loading="lazy">`
-        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#FAF9F6;color:#1B4332;">${iconSvg.replace('<svg ', '<svg style="width:48px;height:48px;stroke:#1B4332;" ')}</div>`;
 
-      return `
-        <div class="tj-category-directory-card" onclick="window.navigateToCategory('${cat.slug}')">
-          <div class="tj-category-directory-img-wrap" style="background:#FAF9F6;display:flex;align-items:center;justify-content:center;">
-            ${visualContent}
+    if (hasError) {
+      grid.innerHTML = `
+        <div style="grid-column:1/-1; text-align:center; padding:40px 20px; color:#1B4332; font-family:var(--font-serif);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#e63946" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 48px; height: 48px; margin: 0 auto 16px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p style="font-size:16px; font-weight:600; margin-bottom:8px;">Failed to Load Collections</p>
+          <p style="font-size:12px; color:#666; margin-bottom:16px;">We encountered an error loading the collections. Please try again.</p>
+          <button onclick="window.retryLoadFilters()" style="background:#1B4332; color:#E3BA45; border:none; padding:8px 20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; border-radius:20px; cursor:pointer; font-family:var(--font-sans);">Retry</button>
+        </div>
+      `;
+      return;
+    }
+
+    if (isCategoriesLoading) {
+      grid.innerHTML = Array.from({ length: 4 }).map(() => `
+        <div class="tj-cat-modal-card skeleton-card" style="pointer-events: none; border-color: rgba(0,0,0,0.03);">
+          <div class="tj-skeleton-shimmer" style="width:100%; aspect-ratio:16/10; background: #e2e8f0; position: relative; overflow: hidden;"></div>
+          <div style="padding: 16px 20px; background: #ffffff; display: flex; align-items: center; justify-content: space-between;">
+            <div class="tj-skeleton-shimmer" style="height: 14px; width: 60%; background: #e2e8f0; border-radius: 4px; overflow: hidden;"></div>
+            <div class="tj-skeleton-shimmer" style="height: 24px; width: 24px; border-radius: 50%; background: #e2e8f0; overflow: hidden;"></div>
           </div>
-          <div class="tj-category-directory-info">
-            <span class="tj-category-directory-name">${cat.name}</span>
+        </div>
+      `).join('');
+      
+      if (!document.getElementById('tj-skeleton-style')) {
+        const style = document.createElement('style');
+        style.id = 'tj-skeleton-style';
+        style.innerHTML = `
+          .tj-skeleton-shimmer::after {
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            transform: translateX(-100%);
+            background-image: linear-gradient(
+              90deg,
+              rgba(255, 255, 255, 0) 0%,
+              rgba(255, 255, 255, 0.35) 20%,
+              rgba(255, 255, 255, 0.6) 60%,
+              rgba(255, 255, 255, 0) 100%
+            );
+            animation: tj-shimmer 1.5s infinite;
+            content: '';
+          }
+          @keyframes tj-shimmer {
+            100% { transform: translateX(100%); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+      return;
+    }
+
+    if (allCategories.length === 0) {
+      grid.innerHTML = `
+        <div style="grid-column:1/-1; text-align:center; padding:40px 0; color:#1B4332; font-family:var(--font-serif);">
+          <p style="font-size:16px; font-weight:600; margin-bottom:8px;">No Collections Found</p>
+          <p style="font-size:12px; color:#666;">Please check back later or refresh the page.</p>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = allCategories.map(cat => {
+      const img = cat.image_url ? formatImageUrl(cat.image_url) : getCategoryFallbackImage(cat);
+      const displayName = cat.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      return `
+        <div class="tj-cat-modal-card" onclick="selectCategoryFromModal('${cat.slug}')">
+          <div class="tj-cat-modal-card-img-wrap">
+            <img class="tj-cat-modal-card-img" src="${img}" alt="${cat.name}" loading="lazy" onerror="this.src='${getCategoryFallbackImage(cat)}'">
+          </div>
+          <div class="tj-cat-modal-card-info">
+            <h4 class="tj-cat-modal-card-name">${displayName}</h4>
+            <div class="tj-cat-modal-card-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><path d="M9 5l7 7-7 7"/></svg>
+            </div>
           </div>
         </div>
       `;
     }).join('');
   };
 
+  window.selectCategoryFromModal = function(slug) {
+    window.closeCategoriesModal();
+    window.navigateToCategory(slug);
+  };
+
+  window.retryLoadFilters = function() {
+    isCategoriesLoading = true;
+    window.renderCategoriesModalGrid();
+    loadFilters().catch(err => {
+      console.error("Retry loading filters error:", err);
+      window.renderCategoriesModalGrid(true);
+    });
+  };
+
+  window.showCategoriesDrawer = function() {
+    window.openCategoriesModal();
+  };
+
+  window.showCategoriesDirectoryPage = function() {
+    window.openCategoriesModal();
+  };
+
   window.renderPageViews = function() {
+    // Strip tracking params (spm etc.) and normalize legacy links to clean paths
+    if (typeof tjCleanUrl === 'function') { try { tjCleanUrl(); } catch(_e){} }
+    if (typeof parseFiltersFromUrl === 'function') parseFiltersFromUrl();
     const urlParams = new URLSearchParams(window.location.search);
     const pageParam = urlParams.get('page');
-    const catParam = urlParams.get('category');
+    const pathname = window.location.pathname;
+    let catParam = urlParams.get('category');
+    let productParam = urlParams.get('product');
+    let openCatDirectory = (pageParam === 'categories');
+
+    if (pathname.startsWith('/product/')) {
+      productParam = pathname.replace('/product/', '').replace(/\/$/, '');
+    }
+    if (pathname.startsWith('/categories/')) {
+      const seg = pathname.replace('/categories/', '').replace(/\/$/, '');
+      if (seg) { catParam = decodeURIComponent(seg); }
+      else { openCatDirectory = true; }
+    } else if (pathname === '/categories') {
+      openCatDirectory = true;
+    }
     
     const heroSec = document.getElementById('tj-hero-banner');
     const goatSec = document.getElementById('tj-goat-deal-outer');
+    const topOuterSec = document.getElementById('tj-top-deal-outer');
     const shopStyleSec = document.getElementById('tj-shop-by-category-outer');
     const trendingSec = document.getElementById('tj-trending-outer');
     const arrivalsSec = document.getElementById('tj-new-arrivals-section');
@@ -4634,6 +6182,8 @@
     const trustBar = document.getElementById('tj-trust-bar');
     const reviewsSec = document.getElementById('tj-reviews-section');
     const bestQualitySec = document.getElementById('tj-best-quality-outer');
+    const quickCatsSec = document.getElementById('tj-quick-categories-section');
+    const productDetailPage = document.getElementById('tj-product-detail-page');
     
     function highlightNav(id) {
       document.querySelectorAll('.tj-bottom-nav-item').forEach(item => {
@@ -4641,9 +6191,20 @@
       });
     }
 
-    if (pageParam === 'categories') {
+    // Redirect legacy categories page requests to homepage modal popup
+    if (openCatDirectory) {
+      const url = new URL(window.location);
+      url.searchParams.delete('page');
+      window.history.replaceState({}, '', url);
+      setTimeout(() => {
+        window.openCategoriesModal();
+      }, 100);
+      return;
+    }
+    else if (productParam) {
       if (heroSec) heroSec.style.display = 'none';
       if (goatSec) goatSec.style.display = 'none';
+      if (topOuterSec) topOuterSec.style.display = 'none';
       if (shopStyleSec) shopStyleSec.style.display = 'none';
       if (trendingSec) trendingSec.style.display = 'none';
       if (arrivalsSec) arrivalsSec.style.display = 'none';
@@ -4654,14 +6215,14 @@
       if (trustBar) trustBar.style.display = 'none';
       if (reviewsSec) reviewsSec.style.display = 'none';
       if (bestQualitySec) bestQualitySec.style.display = 'none';
+      if (quickCatsSec) quickCatsSec.style.display = 'none';
       
+      if (categoriesDirSection) categoriesDirSection.style.display = 'none';
       if (productsSection) productsSection.style.display = 'none';
-      if (categoriesDirSection) {
-        categoriesDirSection.style.display = 'block';
-        renderCategoriesDirectory();
-      }
-      
-      highlightNav('nav-categories');
+      if (productDetailPage) productDetailPage.style.display = 'block';
+
+      renderProductDetailsPage(productParam);
+      highlightNav('nav-home');
       window.scrollTo({ top: 0, behavior: 'auto' });
     }
     else if (catParam) {
@@ -4669,6 +6230,7 @@
       
       if (heroSec) heroSec.style.display = 'none';
       if (goatSec) goatSec.style.display = 'none';
+      if (topOuterSec) topOuterSec.style.display = 'none';
       if (shopStyleSec) shopStyleSec.style.display = 'none';
       if (trendingSec) trendingSec.style.display = 'none';
       if (arrivalsSec) arrivalsSec.style.display = 'none';
@@ -4679,9 +6241,14 @@
       if (trustBar) trustBar.style.display = 'none';
       if (reviewsSec) reviewsSec.style.display = 'none';
       if (bestQualitySec) bestQualitySec.style.display = 'none';
+      if (quickCatsSec) quickCatsSec.style.display = 'none';
       
       if (categoriesDirSection) categoriesDirSection.style.display = 'none';
+      if (productDetailPage) productDetailPage.style.display = 'none';
       if (productsSection) productsSection.style.display = 'block';
+      
+      const dropdown = document.querySelector('.tj-filters-dropdown-container');
+      if (dropdown) dropdown.style.display = 'none';
       
       const selectEl = document.getElementById('tj-category-select');
       if (selectEl) selectEl.value = catParam;
@@ -4694,16 +6261,18 @@
       const subtitle = document.getElementById('tj-catalog-subtitle');
       const activeCat = allCategories.find(c => c.slug === catParam);
       if (activeCat) {
-        if (heading) heading.textContent = activeCat.name + ' Collection';
+        if (heading) heading.textContent = activeCat.name;
         if (subtitle) subtitle.textContent = 'Explore our ' + activeCat.name.toLowerCase() + ' designs — handcrafted with premium quality';
+      } else {
+        const formatName = catParam.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        if (heading) heading.textContent = formatName;
+        if (subtitle) subtitle.textContent = 'Explore our ' + formatName.toLowerCase() + ' designs — handcrafted with premium quality';
       }
       
       loadProducts();
       highlightNav('nav-home');
       
-      setTimeout(() => {
-        if (productsSection) productsSection.scrollIntoView({ behavior: 'auto' });
-      }, 50);
+      window.scrollTo({ top: 0, behavior: 'auto' });
     }
     else {
       currentCategory = 'all';
@@ -4711,6 +6280,7 @@
       
       const sMap = window.tjStorefrontSettings || {};
       if (goatSec) goatSec.style.display = sMap.goat_deal_active !== 'false' ? 'block' : 'none';
+      if (topOuterSec) topOuterSec.style.display = sMap.top_deals_active !== 'false' ? 'block' : 'none';
       if (shopStyleSec) shopStyleSec.style.display = sMap.shop_by_cat_active !== 'false' ? 'block' : 'none';
       if (trendingSec) trendingSec.style.display = sMap.trending_active !== 'false' ? 'block' : 'none';
       
@@ -4722,8 +6292,10 @@
       if (trustBar) trustBar.style.display = 'block';
       if (reviewsSec) reviewsSec.style.display = 'block';
       if (bestQualitySec) bestQualitySec.style.display = sMap.best_quality_active !== 'false' ? 'block' : 'none';
+      if (quickCatsSec) quickCatsSec.style.display = 'block';
       
       if (categoriesDirSection) categoriesDirSection.style.display = 'none';
+      if (productDetailPage) productDetailPage.style.display = 'none';
       if (productsSection) productsSection.style.display = 'none';
       
       const selectEl = document.getElementById('tj-category-select');
@@ -4740,6 +6312,221 @@
       
       loadProducts();
       highlightNav('nav-home');
+    }
+  };
+
+  // ─── RENDER PRODUCT DETAILS PAGE ─────────────────────────
+  // ─── BACK ARROW: go to previous page, fallback Home ─────
+  window.tjGoBack = function() {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.history.pushState({}, "", "/");
+      window.renderPageViews();
+    }
+    window.scrollTo({ top: 0, behavior: "auto" });
+  };
+
+  window.renderProductDetailsPage = async function(slugOrId) {
+    if (!allProducts || allProducts.length === 0) {
+      if (typeof loadProducts === 'function') {
+        await loadProducts();
+      } else {
+        return;
+      }
+    }
+    
+    const p = allProducts.find(x => String(x.id) === String(slugOrId) || x.slug === slugOrId);
+    if (!p) {
+      const pdp = document.getElementById('tj-product-detail-page');
+      if (pdp) {
+        pdp.innerHTML = `<div style="text-align:center; padding: 100px 20px;">
+          <h2 style="font-family: var(--font-serif); color: #1B4332;">Product Not Found</h2>
+          <p style="color: #666; margin-bottom: 24px;">The masterpiece you're looking for could not be located.</p>
+          <a href="/" style="display:inline-block; padding: 12px 24px; background: #1B4332; color: #E3BA45; border-radius: 8px; text-decoration: none; text-transform: uppercase; font-size: 11px; font-weight: 700; letter-spacing: 1px;">Return to Collections</a>
+        </div>`;
+      }
+      return;
+    }
+
+    const catName = p.category || 'Fine Jewelry';
+    const bCrumb = document.getElementById('tj-pdp-breadcrumb');
+    if (bCrumb) bCrumb.innerHTML = `<a href="/">Home</a> &nbsp;/&nbsp; <a href="/?category=${p.category_slug || 'all'}">${catName}</a> &nbsp;/&nbsp; <span style="color: #1B4332; font-weight: 500;">${p.title}</span>`;
+
+    const mainImg = document.getElementById('tj-pdp-main-image');
+    if (mainImg) {
+      mainImg.src = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
+      mainImg.alt = p.title;
+      
+      const imgWrap = document.getElementById('tj-pdp-main-image-wrap');
+      if (imgWrap) {
+        imgWrap.onmousemove = function(e) {
+          const rect = imgWrap.getBoundingClientRect();
+          const x = ((e.clientX - rect.left) / rect.width) * 100;
+          const y = ((e.clientY - rect.top) / rect.height) * 100;
+          mainImg.style.transformOrigin = `${x}% ${y}%`;
+          mainImg.style.transform = 'scale(1.8)';
+        };
+        imgWrap.onmouseleave = function() {
+          mainImg.style.transform = 'scale(1)';
+          mainImg.style.transformOrigin = 'center center';
+        };
+      }
+    }
+
+    const thumbWrap = document.getElementById('tj-pdp-thumbnails');
+    if (thumbWrap) {
+      let images = p.image_url ? [p.image_url] : [];
+      try {
+        if (p.gallery_images) {
+          const parsed = JSON.parse(p.gallery_images);
+          if (Array.isArray(parsed)) images = images.concat(parsed);
+        }
+      } catch(e) {}
+      
+      if (images.length === 0) images = [getProductFallbackImage(p)];
+      
+      thumbWrap.innerHTML = images.map((img, idx) => `
+        <img src="${formatImageUrl(img)}" class="tj-pdp-thumb ${idx === 0 ? 'active' : ''}" onclick="document.getElementById('tj-pdp-main-image').src=this.src; document.querySelectorAll('.tj-pdp-thumb').forEach(t=>t.classList.remove('active')); this.classList.add('active');" alt="Thumbnail">
+      `).join('');
+    }
+
+    const catBadge = document.getElementById('tj-pdp-category-badge');
+    if (catBadge) catBadge.textContent = catName;
+    const titleEl = document.getElementById('tj-pdp-title');
+    if (titleEl) titleEl.textContent = p.title;
+    const priceEl = document.getElementById('tj-pdp-price');
+    if (priceEl) priceEl.textContent = '$' + parseFloat(p.price || 0).toFixed(2);
+
+    const compEl = document.getElementById('tj-pdp-compare-price');
+    const badgeEl = document.getElementById('tj-pdp-discount-badge');
+    if (compEl && badgeEl) {
+      if (p.compare_price && parseFloat(p.compare_price) > parseFloat(p.price)) {
+        compEl.textContent = '$' + parseFloat(p.compare_price).toFixed(2);
+        compEl.style.display = 'inline-block';
+        const off = Math.round((1 - parseFloat(p.price) / parseFloat(p.compare_price)) * 100);
+        badgeEl.textContent = off + '% OFF';
+        badgeEl.style.display = 'inline-block';
+      } else {
+        compEl.style.display = 'none';
+        badgeEl.style.display = 'none';
+      }
+    }
+
+    const moqEl = document.getElementById('tj-pdp-moq');
+    if (moqEl) moqEl.textContent = (p.moq || 2) + ' pieces';
+    const matEl = document.getElementById('tj-pdp-material');
+    if (matEl) matEl.textContent = p.material || 'Premium Alloy & Plating';
+    const wEl = document.getElementById('tj-pdp-weight');
+    if (wEl) wEl.textContent = p.weight || 'Standard';
+
+    const shortEl = document.getElementById('tj-pdp-short-desc');
+    if (shortEl) shortEl.textContent = p.short_description || 'A timeless, meticulously crafted masterpiece designed for elegance and durability. Available exclusively for our wholesale partners.';
+    
+    const fullEl = document.getElementById('tj-pdp-full-desc');
+    if (fullEl) fullEl.textContent = p.description || 'Elevate your jewelry collection with this exquisite piece. Designed with absolute precision by master craftsmen, it offers unparalleled shine and longevity. Our rigorous quality control ensures that each item meets international premium standards, making it perfect for your retail storefront.\n\nAll our pieces undergo rigorous hypoallergenic testing and are guaranteed skin-friendly, giving your customers the ultimate comfort and confidence.';
+
+    const tblMat = document.getElementById('tj-pdp-table-material');
+    if (tblMat) tblMat.textContent = p.material || 'Premium Gold Plated Alloy';
+    const tblMoq = document.getElementById('tj-pdp-table-moq');
+    if (tblMoq) tblMoq.textContent = (p.moq || 2) + ' Units Minimum';
+
+    const featWrap = document.getElementById('tj-pdp-features');
+    if (featWrap) {
+      featWrap.innerHTML = `
+        <li><strong>Handcrafted Precision:</strong> Each stone is set meticulously by experienced artisans.</li>
+        <li><strong>Durability:</strong> Anti-tarnish coating to ensure a long-lasting brilliant finish.</li>
+        <li><strong>Comfort Fit:</strong> Designed with smooth edges for all-day comfortable wear.</li>
+        <li><strong>Versatile Elegance:</strong> Perfect for both high-end events and daily chic styles.</li>
+      `;
+    }
+    
+    const varWrap = document.getElementById('tj-pdp-variants-wrap');
+    const varBox = document.getElementById('tj-pdp-variants');
+    if (varWrap && varBox) {
+      let variants = [];
+      try {
+        if (p.variants) {
+          variants = typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants;
+        }
+      } catch(e) {}
+      
+      if (Array.isArray(variants) && variants.length > 0) {
+        varWrap.style.display = 'block';
+        varBox.innerHTML = variants.map((v, i) => `<div class="tj-pdp-variant-badge ${i===0?'active':''}" onclick="document.querySelectorAll('.tj-pdp-variant-badge').forEach(b=>b.classList.remove('active')); this.classList.add('active');">${v.name || v}</div>`).join('');
+      } else {
+        varWrap.style.display = 'none';
+      }
+    }
+
+    // Action buttons
+    const wlBtn = document.getElementById('tj-pdp-wishlist-btn');
+    if (wlBtn) {
+      const wlKey = 'tj_wl_' + p.id;
+      const isNow = localStorage.getItem(wlKey) === '1';
+      wlBtn.style.borderColor = isNow ? '#E3BA45' : '#eae6e0';
+      wlBtn.style.background = isNow ? '#fff8e0' : '#ffffff';
+      wlBtn.style.color = isNow ? '#E3BA45' : '#ccc';
+      
+      const pIdx = allProducts.findIndex(x => x.id === p.id);
+      wlBtn.onclick = function() {
+        if (typeof toggleWishlistDetail === 'function') toggleWishlistDetail(p.id, pIdx);
+        const isSet = localStorage.getItem(wlKey) === '1';
+        wlBtn.style.borderColor = isSet ? '#E3BA45' : '#eae6e0';
+        wlBtn.style.background = isSet ? '#fff8e0' : '#ffffff';
+        wlBtn.style.color = isSet ? '#E3BA45' : '#ccc';
+      };
+    }
+
+    const bookBtn = document.getElementById('tj-pdp-book-btn');
+    if (bookBtn) {
+      bookBtn.onclick = function() {
+        if (typeof openModal === 'function') openModal(p);
+      };
+    }
+
+    // Render Related Products (Same category, excluding current)
+    const relGrid = document.getElementById('tj-pdp-related-grid');
+    if (relGrid) {
+      let related = allProducts.filter(x => x.category_slug === p.category_slug && x.id !== p.id);
+      if (related.length === 0) related = allProducts.filter(x => x.id !== p.id).slice(0, 4);
+      else related = related.slice(0, 8);
+      
+      if (related.length > 0) {
+        relGrid.innerHTML = related.map((rp, idx) => {
+          const imgUrl = rp.image_url ? formatImageUrl(rp.image_url) : getProductFallbackImage(rp);
+          const wlKey = 'tj_wl_' + rp.id;
+          const isWishlisted = localStorage.getItem(wlKey) === '1';
+          const globalIdx = allProducts.findIndex(ap => ap.id === rp.id);
+          const detailAction = globalIdx !== -1 ? `openProductDetail(${globalIdx})` : '';
+          const bookAction = globalIdx !== -1 ? `openModalByIndex(${globalIdx})` : `openModal(${JSON.stringify(rp)})`;
+          const moq = rp.moq || 2;
+          
+          return `
+          <div class="tj-bestseller-card">
+            <div class="tj-star-badge">★</div>
+            <div class="tj-bestseller-img-wrap" onclick="${detailAction}" style="cursor:pointer;">
+              <img class="tj-bestseller-img" src="${imgUrl}" alt="${rp.title}" loading="lazy">
+            </div>
+            <div class="tj-bestseller-info">
+              <div class="tj-stars">★★★★★</div>
+              <h3 class="tj-bestseller-title" onclick="${detailAction}" style="cursor:pointer;">${rp.title}</h3>
+              <div class="tj-bestseller-desc">${rp.category || 'Fine Jewelry'} &bull; MOQ: ${moq} pcs</div>
+              <div class="tj-bestseller-price">$${parseFloat(rp.price || 0).toFixed(2)}${rp.compare_price ? ` - $${parseFloat(rp.compare_price).toFixed(2)}` : ''}</div>
+              <div style="display: flex; gap: 8px; width: 100%; margin-top: 10px;">
+                <button class="tj-product-btn" style="flex: 1; margin-top: 0; padding: 8px;" onclick="${bookAction}">Book Now</button>
+                <button class="tj-card-wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" id="wl-btn-${rp.id}" onclick="event.stopPropagation(); toggleWishlist('${rp.id}', this)" title="Wishlist" style="width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--green); background: ${isWishlisted ? 'var(--green)' : 'transparent'}; color: ${isWishlisted ? 'var(--gold)' : 'var(--green)'}; cursor: pointer; transition: all 0.3s;">
+                  <svg width="16" height="16" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>`;
+        }).join('');
+      } else {
+        relGrid.innerHTML = '<div style="text-align:center;width:100%;padding:20px;color:#999;font-size:12px;">No related pieces currently available.</div>';
+      }
     }
   };
 
@@ -4790,28 +6577,53 @@
     const overlay = document.getElementById('tj-cat-drawer-overlay');
     const list = document.getElementById('tj-cat-drawer-list');
     if (!drawer) return;
-    if (list && allCategories.length > 0) {
+    
+    const GREEN = '#1B4332';
+    
+    if (list && list.children.length === 0 && allCategories.length > 0) {
       list.innerHTML = allCategories.map(cat => {
-        const hasImage = cat.image_url && cat.image_url !== 'null' && cat.image_url.trim() !== '';
-        const imgUrl = hasImage ? formatImageUrl(cat.image_url) : getCategoryFallbackImage(cat);
-        return `<div onclick="closeCategoriesDrawer(); filterByCategory('${cat.slug}'); document.getElementById('tj-products-section').scrollIntoView({behavior:'smooth'});" style="cursor:pointer;background:#fff;border:1px solid #eee;border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.06);">
-          <div style="height:100px;overflow:hidden;"><img src="${imgUrl}" alt="${cat.name}" style="width:100%;height:100%;object-fit:cover;" loading="lazy"></div>
-          <div style="padding:10px 12px;text-align:center;"><div style="font-size:11px;font-weight:700;color:#1B4332;text-transform:uppercase;letter-spacing:0.5px;line-height:1.4;">${cat.name}</div></div>
-        </div>`;
+        const img = cat.image_url ? formatImageUrl(cat.image_url) : getCategoryFallbackImage(cat);
+        const slug = cat.slug;
+        const name = cat.name;
+        return `
+          <div class="tj-qcat-tile" onclick="closeCategoriesDrawer(); navigateToCategory('${slug}');" style="flex:none; width:85px; margin: 0 auto;">
+            <div class="tj-qcat-img-wrapper" style="border: 2px solid ${GREEN}; width:80px; height:80px; border-radius:16px;">
+              <img src="${img}" alt="${name}" loading="lazy" onerror="this.src='${getCategoryFallbackImage(cat)}'" style="border-radius:12px;">
+            </div>
+            <div class="tj-qcat-label"><span style="color:#C9A82C; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.3px; display:block; text-align:center; max-width:90px; margin-top:2px;">${name}</span></div>
+          </div>`;
       }).join('');
-    } else if (list) {
-      list.innerHTML = '<p style="color:#666;font-size:12px;text-align:center;grid-column:span 2;padding:20px;">No categories found.</p>';
+    } else if (list && list.children.length === 0) {
+      list.innerHTML = '<p style="color:#666;font-size:12px;text-align:center;grid-column:span 4;padding:20px;">No categories found.</p>';
     }
+    
     drawer.style.display = 'block';
     if (overlay) overlay.style.display = 'block';
+    
+    // Force reflow
+    drawer.offsetHeight;
+    if (overlay) overlay.offsetHeight;
+    
+    drawer.style.transform = 'translateY(0)';
+    if (overlay) overlay.style.opacity = '1';
     document.body.style.overflow = 'hidden';
   };
+
   window.closeCategoriesDrawer = function() {
-    const d = document.getElementById('tj-cat-drawer');
-    const o = document.getElementById('tj-cat-drawer-overlay');
-    if (d) d.style.display = 'none';
-    if (o) o.style.display = 'none';
+    const drawer = document.getElementById('tj-cat-drawer');
+    const overlay = document.getElementById('tj-cat-drawer-overlay');
+    if (drawer) drawer.style.transform = 'translateY(100%)';
+    if (overlay) overlay.style.opacity = '0';
     document.body.style.overflow = '';
+    
+    setTimeout(() => {
+      if (drawer && drawer.style.transform === 'translateY(100%)') {
+        drawer.style.display = 'none';
+      }
+      if (overlay && overlay.style.opacity === '0') {
+        overlay.style.display = 'none';
+      }
+    }, 300);
   };
 
   window.toggleMobileMenu = function() {
@@ -5026,11 +6838,11 @@
       const hasImage = cat.image_url && cat.image_url !== 'null' && cat.image_url !== 'undefined' && cat.image_url.trim() !== '';
       const imgUrl = hasImage ? formatImageUrl(cat.image_url) : getCategoryFallbackImage(cat);
       return `
-        <div class="tj-cat-deal-card" onclick="showCategoriesDrawer('${cat.slug}'); selectBottomNav('nav-categories');">
+        <div class="tj-cat-deal-card" onclick="navigateToCategory('${cat.slug}'); selectBottomNav('nav-home');">
           <img class="tj-cat-deal-img" src="${imgUrl}" alt="${cat.name}" loading="lazy" onerror="this.src='${getCategoryFallbackImage(cat)}'">
           <div class="tj-cat-deal-body">
             <div class="tj-cat-deal-name">${cat.name}</div>
-            <button class="tj-cat-deal-cta" onclick="event.stopPropagation(); showCategoriesDrawer('${cat.slug}'); selectBottomNav('nav-categories');">View All</button>
+            <button class="tj-cat-deal-cta" onclick="event.stopPropagation(); navigateToCategory('${cat.slug}'); selectBottomNav('nav-home');">View All</button>
           </div>
         </div>`;
     }).join('');
@@ -5065,12 +6877,68 @@
     }).join('');
   }
 
+  // Get dynamic category-to-product mapping helper
+  function isProductInCategory(p, catSlug) {
+    if (!catSlug || catSlug === 'all') return true;
+    
+    // 1. If we have the new junction mappings (Migrated Schema)
+    if (productCategories && productCategories.length > 0 && allCategories && allCategories.length > 0) {
+      const targetCat = allCategories.find(c => c.slug === catSlug);
+      if (targetCat) {
+        return productCategories.some(pc => pc.product_id === p.id && pc.category_id === targetCat.id);
+      }
+    }
+    
+    // 2. Fallback to legacy string column checks (Legacy Schema)
+    const pCat = (p.category || '').toLowerCase().trim();
+    const cSlug = catSlug.toLowerCase().trim();
+    
+    // Exact match
+    if (pCat === cSlug) return true;
+    
+    // Custom prefix grouping fallback:
+    if (cSlug === 'vintage-jewellery' && pCat.startsWith('vintage-')) return true;
+    if (cSlug === 'stainless-steel-jewellery' && pCat.startsWith('stainless-steel-')) return true;
+    if (cSlug === 'natural-stone-jewellery' && (pCat === 'natural-stones-jewellry' || pCat === 'natural-stone-jewellery')) return true;
+    if (cSlug === 'custom-jewellery' && (pCat === 'custom-jewellery' || pCat === 'rings' || pCat === 'necklace' || pCat === 'bracelets' || pCat === 'bracelet')) return true;
+    if (cSlug === 'mens' && pCat === 'mens') return true;
+    if (cSlug === 'womens' && pCat === 'womens') return true;
+    
+    // Plural/singular adjustments (remove 's' at the end of either)
+    const normPCat = pCat.endsWith('s') ? pCat.slice(0, -1) : pCat;
+    const normCSlug = cSlug.endsWith('s') ? cSlug.slice(0, -1) : cSlug;
+    if (normPCat === normCSlug) return true;
+
+    // Keyword match: e.g. cSlug: "vintage-rings" contains normPCat: "ring"
+    if (cSlug.includes(normPCat) || normPCat.includes(cSlug)) return true;
+    
+    // Specific match: e.g. "earings" / "earrings" typo
+    if ((cSlug.includes('earing') || cSlug.includes('earring')) && (pCat.includes('earing') || pCat.includes('earring'))) return true;
+    if ((cSlug.includes('necklace') || cSlug.includes('necklaces')) && (pCat.includes('necklace') || pCat.includes('necklaces'))) return true;
+    if ((cSlug.includes('bracelet') || cSlug.includes('bracelets')) && (pCat.includes('bracelet') || pCat.includes('bracelets'))) return true;
+    if ((cSlug.includes('jewellry') || cSlug.includes('jewelry')) && (pCat.includes('jewellry') || pCat.includes('jewelry'))) return true;
+    
+    return false;
+  }
+
   // ─── LOAD PRODUCTS ────────────────────────────────────────
   async function loadProducts() {
     if (!db) return;
     try {
-      // Use in-memory cache — fetch all products once, filter locally
+      // Cache products: in-memory first, then sessionStorage (30 min TTL), else fetch once.
       let fullProducts = _cachedProducts;
+      if (!fullProducts) {
+        try {
+          const cachedRaw = sessionStorage.getItem('tj_c_products');
+          if (cachedRaw) {
+            const cached = JSON.parse(cachedRaw);
+            if (cached && cached.ts && (Date.now() - cached.ts) < 1800000 && Array.isArray(cached.data)) {
+              fullProducts = cached.data;
+              _cachedProducts = fullProducts;
+            }
+          }
+        } catch (_e) {}
+      }
       if (!fullProducts) {
         const { data, error } = await db.from('products')
           .select('*')
@@ -5080,18 +6948,82 @@
         if (error) { console.error(error); return; }
         fullProducts = data || [];
         _cachedProducts = fullProducts;
+        try { sessionStorage.setItem('tj_c_products', JSON.stringify({ ts: Date.now(), data: fullProducts })); } catch (_e) {}
       }
 
       allProducts = fullProducts;
 
+      // Render sidebar filters dynamically based on active products in this category
+      if (typeof renderSidebarFilters === 'function') {
+        renderSidebarFilters();
+      }
+
       // Filter locally — instant, no network call
       let filteredProducts = allProducts;
       if (currentCategory !== 'all') {
-        filteredProducts = filteredProducts.filter(p => (p.category || '').toLowerCase() === currentCategory.toLowerCase());
+        filteredProducts = filteredProducts.filter(p => isProductInCategory(p, currentCategory));
       }
-      if (currentSubcategory !== 'all') {
-        filteredProducts = filteredProducts.filter(p => p.subcategory_id === currentSubcategory);
+
+      // Filter by active subcategories
+      if (activeFilters.subcategories && activeFilters.subcategories.length > 0) {
+        filteredProducts = filteredProducts.filter(p => {
+          if (productSubcategories && productSubcategories.length > 0) {
+            return productSubcategories.some(psc => 
+              psc.product_id === p.id && 
+              activeFilters.subcategories.includes(psc.subcategory_id)
+            );
+          } else {
+            // Fallback match using product.category / subcategory_id / matching slugs
+            const pCat = (p.category || '').toLowerCase().trim();
+            return activeFilters.subcategories.some(subSlug => {
+              const normSub = subSlug.toLowerCase().trim();
+              return pCat === normSub || pCat.includes(normSub) || p.subcategory_id === normSub;
+            });
+          }
+        });
       }
+
+      // Filter by Price range
+      if (activeFilters.priceMin !== null) {
+        filteredProducts = filteredProducts.filter(p => parseFloat(p.price || 0) >= activeFilters.priceMin);
+      }
+      if (activeFilters.priceMax !== null) {
+        filteredProducts = filteredProducts.filter(p => parseFloat(p.price || 0) <= activeFilters.priceMax);
+      }
+
+      // Filter by Availability
+      if (activeFilters.availability === 'in-stock') {
+        filteredProducts = filteredProducts.filter(p => p.available);
+      } else if (activeFilters.availability === 'out-of-stock') {
+        filteredProducts = filteredProducts.filter(p => !p.available);
+      }
+
+      // Filter by other dynamic filter groups (gender, plating, material, color, stone-type)
+      const dynamicFilterKeys = ['gender', 'plating', 'material', 'color', 'stone-type'];
+      dynamicFilterKeys.forEach(key => {
+        const selectedValues = activeFilters[key];
+        if (selectedValues && selectedValues.length > 0) {
+          filteredProducts = filteredProducts.filter(p => {
+            // If junction tables are populated
+            if (allProductFilterValues && allProductFilterValues.length > 0) {
+              return allProductFilterValues.some(pfv => {
+                if (pfv.product_id !== p.id) return false;
+                const fv = allFilterValues.find(v => v.id === pfv.filter_value_id);
+                if (!fv) return false;
+                const group = allFilterGroups.find(g => g.id === fv.filter_group_id);
+                return group && group.slug === key && selectedValues.includes(fv.value);
+              });
+            } else {
+              // Fallback client-side parsing of text
+              const text = `${p.title} ${p.description} ${p.material || ''}`.toLowerCase();
+              return selectedValues.some(val => {
+                const normVal = val.toLowerCase();
+                return text.includes(normVal);
+              });
+            }
+          });
+        }
+      });
 
       // Sort locally
       if (currentSort === 'price_asc') {
@@ -5106,7 +7038,22 @@
         countEl.textContent = `${filteredProducts.length} ${filteredProducts.length === 1 ? 'Product' : 'Products'} Found`;
       }
 
-      renderProducts(filteredProducts);
+      // Paginated slice
+      const itemsPerPage = 12;
+      const totalItems = filteredProducts.length;
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      let currentPage = parseInt(urlParams.get('p') || '1', 10);
+      if (isNaN(currentPage) || currentPage < 1) currentPage = 1;
+      if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+
+      renderProducts(paginatedProducts);
+      renderPagination(currentPage, totalPages);
 
       // Render best sellers (featured is true, or slice top 5)
       let bestSellers = allProducts.filter(p => p.featured);
@@ -5124,7 +7071,7 @@
       // Render G.O.A.T. Deal Section
       const goatOuter = document.getElementById('tj-goat-deal-outer');
       if (goatOuter) {
-        if (sMap.goat_deal_active === 'false') {
+        if (currentCategory !== 'all' || sMap.goat_deal_active === 'false') {
           goatOuter.style.display = 'none';
         } else {
           const goatTitleEl = document.getElementById('tj-goat-deal-title');
@@ -5169,7 +7116,7 @@
       // Render Top Deals Section
       const topOuter = document.getElementById('tj-top-deal-outer');
       if (topOuter) {
-        if (sMap.top_deals_active === 'false') {
+        if (currentCategory !== 'all' || sMap.top_deals_active === 'false') {
           topOuter.style.display = 'none';
         } else {
           const topTitleEl = document.getElementById('tj-top-deal-title');
@@ -5214,7 +7161,7 @@
       // Render Best Quality Section
       const qualityOuter = document.getElementById('tj-best-quality-outer');
       if (qualityOuter) {
-        if (sMap.best_quality_active === 'false') {
+        if (currentCategory !== 'all' || sMap.best_quality_active === 'false') {
           qualityOuter.style.display = 'none';
         } else {
           const qualityTitleEl = document.getElementById('tj-best-quality-title');
@@ -5261,7 +7208,7 @@
       // Render Trending Items Section
       const trendingOuter = document.getElementById('tj-trending-outer');
       if (trendingOuter) {
-        if (sMap.trending_active === 'false') {
+        if (currentCategory !== 'all' || sMap.trending_active === 'false') {
           trendingOuter.style.display = 'none';
         } else {
           const trendingTitleEl = document.getElementById('tj-trending-title');
@@ -5311,6 +7258,38 @@
         camp3.style.backgroundImage = `url(${img})`;
       }
 
+      // Final Cleanup: Ensure all homepage-specific sections are strictly hidden when a category filter is active
+      if (currentCategory !== 'all') {
+        const sectionsToForceHide = [
+          'tj-hero-banner',
+          'tj-goat-deal-outer',
+          'tj-top-deal-outer',
+          'tj-shop-by-category-outer',
+          'tj-bestsellers-section',
+          'tj-new-arrivals-section',
+          'tj-trending-outer',
+          'tj-reels-section',
+          'tj-best-quality-outer',
+          'tj-quick-categories-section',
+          'tj-categories-directory-section',
+          'tj-trust-bar',
+          'tj-reviews-section'
+        ];
+        sectionsToForceHide.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'none';
+        });
+
+        const classesToForceHide = ['.tj-promises-bar', '.tj-campaign-section'];
+        classesToForceHide.forEach(cls => {
+          const el = document.querySelector(cls);
+          if (el) el.style.display = 'none';
+        });
+        
+        const productsSection = document.getElementById('tj-products-section');
+        if (productsSection) productsSection.style.display = 'block';
+      }
+
       // Hide preloader once data is loaded and DOM rendering is complete
       if (typeof window.hidePreloader === 'function') {
         window.hidePreloader();
@@ -5339,7 +7318,8 @@
 
     const makeCard = (p, isMobile) => {
       const globalIdx = allProducts.findIndex(ap => ap.id === p.id);
-      const clickAction = globalIdx !== -1 ? `openModalByIndex(${globalIdx})` : '';
+      const detailAction = globalIdx !== -1 ? `openProductDetail(${globalIdx})` : '';
+      const bookAction = globalIdx !== -1 ? `openModalByIndex(${globalIdx})` : '';
       const imgUrl = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
       const hasSale = p.compare_price && parseFloat(p.compare_price) > parseFloat(p.price);
       const compareHtml = hasSale ? `<span class="tj-trending-compare">$${parseFloat(p.compare_price).toFixed(2)}</span>` : '';
@@ -5347,7 +7327,7 @@
       const wlKey = 'tj_wl_' + p.id;
       const isWishlisted = localStorage.getItem(wlKey) === '1';
       return `
-        <div class="tj-trending-card" onclick="${clickAction}">
+        <div class="tj-trending-card" onclick="${detailAction}" style="cursor:pointer;">
           <div class="tj-trending-img-wrap">
             <img src="${imgUrl}" alt="${p.title}" loading="lazy" onerror="this.src='${getProductFallbackImage(p)}'">
             ${saleBadge}
@@ -5364,7 +7344,7 @@
               <span class="tj-trending-price">$${parseFloat(p.price).toFixed(2)}</span>
               ${compareHtml}
             </div>
-            <button class="tj-trending-cta" onclick="event.stopPropagation();${clickAction}">Book Now</button>
+            <button class="tj-trending-cta" onclick="event.stopPropagation();${bookAction}">Book Now</button>
           </div>
         </div>`;
     };
@@ -5380,7 +7360,8 @@
 
     const makeCard = (p, isMobile) => {
       const globalIdx = allProducts.findIndex(ap => ap.id === p.id);
-      const clickAction = globalIdx !== -1 ? `openModalByIndex(${globalIdx})` : '';
+      const detailAction = globalIdx !== -1 ? `openProductDetail(${globalIdx})` : '';
+      const bookAction = globalIdx !== -1 ? `openModalByIndex(${globalIdx})` : '';
       const imgUrl = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
       const hasSale = p.compare_price && parseFloat(p.compare_price) > parseFloat(p.price);
       const compareHtml = hasSale ? `<span class="tj-trending-compare">$${parseFloat(p.compare_price).toFixed(2)}</span>` : '';
@@ -5388,7 +7369,7 @@
       const wlKey = 'tj_wl_' + p.id;
       const isWishlisted = localStorage.getItem(wlKey) === '1';
       return `
-        <div class="tj-trending-card" onclick="${clickAction}">
+        <div class="tj-trending-card" onclick="${detailAction}" style="cursor:pointer;">
           <div class="tj-trending-img-wrap">
             <img src="${imgUrl}" alt="${p.title}" loading="lazy" onerror="this.src='${getProductFallbackImage(p)}'">
             ${saleBadge}
@@ -5405,7 +7386,7 @@
               <span class="tj-trending-price">$${parseFloat(p.price).toFixed(2)}</span>
               ${compareHtml}
             </div>
-            <button class="tj-trending-cta" onclick="event.stopPropagation();${clickAction}">Book Now</button>
+            <button class="tj-trending-cta" onclick="event.stopPropagation();${bookAction}">Book Now</button>
           </div>
         </div>`;
     };
@@ -5419,7 +7400,8 @@
     if (!container) return;
     container.innerHTML = products.map(p => {
       const globalIdx = allProducts.findIndex(ap => ap.id === p.id);
-      const clickAction = globalIdx !== -1 ? `openModalByIndex(${globalIdx})` : '';
+      const detailAction = globalIdx !== -1 ? `openProductDetail(${globalIdx})` : '';
+      const bookAction = globalIdx !== -1 ? `openModalByIndex(${globalIdx})` : `openModal(${JSON.stringify(p)})`;
       const imgUrl = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
       // Discount pill
       let discPct = 0;
@@ -5432,7 +7414,7 @@
         ? `<span class="tj-deal-card-compare">$${parseFloat(p.compare_price).toFixed(2)}</span>` : '';
       const isWl = localStorage.getItem('tj_wl_' + p.id) === '1';
       return `
-        <div class="tj-deal-card" onclick="${clickAction}">
+        <div class="tj-deal-card" onclick="${detailAction}" style="cursor:pointer;">
           <div class="tj-deal-img-wrapper">
             <img src="${imgUrl}" alt="${p.title}" loading="lazy">
             <button class="tj-deal-wl-btn" onclick="event.stopPropagation();toggleDealWishlist('${p.id}',this)" title="Wishlist">
@@ -5446,7 +7428,7 @@
               <span class="tj-deal-card-price">$${parseFloat(p.price).toFixed(2)}</span>
               ${compareHtml}
             </div>
-            <button class="tj-deal-card-cta" onclick="event.stopPropagation();${clickAction}">Buy Now</button>
+            <button class="tj-deal-card-cta" onclick="event.stopPropagation();${bookAction}">Book Now</button>
           </div>
         </div>`;
     }).join('');
@@ -5545,13 +7527,14 @@
 
     container.innerHTML = products.map((p) => {
       const globalIdx = allProducts.findIndex(ap => ap.id === p.id);
-      const clickAction = globalIdx !== -1 ? `openModalByIndex(${globalIdx})` : `openModal(${JSON.stringify(p)})`;
+      const detailAction = globalIdx !== -1 ? `openProductDetail(${globalIdx})` : '';
+      const bookAction = globalIdx !== -1 ? `openModalByIndex(${globalIdx})` : `openModal(${JSON.stringify(p)})`;
       const imgUrl = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
       const wlKey = 'tj_wl_' + p.id;
       const isWishlisted = localStorage.getItem(wlKey) === '1';
 
       return `
-      <div class="tj-bestseller-card" onclick="${clickAction}">
+      <div class="tj-bestseller-card" onclick="${detailAction}" style="cursor:pointer;">
         <div class="tj-bestseller-img-wrap">
           <img class="tj-bestseller-img" src="${imgUrl}" alt="${p.title}" loading="lazy">
           <button class="tj-card-wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" id="wl-btn-${p.id}" onclick="event.stopPropagation(); toggleWishlist('${p.id}', this)" title="Wishlist" style="position: absolute; top: 10px; right: 10px; z-index: 5; width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(27,67,50,0.12); display: flex; align-items: center; justify-content: center; background: ${isWishlisted ? 'var(--green)' : 'rgba(255,255,255,0.92)'}; color: ${isWishlisted ? 'var(--gold)' : 'var(--green)'}; cursor: pointer; transition: all 0.25s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.12);">
@@ -5565,7 +7548,7 @@
           <h3 class="tj-bestseller-title">${p.title}</h3>
           <div class="tj-bestseller-desc">${p.category || 'Fine Jewelry'} &bull; MOQ: ${p.moq || 10} pcs</div>
           <div class="tj-bestseller-price">$${parseFloat(p.price).toFixed(2)}</div>
-          <button class="tj-product-btn" onclick="event.stopPropagation();${clickAction}">Book Now</button>
+          <button class="tj-product-btn" onclick="event.stopPropagation();${bookAction}">Book Now</button>
         </div>
       </div>
       `;
@@ -5591,7 +7574,7 @@
       const isWishlisted = localStorage.getItem(wlKey) === '1';
 
       return `
-      <div class="tj-bestseller-card" onclick="${detailAction}">
+      <div class="tj-bestseller-card" onclick="${detailAction}" style="cursor:pointer;">
         <div class="tj-star-badge" style="background:#E3BA45; color:#fff; font-size:10px; font-weight:700; padding:3px 8px; border-radius:0;">NEW</div>
         <div class="tj-bestseller-img-wrap">
           <img class="tj-bestseller-img" src="${imgUrl}" alt="${p.title}" loading="lazy">
@@ -5624,7 +7607,7 @@
           <svg class="tj-no-products-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
           </svg>
-          <h3 class="tj-no-products-title">Catalog Currently Updating</h3>
+          <h3 class="tj-no-products-title">No Products Found</h3>
           <p class="tj-no-products-desc">
             No products are currently listed in this category. We are regularly adding new designs to our wholesale collection.
           </p>
@@ -5645,18 +7628,18 @@
       const moq = p.moq || 2;
       
       return `
-      <div class="tj-bestseller-card">
+      <div class="tj-bestseller-card" onclick="${detailAction}" style="cursor:pointer;">
         <div class="tj-star-badge">★</div>
-        <div class="tj-bestseller-img-wrap" onclick="${detailAction}" style="cursor:pointer;">
+        <div class="tj-bestseller-img-wrap">
           <img class="tj-bestseller-img" src="${imgUrl}" alt="${p.title}" loading="lazy">
         </div>
         <div class="tj-bestseller-info">
           <div class="tj-stars">★★★★★</div>
-          <h3 class="tj-bestseller-title" onclick="${detailAction}" style="cursor:pointer;">${p.title}</h3>
+          <h3 class="tj-bestseller-title">${p.title}</h3>
           <div class="tj-bestseller-desc">${p.category || 'Fine Jewelry'} &bull; MOQ: ${moq} pcs</div>
           <div class="tj-bestseller-price">$${parseFloat(p.price || 0).toFixed(2)}${p.compare_at_price ? ` - $${parseFloat(p.compare_at_price).toFixed(2)}` : ''}</div>
           <div style="display: flex; gap: 8px; width: 100%; margin-top: 10px;">
-            <button class="tj-product-btn" style="flex: 1; margin-top: 0; padding: 8px;" onclick="${bookAction}">Book Now</button>
+            <button class="tj-product-btn" style="flex: 1; margin-top: 0; padding: 8px;" onclick="event.stopPropagation(); ${bookAction}">Book Now</button>
             <button class="tj-card-wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" id="wl-btn-${p.id || idx}" onclick="event.stopPropagation(); toggleWishlist('${p.id || idx}', this)" title="Wishlist" style="width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--green); background: ${isWishlisted ? 'var(--green)' : 'transparent'}; color: ${isWishlisted ? 'var(--gold)' : 'var(--green)'}; cursor: pointer; transition: all 0.3s;">
               <svg width="16" height="16" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -5668,6 +7651,93 @@
       `;
     }).join('');
   }
+
+  // ─── RENDER PAGINATION ────────────────────────────────────
+  function renderPagination(currentPage, totalPages) {
+    const container = document.getElementById('tj-products-pagination');
+    if (!container) return;
+
+    if (totalPages <= 1) {
+      container.innerHTML = '';
+      return;
+    }
+
+    let html = '';
+
+    // Previous Button
+    const prevDisabled = currentPage === 1;
+    html += `
+      <button onclick="${prevDisabled ? '' : `changeProductPage(${currentPage - 1})`}" 
+              class="tj-pagination-btn"
+              ${prevDisabled ? 'disabled' : ''}>
+        ‹
+      </button>
+    `;
+
+    // Page Numbers
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    if (startPage > 1) {
+      html += `
+        <button onclick="changeProductPage(1)" class="tj-pagination-btn">
+          1
+        </button>
+      `;
+      if (startPage > 2) {
+        html += `<span class="tj-pagination-ellipsis">...</span>`;
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      const isActive = i === currentPage;
+      html += `
+        <button onclick="changeProductPage(${i})" 
+                class="tj-pagination-btn ${isActive ? 'active' : ''}">
+          ${i}
+        </button>
+      `;
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        html += `<span class="tj-pagination-ellipsis">...</span>`;
+      }
+      html += `
+        <button onclick="changeProductPage(${totalPages})" class="tj-pagination-btn">
+          ${totalPages}
+        </button>
+      `;
+    }
+
+    // Next Button
+    const nextDisabled = currentPage === totalPages;
+    html += `
+      <button onclick="${nextDisabled ? '' : `changeProductPage(${currentPage + 1})`}" 
+              class="tj-pagination-btn"
+              ${nextDisabled ? 'disabled' : ''}>
+        ›
+      </button>
+    `;
+
+    container.innerHTML = html;
+  }
+
+  window.changeProductPage = function(pageNumber) {
+    const url = new URL(window.location);
+    url.searchParams.set('p', pageNumber);
+    window.history.pushState({}, '', url);
+    loadProducts();
+    const productsSection = document.getElementById('tj-products-section');
+    if (productsSection) {
+      productsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
 
   // ─── FILTER BY CATEGORY ───────────────────────────────────
@@ -5927,173 +7997,9 @@
     };
   };
 
-  // ─── FULL-SCREEN CATEGORIES PAGE & CATALOG WITH FILTERS ───────────────────
-  window.toggleWishlistFromCatPage = function(pid, btn) {
-    const isWl = localStorage.getItem('tj_wl_' + pid) === '1';
-    if (isWl) {
-      localStorage.removeItem('tj_wl_' + pid);
-      btn.style.color = '#666';
-      btn.querySelector('svg').setAttribute('fill','none');
-      btn.querySelector('svg').setAttribute('stroke','currentColor');
-    } else {
-      localStorage.setItem('tj_wl_' + pid, '1');
-      btn.style.color = '#e63946';
-      btn.querySelector('svg').setAttribute('fill','#e63946');
-      btn.querySelector('svg').setAttribute('stroke','#e63946');
-    }
-    if (typeof updateWishlistCount === 'function') updateWishlistCount();
-    const otherBtns = document.querySelectorAll('#wl-btn-' + pid + ', #wl-new-' + pid);
-    otherBtns.forEach(b => {
-      if (isWl) {
-        b.classList.remove('wishlisted');
-        b.style.background = 'transparent';
-        b.style.color = 'var(--green)';
-      } else {
-        b.classList.add('wishlisted');
-        b.style.background = 'var(--green)';
-        b.style.color = 'var(--gold)';
-      }
-    });
-  };
-
+  // Compatibility redirect for any legacy full-screen drawer calls
   window.showCategoriesDrawer = function(preselectedSlug = 'all') {
-    const existing = document.getElementById('tj-categories-page-overlay');
-    if (existing) existing.remove();
-
-    const overlay = document.createElement('div');
-    overlay.id = 'tj-categories-page-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:#EDF3EE;z-index:99999;display:flex;flex-direction:column;overflow:hidden;animation:tjFadeIn 0.3s ease;';
-
-    if (!document.getElementById('tj-page-anim-style')) {
-      const style = document.createElement('style');
-      style.id = 'tj-page-anim-style';
-      style.innerHTML = `
-        @keyframes tjFadeIn {
-          from { opacity: 0; transform: translateY(15px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .tj-cat-page-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 12px;
-          width: 100%;
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-        @media (min-width: 1024px) {
-          .tj-cat-page-grid {
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-          }
-        }
-      `;
-      document.head.appendChild(style);
-    }
-
-    let activeSlug = preselectedSlug;
-
-    const renderPage = () => {
-      let filteredProducts = allProducts;
-      if (activeSlug !== 'all') {
-        filteredProducts = allProducts.filter(p => p.category && p.category.toLowerCase() === activeSlug.toLowerCase());
-      }
-
-      overlay.innerHTML = `
-        <!-- Header -->
-        <div style="background:#1B4332;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,0.15);">
-          <div>
-            <div style="font-family:'Cinzel',serif;color:#E3BA45;font-size:15px;letter-spacing:2px;text-transform:uppercase;">Collections</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px;">Browse designs with simple filters</div>
-          </div>
-          <button onclick="document.getElementById('tj-categories-page-overlay').remove();document.body.style.overflow='';selectBottomNav('nav-home');" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:34px;height:34px;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
-        </div>
-
-        <!-- Filter capsules row -->
-        <div style="background:#fff;border-bottom:1px solid rgba(27,67,50,0.08);padding:10px 16px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.02);">
-          <button onclick="setActiveSlug('all')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:var(--font-sans);
-            ${activeSlug === 'all' 
-              ? 'background:#1B4332;color:#E3BA45;border:1px solid #1B4332;' 
-              : 'background:#f2f4f2;color:#555;border:1px solid #e1e4e1;'};">
-            All Collections
-          </button>
-          
-          ${allCategories.map(cat => {
-            const isSelected = activeSlug.toLowerCase() === cat.slug.toLowerCase();
-            return `
-              <button onclick="setActiveSlug('${cat.slug}')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:var(--font-sans);
-                ${isSelected 
-                  ? 'background:#1B4332;color:#E3BA45;border:1px solid #1B4332;' 
-                  : 'background:#f2f4f2;color:#555;border:1px solid #e1e4e1;'};">
-                ${cat.name}
-              </button>
-            `;
-          }).join('')}
-        </div>
-
-        <div style="flex:1;overflow-y:auto;padding:16px;box-sizing:border-box;">
-          ${allProducts.length === 0 ? `
-            <div class="tj-cat-page-grid">
-              ${[1, 2, 3, 4, 5, 6, 7, 8].map(() => `
-                <div class="tj-cat-page-card" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);display:flex;flex-direction:column;height:100%;position:relative;">
-                  <div class="tj-skeleton" style="width:100%;aspect-ratio:1;"></div>
-                  <div style="padding:12px;display:flex;flex-direction:column;gap:8px;">
-                    <div class="tj-skeleton" style="height:10px;width:30%;border-radius:4px;"></div>
-                    <div class="tj-skeleton" style="height:12px;width:80%;border-radius:4px;"></div>
-                    <div class="tj-skeleton" style="height:12px;width:40%;border-radius:4px;"></div>
-                    <div class="tj-skeleton" style="height:32px;width:100%;border-radius:6px;margin-top:6px;"></div>
-                  </div>
-                </div>
-              `).join('')}
-            </div>` : filteredProducts.length === 0 ? `
-            <div style="text-align:center;padding:80px 20px;">
-              <svg style="width:50px;height:50px;color:#ccc;margin:0 auto 12px;display:block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <p style="font-size:13px;color:#888;">No designs found in this collection.</p>
-            </div>` : `
-            <div class="tj-cat-page-grid">
-              ${filteredProducts.map(p => {
-                const imgUrl = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
-                const globalIdx = allProducts.findIndex(ap => ap.id === p.id);
-                const hasSale = p.compare_price && parseFloat(p.compare_price) > parseFloat(p.price);
-                const isWl = localStorage.getItem('tj_wl_' + p.id) === '1';
-                return `
-                  <div class="tj-cat-page-card" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);display:flex;flex-direction:column;height:100%;position:relative;cursor:pointer;">
-                    <!-- Image Wrap -->
-                    <div style="width:100%;aspect-ratio:1;overflow:hidden;position:relative;background:#f9f9f9;" onclick="openProductDetail(${globalIdx})">
-                      <img src="${imgUrl}" alt="${p.title}" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.3s ease;">
-                      ${hasSale ? `<span style="position:absolute;top:8px;left:8px;background:#e63946;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase;">Sale</span>` : ''}
-                      
-                      <!-- Wishlist Icon -->
-                      <button onclick="event.stopPropagation();toggleWishlistFromCatPage('${p.id}', this)" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;border:none;background:rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.1);color:${isWl ? '#e63946' : '#666'};">
-                        <svg viewBox="0 0 24 24" fill="${isWl ? '#e63946' : 'none'}" stroke="${isWl ? '#e63946' : 'currentColor'}" stroke-width="2" style="width:14px;height:14px;"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-                      </button>
-                    </div>
-                    <!-- Body -->
-                    <div style="padding:10px;display:flex;flex-direction:column;flex:1;">
-                      <div style="font-size:9px;color:#C9A82C;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:2px;">${p.category || 'Jewelry'}</div>
-                      <h4 style="font-size:12px;color:#1B4332;font-weight:600;margin:0 0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;" onclick="openProductDetail(${globalIdx})">${p.title}</h4>
-                      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-                        <span style="font-size:13px;color:#1B4332;font-weight:700;">$${parseFloat(p.price || 0).toFixed(2)}</span>
-                        ${hasSale ? `<span style="font-size:10px;color:#999;text-decoration:line-through;">$${parseFloat(p.compare_price).toFixed(2)}</span>` : ''}
-                      </div>
-                      <button onclick="event.stopPropagation();openModalByIndex(${globalIdx})" style="margin-top:auto;background:#1B4332;color:#E3BA45;border:none;border-radius:6px;padding:7px 0;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;width:100%;transition:background 0.2s;">Buy Now</button>
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          `}
-        </div>
-      `;
-    };
-
-    window.setActiveSlug = function(slug) {
-      activeSlug = slug;
-      renderPage();
-    };
-
-    renderPage();
-    document.body.appendChild(overlay);
-    document.body.style.overflow = 'hidden';
+    window.openCategoriesModal();
   };
 
 
@@ -6425,6 +8331,28 @@
     setTimeout(killEls, 3000);
     setTimeout(killEls, 5000);
   })();
+  // ─── MOBILE SEARCH TOGGLE ──────────────────────────────────
+  window.toggleMobileSearch = function(open) {
+    const header = document.getElementById('tj-custom-header');
+    const searchInput = document.getElementById('tj-nav-search-input');
+    if (header) {
+      if (open) {
+        header.classList.add('mobile-search-active');
+        if (searchInput) {
+          setTimeout(() => searchInput.focus(), 150);
+        }
+      } else {
+        header.classList.remove('mobile-search-active');
+        if (searchInput) {
+          searchInput.value = '';
+        }
+        const clearBtn = document.getElementById('tj-search-clear');
+        if (clearBtn) clearBtn.classList.remove('visible');
+        const resultsBox = document.getElementById('tj-search-results');
+        if (resultsBox) resultsBox.classList.remove('open');
+      }
+    }
+  };
   // ─── ACCOUNT NAV HANDLER ──────────────────────────────────
   window.handleAccountNav = function() {
     if (window.currentUser) {
@@ -6958,59 +8886,15 @@
   window.openProductDetail = function(index) {
     const p = allProducts[index];
     if (!p) return;
-    const existing = document.getElementById('tj-product-detail-overlay');
-    if (existing) existing.remove();
-
-    const imgUrl = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
-    const wlKey = 'tj_wl_' + p.id;
-    const isWishlisted = localStorage.getItem(wlKey) === '1';
-    const stars = '★'.repeat(Math.min(5, Math.round(parseFloat(p.rating || 5))));
-    const empty = '☆'.repeat(5 - stars.length);
-
-    const overlay = document.createElement('div');
-    overlay.id = 'tj-product-detail-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:100000;overflow-y:auto;';
-    overlay.innerHTML = `
-      <div style="background:#1B4332;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;">
-        <button onclick="document.getElementById('tj-product-detail-overlay').remove();document.body.style.overflow='';" style="background:rgba(255,255,255,0.1);border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;">←</button>
-        <span style="font-family:'Cinzel',serif;color:#E3BA45;font-size:13px;letter-spacing:2px;text-transform:uppercase;">Product Detail</span>
-        <button onclick="toggleWishlistDetail('${p.id}',${index})" id="detail-wl-btn" style="background:${isWishlisted ? '#E3BA45' : 'rgba(255,255,255,0.1)'};border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;color:${isWishlisted ? '#1B4332' : '#fff'};font-size:18px;display:flex;align-items:center;justify-content:center;">♥</button>
-      </div>
-
-      <img src="${imgUrl}" alt="${p.title}" style="width:100%;height:320px;object-fit:cover;display:block;" onerror="this.style.background='#f5f0eb'">
-
-      <div style="padding:24px 20px;">
-        <div style="font-size:10px;color:#C9A82C;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">${p.category || 'Fine Jewelry'}</div>
-        <h1 style="font-family:'Cinzel',serif;font-size:22px;color:#1B4332;margin-bottom:10px;line-height:1.3;">${p.title}</h1>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-          <span style="color:#E3BA45;font-size:16px;">${stars}<span style="color:#ddd;">${empty}</span></span>
-          <span style="font-size:11px;color:#888;">(Wholesale Rated)</span>
-        </div>
-
-        <div style="display:flex;align-items:flex-end;gap:12px;margin-bottom:20px;">
-          <span style="font-size:28px;font-weight:700;color:#1B4332;">$${parseFloat(p.price || 0).toFixed(2)}</span>
-          ${p.compare_price && parseFloat(p.compare_price) > parseFloat(p.price) ? `<span style="font-size:14px;color:#999;text-decoration:line-through;">$${parseFloat(p.compare_price).toFixed(2)}</span><span style="font-size:12px;font-weight:700;color:#e63946;background:#fee;padding:2px 8px;border-radius:4px;">${Math.round((1 - parseFloat(p.price)/parseFloat(p.compare_price))*100)}% OFF</span>` : ''}
-          <span style="font-size:11px;color:#888;">/piece</span>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#f9f8f6;border-radius:12px;padding:16px;margin-bottom:20px;">
-          <div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:1px;">Min. Order</div><div style="font-size:14px;font-weight:600;color:#1B4332;margin-top:3px;">${p.moq || 2} pieces</div></div>
-          <div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:1px;">Material</div><div style="font-size:14px;font-weight:600;color:#1B4332;margin-top:3px;">${p.material || 'Premium'}</div></div>
-          <div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:1px;">Weight</div><div style="font-size:14px;font-weight:600;color:#1B4332;margin-top:3px;">${p.weight || '—'}</div></div>
-          <div><div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:1px;">Availability</div><div style="font-size:14px;font-weight:600;color:#0f9d58;margin-top:3px;">In Stock</div></div>
-        </div>
-
-        ${p.description ? `<div style="margin-bottom:20px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#999;margin-bottom:8px;">Description</div><p style="font-size:13px;color:#555;line-height:1.7;">${p.description}</p></div>` : ''}
-
-        <div style="display:flex;gap:10px;padding-bottom:40px;">
-          <button onclick="document.getElementById('tj-product-detail-overlay').remove();document.body.style.overflow='';openModal(allProducts[${index}]);" style="flex:1;padding:16px;background:#1B4332;color:#E3BA45;border:none;border-radius:12px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px;cursor:pointer;">Book Wholesale Order</button>
-          <button onclick="toggleWishlistDetail('${p.id}',${index})" id="detail-wl-btn2" style="width:52px;height:52px;border:2px solid ${isWishlisted ? '#E3BA45' : '#eae6e0'};background:${isWishlisted ? '#fff8e0' : '#fff'};border-radius:12px;cursor:pointer;font-size:20px;color:${isWishlisted ? '#E3BA45' : '#ccc'};">♥</button>
-        </div>
-      </div>`;
-
-    document.body.appendChild(overlay);
-    document.body.style.overflow = 'hidden';
-    overlay.scrollTo(0, 0);
+    
+    const slug = p.slug || p.id;
+    // Client-side route when on the storefront (home, category, or product pages)
+    if (typeof window.tjIsClientRoutable === 'function' ? window.tjIsClientRoutable() : (window.location.pathname === '/' || window.location.pathname.startsWith('/product/'))) {
+      window.history.pushState({}, '', '/product/' + slug);
+      window.renderPageViews();
+    } else {
+      window.location.href = `/product/${slug}`;
+    }
   };
 
   window.toggleWishlistDetail = function(productId, index) {

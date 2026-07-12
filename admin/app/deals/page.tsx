@@ -52,11 +52,17 @@ export default function DealsPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCatSlugs, setSelectedCatSlugs] = useState<string[]>([])
 
+  // Redirect Link Types
+  const [goatLinkType, setGoatLinkType] = useState('custom')
+  const [topLinkType, setTopLinkType] = useState('custom')
+  const [qualityLinkType, setQualityLinkType] = useState('custom')
+
   useEffect(() => {
     async function loadData() {
       setLoading(true)
-      // Load products for dropdown selection
-      const { data: prodData } = await supabase.from('products').select('id, title, price, sku').order('title')
+      // Load products for dropdown selection (removed slug since it does not exist in products schema)
+      const { data: prodData, error: prodError } = await supabase.from('products').select('id, title, price, sku').order('title')
+      if (prodError) console.error("Error loading products:", prodError)
       if (prodData) setProducts(prodData)
 
       // Load categories for the Shop by Category selector
@@ -66,8 +72,8 @@ export default function DealsPage() {
       // Load current storefront settings
       const { data: settingsData } = await supabase.from('storefront_settings').select('*')
       if (settingsData) {
-        const m: any = {}
-        settingsData.forEach((r: any) => { m[r.key] = r.value })
+         const m: any = {}
+         settingsData.forEach((r: any) => { m[r.key] = r.value })
 
         const newSettings = {
           goat_deal_active: m.goat_deal_active || 'true',
@@ -100,6 +106,20 @@ export default function DealsPage() {
         try { setSelectedQualityIds(JSON.parse(newSettings.best_quality_products)) } catch { setSelectedQualityIds([]) }
         try { setSelectedTrendingIds(JSON.parse(newSettings.trending_products)) } catch { setSelectedTrendingIds([]) }
         try { setSelectedCatSlugs(JSON.parse((newSettings as any).shop_by_cat_slugs || '[]')) } catch { setSelectedCatSlugs([]) }
+
+        // Initialize redirect link types
+        const goatVal = newSettings.goat_deal_more_url
+        const topVal = newSettings.top_deals_more_url
+        const qualVal = newSettings.best_quality_more_url
+
+        if (goatVal.startsWith('/product/')) setGoatLinkType('product')
+        else setGoatLinkType('custom')
+
+        if (topVal.startsWith('/product/')) setTopLinkType('product')
+        else setTopLinkType('custom')
+
+        if (qualVal.startsWith('/product/')) setQualityLinkType('product')
+        else setQualityLinkType('custom')
       }
       setLoading(false)
     }
@@ -221,13 +241,49 @@ export default function DealsPage() {
 
                 <div className="mt-4">
                   <label className="block text-[10px] uppercase tracking-wider font-semibold mb-2 text-gray-500">Redirect Landing URL ("More Deals")</label>
-                  <input
-                    type="text"
-                    value={settings.goat_deal_more_url}
-                    onChange={(e) => setSettings({ ...settings, goat_deal_more_url: e.target.value })}
-                    placeholder="/pages/deals or WhatsApp link"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-mono outline-none focus:border-yellow-400"
-                  />
+                  <div className="flex gap-1 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => { setGoatLinkType('product'); setSettings(s => ({ ...s, goat_deal_more_url: products[0] ? `/product/${products[0].id}` : '' })) }}
+                      className={`px-3 py-1.5 text-center text-[9px] uppercase tracking-wider rounded-lg border font-normal transition-all ${
+                        goatLinkType === 'product' ? 'border-emerald-600 bg-emerald-50/40 text-emerald-950 font-semibold' : 'border-gray-200 text-gray-500 bg-white'
+                      }`}
+                    >
+                      Product
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setGoatLinkType('custom'); setSettings(s => ({ ...s, goat_deal_more_url: '' })) }}
+                      className={`px-3 py-1.5 text-center text-[9px] uppercase tracking-wider rounded-lg border font-normal transition-all ${
+                        goatLinkType === 'custom' ? 'border-emerald-600 bg-emerald-50/40 text-emerald-950 font-semibold' : 'border-gray-200 text-gray-500 bg-white'
+                      }`}
+                    >
+                      Custom Link
+                    </button>
+                  </div>
+
+                  {goatLinkType === 'product' && (
+                    <select
+                      value={settings.goat_deal_more_url}
+                      onChange={(e) => setSettings({ ...settings, goat_deal_more_url: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 bg-white"
+                    >
+                      <option value="">-- Choose Product --</option>
+                      {products.map(p => (
+                        <option key={p.id} value={`/product/${p.id}`}>{p.title} (/product/{p.id})</option>
+                      ))}
+                    </select>
+                  )}
+
+                  {goatLinkType === 'custom' && (
+                    <input
+                      type="text"
+                      value={settings.goat_deal_more_url}
+                      onChange={(e) => setSettings({ ...settings, goat_deal_more_url: e.target.value })}
+                      placeholder="/pages/deals or WhatsApp link"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-mono outline-none focus:border-yellow-400"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -298,13 +354,49 @@ export default function DealsPage() {
 
                 <div className="mt-4">
                   <label className="block text-[10px] uppercase tracking-wider font-semibold mb-2 text-gray-500">Redirect Landing URL ("More Deals")</label>
-                  <input
-                    type="text"
-                    value={settings.top_deals_more_url}
-                    onChange={(e) => setSettings({ ...settings, top_deals_more_url: e.target.value })}
-                    placeholder="/pages/deals or WhatsApp link"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-mono outline-none focus:border-yellow-400"
-                  />
+                  <div className="flex gap-1 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => { setTopLinkType('product'); setSettings(s => ({ ...s, top_deals_more_url: products[0] ? `/product/${products[0].id}` : '' })) }}
+                      className={`px-3 py-1.5 text-center text-[9px] uppercase tracking-wider rounded-lg border font-normal transition-all ${
+                        topLinkType === 'product' ? 'border-emerald-600 bg-emerald-50/40 text-emerald-950 font-semibold' : 'border-gray-200 text-gray-500 bg-white'
+                      }`}
+                    >
+                      Product
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setTopLinkType('custom'); setSettings(s => ({ ...s, top_deals_more_url: '' })) }}
+                      className={`px-3 py-1.5 text-center text-[9px] uppercase tracking-wider rounded-lg border font-normal transition-all ${
+                        topLinkType === 'custom' ? 'border-emerald-600 bg-emerald-50/40 text-emerald-950 font-semibold' : 'border-gray-200 text-gray-500 bg-white'
+                      }`}
+                    >
+                      Custom Link
+                    </button>
+                  </div>
+
+                  {topLinkType === 'product' && (
+                    <select
+                      value={settings.top_deals_more_url}
+                      onChange={(e) => setSettings({ ...settings, top_deals_more_url: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 bg-white"
+                    >
+                      <option value="">-- Choose Product --</option>
+                      {products.map(p => (
+                        <option key={p.id} value={`/product/${p.id}`}>{p.title} (/product/{p.id})</option>
+                      ))}
+                    </select>
+                  )}
+
+                  {topLinkType === 'custom' && (
+                    <input
+                      type="text"
+                      value={settings.top_deals_more_url}
+                      onChange={(e) => setSettings({ ...settings, top_deals_more_url: e.target.value })}
+                      placeholder="/pages/deals or WhatsApp link"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-mono outline-none focus:border-yellow-400"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -375,13 +467,49 @@ export default function DealsPage() {
 
                 <div className="mt-4">
                   <label className="block text-[10px] uppercase tracking-wider font-semibold mb-2 text-gray-500">Redirect Landing URL ("More Deals")</label>
-                  <input
-                    type="text"
-                    value={settings.best_quality_more_url}
-                    onChange={(e) => setSettings({ ...settings, best_quality_more_url: e.target.value })}
-                    placeholder="/pages/deals or WhatsApp link"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-mono outline-none focus:border-yellow-400"
-                  />
+                  <div className="flex gap-1 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => { setQualityLinkType('product'); setSettings(s => ({ ...s, best_quality_more_url: products[0] ? `/product/${products[0].id}` : '' })) }}
+                      className={`px-3 py-1.5 text-center text-[9px] uppercase tracking-wider rounded-lg border font-normal transition-all ${
+                        qualityLinkType === 'product' ? 'border-emerald-600 bg-emerald-50/40 text-emerald-950 font-semibold' : 'border-gray-200 text-gray-500 bg-white'
+                      }`}
+                    >
+                      Product
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setQualityLinkType('custom'); setSettings(s => ({ ...s, best_quality_more_url: '' })) }}
+                      className={`px-3 py-1.5 text-center text-[9px] uppercase tracking-wider rounded-lg border font-normal transition-all ${
+                        qualityLinkType === 'custom' ? 'border-emerald-600 bg-emerald-50/40 text-emerald-950 font-semibold' : 'border-gray-200 text-gray-500 bg-white'
+                      }`}
+                    >
+                      Custom Link
+                    </button>
+                  </div>
+
+                  {qualityLinkType === 'product' && (
+                    <select
+                      value={settings.best_quality_more_url}
+                      onChange={(e) => setSettings({ ...settings, best_quality_more_url: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 bg-white"
+                    >
+                      <option value="">-- Choose Product --</option>
+                      {products.map(p => (
+                        <option key={p.id} value={`/product/${p.id}`}>{p.title} (/product/{p.id})</option>
+                      ))}
+                    </select>
+                  )}
+
+                  {qualityLinkType === 'custom' && (
+                    <input
+                      type="text"
+                      value={settings.best_quality_more_url}
+                      onChange={(e) => setSettings({ ...settings, best_quality_more_url: e.target.value })}
+                      placeholder="/pages/deals or WhatsApp link"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-mono outline-none focus:border-yellow-400"
+                    />
+                  )}
                 </div>
               </div>
 

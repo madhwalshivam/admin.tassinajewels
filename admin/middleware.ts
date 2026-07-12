@@ -5,7 +5,10 @@ export function middleware(req: NextRequest) {
   const isProtected = req.nextUrl.pathname.startsWith('/dashboard') ||
     req.nextUrl.pathname.startsWith('/products') ||
     req.nextUrl.pathname.startsWith('/inquiries') ||
-    req.nextUrl.pathname.startsWith('/categories')
+    req.nextUrl.pathname.startsWith('/categories') ||
+    req.nextUrl.pathname.startsWith('/deals') ||
+    req.nextUrl.pathname.startsWith('/settings') ||
+    req.nextUrl.pathname.startsWith('/filters')
 
   if (isProtected && auth !== 'true') {
     return NextResponse.redirect(new URL('/', req.url))
@@ -13,4 +16,4 @@ export function middleware(req: NextRequest) {
   return NextResponse.next()
 }
 
-export const config = { matcher: ['/dashboard/:path*', '/products/:path*', '/inquiries/:path*', '/categories/:path*'] }
+export const config = { matcher: ['/dashboard/:path*', '/products/:path*', '/inquiries/:path*', '/categories/:path*', '/deals/:path*', '/settings/:path*', '/filters/:path*'] }

@@ -9,6 +9,9 @@ type Product = {
 }
 type Category = { id: string; name: string; slug: string }
 type Subcategory = { id: string; category_id: string; name: string; slug: string }
+type FilterGroup = { id: string; name: string; slug: string; is_enabled: boolean }
+type FilterValue = { id: string; filter_group_id: string; value: string }
+type CategoryFilter = { category_id: string; filter_group_id: string }
 
 const EMPTY: Omit<Product, 'id' | 'created_at'> = {
   title: '', description: '', price: 0, compare_price: null, image_url: null,
@@ -27,7 +30,14 @@ function formatImageUrl(url: string | null): string {
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
-  const [subcategories, setSubcategories] = useState<Subcategory[]>([])
+  const [filterGroups, setFilterGroups] = useState<FilterGroup[]>([])
+  const [filterValues, setFilterValues] = useState<FilterValue[]>([])
+  const [categoryFilters, setCategoryFilters] = useState<CategoryFilter[]>([])
+
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [selectedFilterValues, setSelectedFilterValues] = useState<string[]>([])
+
+  const [productCatMappings, setProductCatMappings] = useState<{ [prodId: string]: string[] }>({})
   
   const [search, setSearch] = useState('')
   const [filterCat, setFilterCat] = useState('all')
@@ -43,48 +53,130 @@ export default function ProductsPage() {
   const load = useCallback(async () => {
     setLoading(true)
     let q = supabase.from('products').select('*', { count: 'exact' })
-    if (filterCat !== 'all') q = q.eq('category', filterCat)
+    if (filterCat !== 'all') {
+      // Find product IDs assigned to this category from product_categories table
+      const { data: pcData } = await supabase.from('product_categories').select('product_id').eq('category_id', filterCat)
+      const pids = pcData?.map(pc => pc.product_id) || []
+      q = q.in('id', pids.length > 0 ? pids : ['00000000-0000-0000-0000-000000000000'])
+    }
     if (search) q = q.ilike('title', `%${search}%`)
     q = q.order('created_at', { ascending: false }).range(page * PER_PAGE, (page + 1) * PER_PAGE - 1)
+    
     const { data, count } = await q
-    setProducts(data || [])
+    const loadedProds = data || []
+    setProducts(loadedProds)
     setTotal(count || 0)
+
+    const productIds = loadedProds.map(p => p.id)
+    if (productIds.length > 0) {
+      const [pcRes] = await Promise.all([
+        supabase.from('product_categories').select('product_id, category_id').in('product_id', productIds)
+      ])
+      
+      const catMap: { [key: string]: string[] } = {}
+      pcRes.data?.forEach(r => {
+        if (!catMap[r.product_id]) catMap[r.product_id] = []
+        catMap[r.product_id].push(r.category_id)
+      })
+      setProductCatMappings(catMap)
+    }
+
     setLoading(false)
   }, [search, filterCat, page])
 
   useEffect(() => { load() }, [load])
   
   useEffect(() => {
-    // Load categories and subcategories once
+    // Load metadata once
     supabase.from('categories').select('*').order('display_order').then(({ data }) => setCategories(data || []))
-    supabase.from('subcategories').select('*').order('display_order').then(({ data }) => setSubcategories(data || []))
+    supabase.from('filter_groups').select('*').order('display_order').then(({ data }) => setFilterGroups(data || []))
+    supabase.from('filter_values').select('*').order('created_at').then(({ data }) => setFilterValues(data || []))
+    supabase.from('category_filters').select('*').then(({ data }) => setCategoryFilters(data || []))
   }, [])
 
-  function openAdd() { setForm(EMPTY); setModal('add') }
-  function openEdit(p: Product) { setForm({ ...p }); setModal('edit') }
+  function openAdd() {
+    setForm(EMPTY)
+    setSelectedCategories([])
+    setSelectedFilterValues([])
+    setModal('add')
+  }
+
+  async function openEdit(p: Product) {
+    setForm({ ...p })
+    setModal('edit')
+    
+    // Fetch current assignments
+    const [catsRes, valsRes] = await Promise.all([
+      supabase.from('product_categories').select('category_id').eq('product_id', p.id),
+      supabase.from('product_filter_values').select('filter_value_id').eq('product_id', p.id)
+    ])
+    
+    setSelectedCategories(catsRes.data?.map(c => c.category_id) || [])
+    setSelectedFilterValues(valsRes.data?.map(v => v.filter_value_id) || [])
+  }
 
   async function save() {
     setSaving(true)
-    const payload = {
-      ...form,
+    
+    // Determine primary category slug for backward compatibility
+    const firstCatId = selectedCategories[0]
+    const primaryCategorySlug = categories.find(c => c.id === firstCatId)?.slug || null
+
+    const productPayload = {
+      title: form.title,
+      description: form.description,
       price: parseFloat(form.price),
       compare_price: form.compare_price ? parseFloat(form.compare_price) : null,
+      image_url: form.image_url,
+      category: primaryCategorySlug,
+      subcategory_id: null,
+      sku: form.sku,
       moq: parseInt(form.moq) || 10,
-      subcategory_id: form.subcategory_id || null
+      tags: form.tags,
+      available: form.available,
+      featured: form.featured,
     }
-    delete payload.id; delete payload.created_at
-    let res;
+
+    let productId = form.id
+    let res
     if (modal === 'add') {
-      res = await supabase.from('products').insert([payload])
+      res = await supabase.from('products').insert([productPayload]).select('id').single()
+      if (!res.error && res.data) {
+        productId = res.data.id
+      }
     } else {
-      res = await supabase.from('products').update(payload).eq('id', form.id)
+      res = await supabase.from('products').update(productPayload).eq('id', form.id)
     }
+
     if (res.error) {
-      alert(`Error saving product: ${res.error.message}\n${res.error.details || ''}`);
-    } else {
-      setModal(null)
-      load()
+      alert(`Error saving product: ${res.error.message}\n${res.error.details || ''}`)
+      setSaving(false)
+      return
     }
+
+    // Save Many-to-Many Relationships
+    if (productId) {
+      // 1. Update Product Categories
+      await supabase.from('product_categories').delete().eq('product_id', productId)
+      if (selectedCategories.length > 0) {
+        await supabase.from('product_categories').insert(
+          selectedCategories.map(cid => ({ product_id: productId, category_id: cid }))
+        )
+      }
+
+      // 2. Update Product Subcategories (Removed)
+
+      // 3. Update Product Filter Values
+      await supabase.from('product_filter_values').delete().eq('product_id', productId)
+      if (selectedFilterValues.length > 0) {
+        await supabase.from('product_filter_values').insert(
+          selectedFilterValues.map(fvid => ({ product_id: productId, filter_value_id: fvid }))
+        )
+      }
+    }
+
+    setModal(null)
+    load()
     setSaving(false)
   }
 
@@ -102,12 +194,6 @@ export default function ProductsPage() {
   }
 
   const pages = Math.ceil(total / PER_PAGE)
-
-  // Filter subcategories for the product form based on selected parent category slug
-  const activeCategoryObject = categories.find(c => c.slug === form.category)
-  const filteredSubcatsForForm = activeCategoryObject
-    ? subcategories.filter(s => s.category_id === activeCategoryObject.id)
-    : []
 
   return (
     <div className="p-8 font-light max-w-6xl mx-auto">
@@ -136,7 +222,7 @@ export default function ProductsPage() {
         </div>
         <select value={filterCat} onChange={e => { setFilterCat(e.target.value); setPage(0) }} className="px-4 py-2 border border-gray-200 rounded-xl text-xs outline-none bg-white font-light text-gray-600">
           <option value="all">All Categories</option>
-          {categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
+          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </div>
 
@@ -156,8 +242,9 @@ export default function ProductsPage() {
             ) : products.length === 0 ? (
               <tr><td colSpan={8} className="px-4 py-12 text-center text-gray-400">No products found in this filter.</td></tr>
             ) : products.map(p => {
-              const parentCat = categories.find(c => c.slug === p.category)
-              const subCat = subcategories.find(s => s.id === p.subcategory_id)
+              const assignedCatIds = productCatMappings[p.id] || []
+              const assignedCatNames = assignedCatIds.map(cid => categories.find(c => c.id === cid)?.name).filter(Boolean)
+              
               return (
                 <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 transition-all">
                   <td className="px-4 py-4">
@@ -173,9 +260,8 @@ export default function ProductsPage() {
                     <div className="font-normal text-sm truncate" style={{ color: '#1B4332' }}>{p.title}</div>
                     {p.sku ? <div className="text-[10px] text-gray-400 font-mono mt-0.5">SKU: {p.sku}</div> : <div className="text-[10px] text-gray-300 font-light mt-0.5">No SKU</div>}
                   </td>
-                  <td className="px-4 py-4 text-gray-500">
-                    <div className="font-normal">{parentCat?.name || 'Jewelry'}</div>
-                    {subCat && <div className="text-[10px] text-gray-400 mt-0.5">↳ {subCat.name}</div>}
+                  <td className="px-4 py-4 text-gray-500 max-w-[250px]">
+                    <div className="font-normal truncate">{assignedCatNames.join(', ') || 'Unassigned'}</div>
                   </td>
                   <td className="px-4 py-4 font-semibold text-sm" style={{ color: '#1B4332' }}>${p.price?.toFixed(2)}</td>
                   <td className="px-4 py-4 text-gray-500">{p.moq} pcs</td>
@@ -240,29 +326,79 @@ export default function ProductsPage() {
                   <label className="block text-[10px] uppercase tracking-wider font-medium mb-1.5 text-gray-500">Compare Price</label>
                   <input type="number" step="0.01" value={form.compare_price || ''} onChange={e => setForm({ ...form, compare_price: e.target.value || null })} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 font-light" placeholder="0.00" />
                 </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider font-medium mb-1.5 text-gray-500">Category</label>
-                  <select
-                    value={form.category || ''}
-                    onChange={e => setForm({ ...form, category: e.target.value || null, subcategory_id: null })}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 bg-white font-light text-gray-600"
-                  >
-                    <option value="">Select category</option>
-                    {categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
-                  </select>
+
+                {/* Categories Assignment */}
+                <div className="col-span-2">
+                  <label className="block text-[10px] uppercase tracking-wider font-medium mb-1.5 text-gray-500">Categories / Collections (Select Multiple)</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {categories.map(c => (
+                      <label key={c.id} className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs cursor-pointer select-none transition-all ${selectedCategories.includes(c.id) ? 'border-emerald-600 bg-emerald-50/40 text-emerald-950 font-normal' : 'border-gray-150 hover:bg-gray-50 text-gray-600'}`}>
+                        <input
+                          type="checkbox"
+                          checked={selectedCategories.includes(c.id)}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setSelectedCategories([...selectedCategories, c.id])
+                            } else {
+                              setSelectedCategories(selectedCategories.filter(id => id !== c.id))
+                            }
+                          }}
+                          className="w-3.5 h-3.5 accent-emerald-800"
+                        />
+                        <span>{c.name}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider font-medium mb-1.5 text-gray-500">Subcategory</label>
-                  <select
-                    value={form.subcategory_id || ''}
-                    onChange={e => setForm({ ...form, subcategory_id: e.target.value || null })}
-                    disabled={!form.category}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 bg-white font-light text-gray-600 disabled:opacity-50"
-                  >
-                    <option value="">Select subcategory</option>
-                    {filteredSubcatsForForm.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
+
+                {/* Subcategories Assignment Removed */}
+
+                {/* Dynamic Filters Values Assignment */}
+                <div className="col-span-2 border-t border-gray-100 pt-4">
+                  <label className="block text-[10px] uppercase tracking-wider font-semibold mb-2.5 text-emerald-950">Dynamic Product Filter Values (Select Multiple)</label>
+                  {selectedCategories.length === 0 ? (
+                    <div className="text-xs text-gray-400 italic">Select one or more categories first to see available filters.</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {filterGroups
+                        .filter(g => g.is_enabled && categoryFilters.some(cf => selectedCategories.includes(cf.category_id) && cf.filter_group_id === g.id))
+                        .map(g => {
+                          const groupVals = filterValues.filter(fv => fv.filter_group_id === g.id)
+                          return (
+                            <div key={g.id} className="space-y-1.5">
+                              <span className="block text-[10px] uppercase tracking-wider font-bold text-gray-400">{g.name}</span>
+                              <div className="flex flex-wrap gap-2">
+                                {groupVals.map(fv => (
+                                  <label key={fv.id} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs cursor-pointer select-none transition-all ${selectedFilterValues.includes(fv.id) ? 'border-emerald-600 bg-emerald-50/40 text-emerald-950 font-normal' : 'border-gray-150 hover:bg-gray-50 text-gray-600'}`}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedFilterValues.includes(fv.id)}
+                                      onChange={e => {
+                                        if (e.target.checked) {
+                                          setSelectedFilterValues([...selectedFilterValues, fv.id])
+                                        } else {
+                                          setSelectedFilterValues(selectedFilterValues.filter(id => id !== fv.id))
+                                        }
+                                      }}
+                                      className="w-3 h-3 accent-emerald-800"
+                                    />
+                                    <span>{fv.value}</span>
+                                  </label>
+                                ))}
+                                {groupVals.length === 0 && (
+                                  <span className="text-xs text-gray-400 italic">No values defined for this filter group.</span>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      {filterGroups.filter(g => g.is_enabled && categoryFilters.some(cf => selectedCategories.includes(cf.category_id) && cf.filter_group_id === g.id)).length === 0 && (
+                        <div className="text-xs text-gray-400 italic">No dynamic filters assigned to the selected categories.</div>
+                      )}
+                    </div>
+                  )}
                 </div>
+
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider font-medium mb-1.5 text-gray-500">SKU</label>
                   <input value={form.sku || ''} onChange={e => setForm({ ...form, sku: e.target.value || null })} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 font-mono text-[11px]" placeholder="SKU-001" />
@@ -344,7 +480,7 @@ export default function ProductsPage() {
 
             <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100">
               <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-[10px] uppercase tracking-widest font-normal border text-gray-500 hover:bg-gray-50">Cancel</button>
-              <button onClick={save} disabled={saving || !form.title || !form.price} className="flex-1 py-2.5 rounded-xl text-[10px] uppercase tracking-widest font-normal disabled:opacity-60 transition-all" style={{ background: '#1B4332', color: '#E3BA45' }}>
+              <button onClick={save} disabled={saving || !form.title || !form.price || selectedCategories.length === 0} className="flex-1 py-2.5 rounded-xl text-[10px] uppercase tracking-widest font-normal disabled:opacity-60 transition-all" style={{ background: '#1B4332', color: '#E3BA45' }}>
                 {saving ? 'Saving...' : modal === 'add' ? 'Create' : 'Save'}
               </button>
             </div>
