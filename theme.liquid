@@ -1031,6 +1031,36 @@
     font-weight: 600;
   }
 
+  /* Load More Button */
+  .tj-load-more-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 34px;
+    border: 1px solid var(--green);
+    border-radius: 4px;
+    background: var(--green);
+    color: var(--gold);
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    outline: none;
+  }
+  .tj-load-more-btn:hover {
+    background: var(--white);
+    color: var(--green);
+    border-color: var(--gold);
+  }
+  .tj-load-more-count {
+    font-weight: 400;
+    opacity: 0.75;
+    letter-spacing: 0.5px;
+  }
+
   /* Product Card */
   .tj-product-card {
     background: var(--white);
@@ -4758,6 +4788,10 @@
   let currentCategory = 'all';
   let currentSubcategory = 'all';
   let currentSort = 'default';
+  // Load-More pagination state (8 products per page, accumulate on click)
+  const TJ_PAGE_SIZE = 8;
+  let tjVisibleCount = TJ_PAGE_SIZE;
+  let tjCurrentFiltered = [];
 
   // Navigation and Filter variables
   let navigationTree = [];
@@ -7250,22 +7284,12 @@
         countEl.textContent = `${filteredProducts.length} ${filteredProducts.length === 1 ? 'Product' : 'Products'} Found`;
       }
 
-      // Paginated slice
-      const itemsPerPage = 12;
-      const totalItems = filteredProducts.length;
-      const totalPages = Math.ceil(totalItems / itemsPerPage);
-      
-      const urlParams = new URLSearchParams(window.location.search);
-      let currentPage = parseInt(urlParams.get('p') || '1', 10);
-      if (isNaN(currentPage) || currentPage < 1) currentPage = 1;
-      if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
-
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = startIndex + itemsPerPage;
-      const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
-
-      renderProducts(paginatedProducts);
-      renderPagination(currentPage, totalPages);
+      // Load-More pagination — restart at the first page (6 products) on every
+      // filter / sort / category (re)load; growth happens only via tjLoadMore().
+      tjVisibleCount = TJ_PAGE_SIZE;
+      tjCurrentFiltered = filteredProducts;
+      renderProducts(filteredProducts.slice(0, tjVisibleCount));
+      renderLoadMore();
 
       // Render New Arrivals (first 4 newest products)
       const newArrivals = allProducts.slice(0, 4);
@@ -7495,6 +7519,113 @@
       if (camp3) {
         const img = (allProducts[2] && allProducts[2].image_url) ? formatImageUrl(allProducts[2].image_url) : defaultCamps[2];
         camp3.style.backgroundImage = `url(${img})`;
+      }
+
+      // ── DYNAMIC VIDEO SECTION (REELS) ──
+      try {
+        const reelsSection = document.getElementById('tj-reels-section');
+        const sMap = window.tjStorefrontSettings || {};
+        if (reelsSection) {
+          let reelsList = [];
+          if (sMap.reels_videos) {
+            try {
+              reelsList = JSON.parse(sMap.reels_videos);
+            } catch (_) {}
+          }
+          
+          // Filter out empty items
+          const validVideos = reelsList.filter(v => v.upload_url || v.url);
+          
+          if (validVideos.length > 0) {
+            const grid = reelsSection.querySelector('.tj-reels-grid');
+            if (grid) {
+              // Helper to get embed or direct source
+              function getEmbedOrVideoSrc(url) {
+                if (!url) return null;
+                
+                // YouTube check
+                let ytId = null;
+                const ytReg = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/;
+                const ytMatch = url.match(ytReg);
+                if (ytMatch && ytMatch[1]) {
+                  ytId = ytMatch[1];
+                  return {
+                    type: 'youtube',
+                    src: `https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&controls=0&modestbranding=1&playsinline=1`
+                  };
+                }
+                
+                // Vimeo check
+                let vimeoId = null;
+                const vimeoReg = /(?:vimeo\.com\/(?:video\/)?|player\.vimeo\.com\/video\/)(\d+)/;
+                const vimeoMatch = url.match(vimeoReg);
+                if (vimeoMatch && vimeoMatch[1]) {
+                  vimeoId = vimeoMatch[1];
+                  return {
+                    type: 'vimeo',
+                    src: `https://player.vimeo.com/video/${vimeoId}?autoplay=1&muted=1&loop=1&autopause=0&controls=0`
+                  };
+                }
+                
+                // Direct link / fallback
+                return {
+                  type: 'direct',
+                  src: url
+                };
+              }
+
+              // Rebuild the grid cards dynamically
+              grid.innerHTML = '';
+              validVideos.forEach(v => {
+                const activeUrl = v.upload_url || v.url;
+                const videoObj = getEmbedOrVideoSrc(activeUrl);
+                if (videoObj) {
+                  const card = document.createElement('div');
+                  card.className = 'tj-reel-card';
+                  
+                  if (videoObj.type === 'youtube' || videoObj.type === 'vimeo') {
+                    const iframe = document.createElement('iframe');
+                    iframe.className = 'tj-reel-media';
+                    iframe.src = videoObj.src;
+                    iframe.setAttribute('frameborder', '0');
+                    iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture');
+                    iframe.setAttribute('allowfullscreen', 'true');
+                    iframe.style.width = '100%';
+                    iframe.style.height = '100%';
+                    iframe.style.objectFit = 'cover';
+                    iframe.style.border = 'none';
+                    card.appendChild(iframe);
+                  } else {
+                    const videoEl = document.createElement('video');
+                    videoEl.className = 'tj-reel-media';
+                    videoEl.autoplay = true;
+                    videoEl.loop = true;
+                    videoEl.muted = true;
+                    videoEl.setAttribute('playsinline', 'true');
+                    
+                    const sourceEl = document.createElement('source');
+                    sourceEl.src = videoObj.src;
+                    sourceEl.type = 'video/mp4';
+                    videoEl.appendChild(sourceEl);
+                    
+                    card.appendChild(videoEl);
+                    
+                    // Create and append mute button for direct HTML5 video
+                    const muteBtn = document.createElement('div');
+                    muteBtn.className = 'tj-reel-mute-btn';
+                    muteBtn.setAttribute('onclick', 'toggleMute(this)');
+                    muteBtn.innerHTML = '<svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>';
+                    card.appendChild(muteBtn);
+                  }
+                  
+                  grid.appendChild(card);
+                }
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Error setting dynamic reels:", e);
       }
 
       // Final Cleanup: Ensure all homepage-specific sections are strictly hidden when a category filter is active
@@ -7962,6 +8093,30 @@
 
     container.innerHTML = html;
   }
+
+  // ─── RENDER "LOAD MORE" BUTTON (replaces numbered pagination) ──
+  function renderLoadMore() {
+    const container = document.getElementById('tj-products-pagination');
+    if (!container) return;
+    const total = tjCurrentFiltered.length;
+    if (total === 0 || tjVisibleCount >= total) {
+      container.innerHTML = '';
+      return;
+    }
+    const remaining = total - tjVisibleCount;
+    const nextBatch = Math.min(TJ_PAGE_SIZE, remaining);
+    container.innerHTML =
+      '<button type="button" class="tj-load-more-btn" onclick="tjLoadMore()">'
+      + 'Load More <span class="tj-load-more-count">(' + nextBatch + ' of ' + remaining + ')</span>'
+      + '</button>';
+  }
+
+  window.tjLoadMore = function() {
+    tjVisibleCount += TJ_PAGE_SIZE;
+    if (tjVisibleCount > tjCurrentFiltered.length) tjVisibleCount = tjCurrentFiltered.length;
+    renderProducts(tjCurrentFiltered.slice(0, tjVisibleCount));
+    renderLoadMore();
+  };
 
   window.changeProductPage = function(pageNumber) {
     const url = new URL(window.location);

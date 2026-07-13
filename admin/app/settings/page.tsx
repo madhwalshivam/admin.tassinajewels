@@ -5,6 +5,7 @@ import { useNotification } from '@/components/NotificationProvider'
 
 interface StyleCard { title: string; image: string; filter: string }
 interface HeroSlide { image: string; link_url: string }
+interface ReelsVideo { upload_url: string; url: string }
 
 function formatImageUrl(url: string | null): string {
   if (!url) return ''
@@ -19,7 +20,7 @@ export default function SettingsPage() {
   const { showToast } = useNotification()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [tab, setTab] = useState<'hero'|'announcement'|'style'|'general'>('hero')
+  const [tab, setTab] = useState<'hero'|'announcement'|'style'|'general'|'video'>('hero')
 
   const [settings, setSettings] = useState({
     announcement_text: '',
@@ -40,6 +41,10 @@ export default function SettingsPage() {
     { title: 'Contemporary Chic', image: '', filter: 'all' },
   ])
 
+  const [reelsVideos, setReelsVideos] = useState<ReelsVideo[]>([
+    { upload_url: '', url: '' }
+  ])
+
   useEffect(() => {
     async function load() {
       setLoading(true)
@@ -55,6 +60,9 @@ export default function SettingsPage() {
           whatsapp_number: m.whatsapp_number || '',
           admin_domain: m.admin_domain || '',
         }))
+        if (m.reels_videos) {
+          try { setReelsVideos(JSON.parse(m.reels_videos)) } catch {}
+        }
         if (m.hero_slides) {
           try {
             const parsed = JSON.parse(m.hero_slides)
@@ -82,6 +90,7 @@ export default function SettingsPage() {
       ...Object.entries(settings).map(([key, value]) => ({ key, value })),
       { key: 'hero_slides', value: JSON.stringify(heroSlides) },
       { key: 'style_cards', value: JSON.stringify(styleCards) },
+      { key: 'reels_videos', value: JSON.stringify(reelsVideos) },
     ]
     await Promise.all(entries.map(e =>
       supabase.from('storefront_settings').upsert(e, { onConflict: 'key' })
@@ -126,8 +135,8 @@ export default function SettingsPage() {
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6 p-1.5 bg-gray-100 rounded-xl w-fit">
-        {(['hero','announcement','style','general'] as const).map(t => (
-          <button key={t} style={tabStyle(t)} onClick={() => setTab(t)}>{t === 'style' ? 'Shop Style' : t.charAt(0).toUpperCase()+t.slice(1)}</button>
+        {(['hero','announcement','style','video','general'] as const).map(t => (
+          <button key={t} style={tabStyle(t)} onClick={() => setTab(t)}>{t === 'style' ? 'Shop Style' : t === 'video' ? 'Video Section' : t.charAt(0).toUpperCase()+t.slice(1)}</button>
         ))}
       </div>
 
@@ -265,6 +274,115 @@ export default function SettingsPage() {
                 onClick={() => setStyleCards(c => [...c, { title: '', image: '', filter: 'all' }])}
                 className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-xs text-gray-400 hover:border-yellow-300 hover:text-yellow-600 transition-all uppercase tracking-wider"
               >+ Add Style Card</button>
+            </>
+          )}
+
+          {/* VIDEO SECTION TAB */}
+          {tab === 'video' && (
+            <>
+              <div className="p-4 rounded-xl border border-emerald-100 bg-emerald-50">
+                <p className="text-[10px] text-emerald-800 font-medium uppercase tracking-wide mb-1">🎬 Video Section Settings</p>
+                <p className="text-[10px] text-emerald-700">Add multiple videos to display on the storefront "Jewellery in Action" section.</p>
+              </div>
+
+              <div className="space-y-6">
+                {reelsVideos.map((video, i) => (
+                  <div key={i} className="border border-gray-100 rounded-xl p-4 space-y-3 bg-gray-50/40 relative">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-500">Video {i + 1}</span>
+                      {reelsVideos.length > 1 && (
+                        <button
+                          onClick={() => setReelsVideos(vids => vids.filter((_, idx) => idx !== i))}
+                          className="text-[10px] text-red-500 hover:text-red-700 uppercase tracking-wider font-semibold"
+                        >Remove</button>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-[9px] uppercase tracking-wider font-medium mb-1.5 text-gray-400">Option 1: Upload Video</label>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          value={video.upload_url || ''}
+                          readOnly
+                          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 bg-gray-50 font-mono"
+                          placeholder="Upload a video file (MP4/WebM) →"
+                        />
+                        <label className="px-3 py-2 rounded-lg text-xs border cursor-pointer transition-all hover:bg-gray-50 shrink-0 text-center font-normal" style={{ borderColor: '#1B4332', color: '#1B4332' }}>
+                          {video.upload_url?.startsWith('Uploading') ? 'Uploading...' : 'Choose File'}
+                          <input
+                            type="file"
+                            accept="video/mp4,video/webm"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0]
+                              if (!file) return
+                              const formData = new FormData()
+                              formData.append('file', file)
+                              
+                              const originalUrl = video.upload_url
+                              const updated = [...reelsVideos]
+                              updated[i] = { ...updated[i], upload_url: 'Uploading...' }
+                              setReelsVideos(updated)
+                              
+                              try {
+                                const res = await fetch('/api/upload', { method: 'POST', body: formData })
+                                const data = await res.json()
+                                if (data.url) {
+                                  const successList = [...reelsVideos]
+                                  successList[i] = { ...successList[i], upload_url: data.url }
+                                  setReelsVideos(successList)
+                                  showToast('Video uploaded successfully!', { type: 'success' })
+                                } else {
+                                  showToast(data.error || 'Upload failed', { type: 'error' })
+                                  const failList = [...reelsVideos]
+                                  failList[i] = { ...failList[i], upload_url: originalUrl || '' }
+                                  setReelsVideos(failList)
+                                }
+                              } catch (err) {
+                                showToast('Upload error', { type: 'error' })
+                                const failList = [...reelsVideos]
+                                failList[i] = { ...failList[i], upload_url: originalUrl || '' }
+                                setReelsVideos(failList)
+                              }
+                            }}
+                          />
+                        </label>
+                        {video.upload_url && video.upload_url !== 'Uploading...' && (
+                          <button
+                            onClick={() => {
+                              const updated = [...reelsVideos]
+                              updated[i] = { ...updated[i], upload_url: '' }
+                              setReelsVideos(updated)
+                            }}
+                            className="px-3 py-2 border border-red-200 text-red-500 rounded-lg text-xs hover:bg-red-50 transition-all shrink-0 text-center font-normal"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[9px] uppercase tracking-wider font-medium mb-1 text-gray-400">Option 2: Video URL</label>
+                      <input
+                        value={video.url}
+                        onChange={e => {
+                          const updated = [...reelsVideos]
+                          updated[i] = { ...updated[i], url: e.target.value }
+                          setReelsVideos(updated)
+                        }}
+                        placeholder="Paste Direct MP4 URL, YouTube or Vimeo Link"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 font-mono"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setReelsVideos(vids => [...vids, { upload_url: '', url: '' }])}
+                className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-xs text-gray-400 hover:border-yellow-300 hover:text-yellow-600 transition-all uppercase tracking-wider font-semibold"
+              >+ Add Video</button>
             </>
           )}
 
