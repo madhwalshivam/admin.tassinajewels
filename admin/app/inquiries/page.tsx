@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useNotification } from '@/components/NotificationProvider'
 
 type Inquiry = {
   id: string; name: string; company: string | null; email: string; whatsapp: string | null;
@@ -17,6 +18,7 @@ const statusColor: Record<string, string> = {
 }
 
 export default function InquiriesPage() {
+  const { showToast, showConfirm } = useNotification()
   const [inquiries, setInquiries] = useState<Inquiry[]>([])
   const [selected, setSelected] = useState<Inquiry | null>(null)
   const [tab, setTab] = useState('all')
@@ -36,15 +38,26 @@ export default function InquiriesPage() {
   useEffect(() => { load() }, [load])
 
   async function updateStatus(id: string, status: string) {
-    await supabase.from('inquiries').update({ status }).eq('id', id)
-    setSelected(s => s ? { ...s, status } : null)
-    load()
+    const { error } = await supabase.from('inquiries').update({ status }).eq('id', id)
+    if (error) {
+      showToast(`Error updating status: ${error.message}`, { type: 'error' })
+    } else {
+      showToast(`Status updated to ${status}!`, { type: 'success' })
+      setSelected(s => s ? { ...s, status } : null)
+      load()
+    }
   }
 
   async function del(id: string) {
-    if (!confirm('Are you sure you want to delete this inquiry?')) return
-    await supabase.from('inquiries').delete().eq('id', id)
-    setSelected(null); load()
+    const confirmed = await showConfirm('Are you sure you want to delete this inquiry?')
+    if (!confirmed) return
+    const { error } = await supabase.from('inquiries').delete().eq('id', id)
+    if (error) {
+      showToast(`Error deleting inquiry: ${error.message}`, { type: 'error' })
+    } else {
+      showToast('Inquiry deleted successfully!', { type: 'success' })
+      setSelected(null); load()
+    }
   }
 
   return (

@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useNotification } from '@/components/NotificationProvider'
 
 type Category = { id: string; name: string; slug: string; image_url: string | null; display_order: number; visible: boolean }
 
@@ -16,6 +17,7 @@ function formatImageUrl(url: string | null): string {
 }
 
 export default function CategoriesPage() {
+  const { showToast, showConfirm } = useNotification()
   const [categories, setCategories] = useState<Category[]>([])
   
   // Modals state
@@ -54,8 +56,9 @@ export default function CategoriesPage() {
       res = await supabase.from('categories').update(payload).eq('id', catForm.id)
     }
     if (res.error) {
-      alert(`Error saving category: ${res.error.message}\n${res.error.details || ''}`);
+      showToast(`Error saving category: ${res.error.message}\n${res.error.details || ''}`, { type: 'error' });
     } else {
+      showToast('Category saved successfully!', { type: 'success' })
       setCatModal(null)
       loadData()
     }
@@ -63,9 +66,14 @@ export default function CategoriesPage() {
   }
 
   async function delCat(id: string) {
-    if (!confirm('Are you sure you want to delete this category?')) return
+    const confirmed = await showConfirm('Are you sure you want to delete this category?')
+    if (!confirmed) return
     const { error } = await supabase.from('categories').delete().eq('id', id)
-    if (error) alert(`Error deleting category: ${error.message}`);
+    if (error) {
+      showToast(`Error deleting category: ${error.message}`, { type: 'error' })
+    } else {
+      showToast('Category deleted successfully!', { type: 'success' })
+    }
     loadData()
   }
 
@@ -218,12 +226,13 @@ export default function CategoriesPage() {
                           const data = await res.json()
                           if (data.url) {
                             setCatForm({ ...catForm, image_url: data.url })
+                            showToast('Image uploaded successfully!', { type: 'success' })
                           } else {
-                            alert(data.error || 'Upload failed')
+                            showToast(data.error || 'Upload failed', { type: 'error' })
                             setCatForm({ ...catForm, image_url: originalUrl })
                           }
                         } catch (err) {
-                          alert('Upload error')
+                          showToast('Upload error', { type: 'error' })
                           setCatForm({ ...catForm, image_url: originalUrl })
                         }
                       }}

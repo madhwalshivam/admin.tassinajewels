@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useNotification } from '@/components/NotificationProvider'
 
 interface Product {
   id: string
@@ -16,6 +17,7 @@ interface Category {
 }
 
 export default function DealsPage() {
+  const { showToast } = useNotification()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
@@ -158,7 +160,7 @@ export default function DealsPage() {
     ))
 
     setSaving(false)
-    alert('✅ Campaign deals saved successfully!')
+    showToast('Campaign deals saved successfully!', { type: 'success' })
   }
 
   const addGoatProduct = (id: string) => {

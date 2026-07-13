@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useNotification } from '@/components/NotificationProvider'
 
 interface StyleCard { title: string; image: string; filter: string }
 interface HeroSlide { image: string; link_url: string }
@@ -15,6 +16,7 @@ function formatImageUrl(url: string | null): string {
 }
 
 export default function SettingsPage() {
+  const { showToast } = useNotification()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [tab, setTab] = useState<'hero'|'announcement'|'style'|'general'>('hero')
@@ -85,7 +87,7 @@ export default function SettingsPage() {
       supabase.from('storefront_settings').upsert(e, { onConflict: 'key' })
     ))
     setSaving(false)
-    alert('✅ Settings saved! Reload the storefront to see changes.')
+    showToast('Settings saved successfully! Reload the storefront to see changes.', { type: 'success' })
   }
 
   const tabStyle = (t: string) => ({

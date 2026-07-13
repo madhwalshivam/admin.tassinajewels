@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useNotification } from '@/components/NotificationProvider'
 
 type Product = {
   id: string; title: string; description: string; price: number; compare_price: number | null;
@@ -28,6 +29,7 @@ function formatImageUrl(url: string | null): string {
 }
 
 export default function ProductsPage() {
+  const { showToast, showConfirm } = useNotification()
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [filterGroups, setFilterGroups] = useState<FilterGroup[]>([])
@@ -149,7 +151,7 @@ export default function ProductsPage() {
     }
 
     if (res.error) {
-      alert(`Error saving product: ${res.error.message}\n${res.error.details || ''}`)
+      showToast(`Error saving product: ${res.error.message}\n${res.error.details || ''}`, { type: 'error' })
       setSaving(false)
       return
     }
@@ -175,21 +177,31 @@ export default function ProductsPage() {
       }
     }
 
+    showToast('Product saved successfully!', { type: 'success' })
     setModal(null)
     load()
     setSaving(false)
   }
 
   async function del(id: string) {
-    if (!confirm('Are you sure you want to delete this product?')) return
+    const confirmed = await showConfirm('Are you sure you want to delete this product?')
+    if (!confirmed) return
     const { error } = await supabase.from('products').delete().eq('id', id)
-    if (error) alert(`Error deleting product: ${error.message}`)
+    if (error) {
+      showToast(`Error deleting product: ${error.message}`, { type: 'error' })
+    } else {
+      showToast('Product deleted successfully!', { type: 'success' })
+    }
     load()
   }
 
   async function toggle(id: string, field: 'available' | 'featured', val: boolean) {
     const { error } = await supabase.from('products').update({ [field]: !val }).eq('id', id)
-    if (error) alert(`Error updating product status: ${error.message}`)
+    if (error) {
+      showToast(`Error updating product status: ${error.message}`, { type: 'error' })
+    } else {
+      showToast(`Product ${field} status updated!`, { type: 'success' })
+    }
     load()
   }
 
@@ -439,12 +451,13 @@ export default function ProductsPage() {
                             const data = await res.json()
                             if (data.url) {
                               setForm({ ...form, image_url: data.url })
+                              showToast('Image uploaded successfully!', { type: 'success' })
                             } else {
-                              alert(data.error || 'Upload failed')
+                              showToast(data.error || 'Upload failed', { type: 'error' })
                               setForm({ ...form, image_url: originalUrl })
                             }
                           } catch (err) {
-                            alert('Upload error')
+                            showToast('Upload error', { type: 'error' })
                             setForm({ ...form, image_url: originalUrl })
                           }
                         }}

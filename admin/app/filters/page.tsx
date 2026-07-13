@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useNotification } from '@/components/NotificationProvider'
 
 type Category = { id: string; name: string; slug: string }
 type FilterGroup = { id: string; name: string; slug: string; is_enabled: boolean; display_order: number }
@@ -8,6 +9,7 @@ type FilterValue = { id: string; filter_group_id: string; value: string }
 type CategoryFilter = { category_id: string; filter_group_id: string }
 
 export default function FiltersPage() {
+  const { showToast, showConfirm } = useNotification()
   const [categories, setCategories] = useState<Category[]>([])
   const [filterGroups, setFilterGroups] = useState<FilterGroup[]>([])
   const [filterValues, setFilterValues] = useState<FilterValue[]>([])
@@ -67,8 +69,9 @@ export default function FiltersPage() {
     }
 
     if (res.error) {
-      alert(`Error saving filter group: ${res.error.message}`)
+      showToast(`Error saving filter group: ${res.error.message}`, { type: 'error' })
     } else {
+      showToast('Filter group saved successfully!', { type: 'success' })
       setGroupModal(null)
       loadData()
     }
@@ -76,15 +79,24 @@ export default function FiltersPage() {
   }
 
   async function delGroup(id: string) {
-    if (!confirm('Are you sure you want to delete this filter group? All associated values and product assignments will be deleted.')) return
+    const confirmed = await showConfirm('Are you sure you want to delete this filter group? All associated values and product assignments will be deleted.')
+    if (!confirmed) return
     const { error } = await supabase.from('filter_groups').delete().eq('id', id)
-    if (error) alert(`Error deleting filter group: ${error.message}`)
+    if (error) {
+      showToast(`Error deleting filter group: ${error.message}`, { type: 'error' })
+    } else {
+      showToast('Filter group deleted successfully!', { type: 'success' })
+    }
     loadData()
   }
 
   async function toggleGroupEnabled(g: FilterGroup) {
     const { error } = await supabase.from('filter_groups').update({ is_enabled: !g.is_enabled }).eq('id', g.id)
-    if (error) alert(`Error toggling filter status: ${error.message}`)
+    if (error) {
+      showToast(`Error toggling filter status: ${error.message}`, { type: 'error' })
+    } else {
+      showToast(`Filter group ${!g.is_enabled ? 'enabled' : 'disabled'}!`, { type: 'success' })
+    }
     loadData()
   }
 
@@ -99,17 +111,23 @@ export default function FiltersPage() {
     }])
     
     if (error) {
-      alert(`Error adding filter value: ${error.message}`)
+      showToast(`Error adding filter value: ${error.message}`, { type: 'error' })
     } else {
+      showToast('Filter value added successfully!', { type: 'success' })
       setNewValueInput({ ...newValueInput, [groupId]: '' })
       loadData()
     }
   }
 
   async function delValue(valueId: string) {
-    if (!confirm('Are you sure you want to delete this filter value?')) return
+    const confirmed = await showConfirm('Are you sure you want to delete this filter value?')
+    if (!confirmed) return
     const { error } = await supabase.from('filter_values').delete().eq('id', valueId)
-    if (error) alert(`Error deleting filter value: ${error.message}`)
+    if (error) {
+      showToast(`Error deleting filter value: ${error.message}`, { type: 'error' })
+    } else {
+      showToast('Filter value deleted successfully!', { type: 'success' })
+    }
     loadData()
   }
 
@@ -123,14 +141,22 @@ export default function FiltersPage() {
         .eq('category_id', catId)
         .eq('filter_group_id', groupId)
       
-      if (error) alert(`Error removing category filter: ${error.message}`)
+      if (error) {
+        showToast(`Error removing category filter: ${error.message}`, { type: 'error' })
+      } else {
+        showToast('Category filter assignment removed.', { type: 'success' })
+      }
     } else {
       // Add assignment
       const { error } = await supabase
         .from('category_filters')
         .insert([{ category_id: catId, filter_group_id: groupId }])
       
-      if (error) alert(`Error assigning category filter: ${error.message}`)
+      if (error) {
+        showToast(`Error assigning category filter: ${error.message}`, { type: 'error' })
+      } else {
+        showToast('Category filter assigned successfully!', { type: 'success' })
+      }
     }
     loadData()
   }

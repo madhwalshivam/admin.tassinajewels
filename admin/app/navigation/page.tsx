@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useNotification } from '@/components/NotificationProvider'
 
 type Category = { id: string; name: string; slug: string }
 type Product = { id: string; title: string }
@@ -18,6 +19,7 @@ type MenuItem = {
 }
 
 export default function NavigationPage() {
+  const { showToast, showConfirm } = useNotification()
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
@@ -53,7 +55,20 @@ export default function NavigationPage() {
       try {
         const parsed = JSON.parse(settingsMap.navbar_menu)
         if (Array.isArray(parsed)) {
-          setMenuItems(parsed)
+          // Normalize loaded menu items to ensure they all have IDs
+          const normalized = parsed.map(item => ({
+            id: item.id || 'parent_' + Math.random().toString(36).substring(2, 9),
+            name: item.name || '',
+            slug: item.slug || '',
+            visible: item.visible ?? true,
+            subcategories: (item.subcategories || []).map((sub: any) => ({
+              id: sub.id || 'child_' + Math.random().toString(36).substring(2, 9),
+              name: sub.name || '',
+              slug: sub.slug || '',
+              visible: sub.visible ?? true
+            }))
+          }))
+          setMenuItems(normalized)
         } else {
           setMenuItems([])
         }
@@ -88,9 +103,9 @@ export default function NavigationPage() {
     }
     const { error } = await supabase.from('storefront_settings').upsert(payload, { onConflict: 'key' })
     if (error) {
-      alert(`Error saving menu: ${error.message}`)
+      showToast(`Error saving menu: ${error.message}`, { type: 'error' })
     } else {
-      alert('Navigation menu saved successfully! Re-publishing to storefront.')
+      showToast('Navigation menu saved successfully! Re-publishing to storefront.', { type: 'success' })
     }
     setSaving(false)
   }
@@ -107,8 +122,9 @@ export default function NavigationPage() {
     setMenuItems([...menuItems, newItem])
   }
 
-  function deleteParentItem(parentId: string) {
-    if (!confirm('Are you sure you want to delete this menu item and all its dropdown items?')) return
+  async function deleteParentItem(parentId: string) {
+    const confirmed = await showConfirm('Are you sure you want to delete this menu item and all its dropdown items?')
+    if (!confirmed) return
     setMenuItems(menuItems.filter(item => item.id !== parentId))
     if (activeParentEdit === parentId) setActiveParentEdit(null)
   }
@@ -147,8 +163,9 @@ export default function NavigationPage() {
     )
   }
 
-  function deleteChildItem(parentId: string, childId: string) {
-    if (!confirm('Are you sure you want to delete this dropdown item?')) return
+  async function deleteChildItem(parentId: string, childId: string) {
+    const confirmed = await showConfirm('Are you sure you want to delete this dropdown item?')
+    if (!confirmed) return
     setMenuItems(
       menuItems.map(item => {
         if (item.id === parentId) {
@@ -198,12 +215,18 @@ export default function NavigationPage() {
     setActiveChildEdit(null)
     setActiveParentEdit(item.id)
     let linkType = 'custom'
-    if (item.slug && item.slug.startsWith('/category/')) {
-      linkType = 'category'
-    } else if (item.slug && item.slug.startsWith('/product/')) {
+    let slugVal = item.slug || ''
+    
+    if (slugVal.startsWith('/product/')) {
       linkType = 'product'
+    } else if (slugVal.startsWith('/categories/')) {
+      linkType = 'category'
+      slugVal = slugVal.replace('/categories/', '')
+    } else if (slugVal && !slugVal.startsWith('/') && !slugVal.startsWith('#') && !slugVal.startsWith('http')) {
+      linkType = 'category'
     }
-    setEditForm({ name: item.name, slug: item.slug, linkType })
+    
+    setEditForm({ name: item.name, slug: slugVal, linkType })
   }
 
   function saveParentEdit(parentId: string) {
@@ -226,12 +249,18 @@ export default function NavigationPage() {
     setActiveParentEdit(null)
     setActiveChildEdit({ parentId, childId: sub.id })
     let linkType = 'custom'
-    if (sub.slug && sub.slug.startsWith('/category/')) {
-      linkType = 'category'
-    } else if (sub.slug && sub.slug.startsWith('/product/')) {
+    let slugVal = sub.slug || ''
+    
+    if (slugVal.startsWith('/product/')) {
       linkType = 'product'
+    } else if (slugVal.startsWith('/categories/')) {
+      linkType = 'category'
+      slugVal = slugVal.replace('/categories/', '')
+    } else if (slugVal && !slugVal.startsWith('/') && !slugVal.startsWith('#') && !slugVal.startsWith('http')) {
+      linkType = 'category'
     }
-    setEditForm({ name: sub.name, slug: sub.slug, linkType })
+    
+    setEditForm({ name: sub.name, slug: slugVal, linkType })
   }
 
   function saveChildEdit(parentId: string, childId: string) {
