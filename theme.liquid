@@ -3380,7 +3380,7 @@
     </div>
     <div style="margin-top:22px;font-family:'Cinzel',serif;color:#E3BA45;font-size:21px;font-weight:600;letter-spacing:4px;text-transform:uppercase;text-align:center;">Tassina Jewels</div>
     <div style="margin-top:6px;font-family:'Montserrat',sans-serif;color:rgba(255,255,255,0.55);font-size:9.5px;letter-spacing:2.5px;text-transform:uppercase;text-align:center;">Handcrafted Fine Jewelry</div>
-    <div class="tj-loader-dots" style="margin-top:20px;">
+    <div class="tj-loader-dots" id="tj-loader-dots" style="margin-top:20px;">
       <div class="tj-loader-dot"></div>
       <div class="tj-loader-dot"></div>
       <div class="tj-loader-dot"></div>
@@ -3388,12 +3388,17 @@
     <div id="tj-preloader-slow" style="margin-top:20px;color:rgba(227,186,69,0.9);font-size:12px;letter-spacing:0.4px;font-family:'Montserrat',sans-serif;text-align:center;max-width:280px;padding:0 24px;line-height:1.5;opacity:0;transition:opacity 0.4s ease;">
       Slow connection detected — loading your catalog, please wait…
     </div>
+    <div id="tj-preloader-error" style="display:none;margin-top:20px;text-align:center;max-width:300px;padding:0 24px;font-family:'Montserrat',sans-serif;">
+      <p style="color:rgba(255,255,255,0.85);font-size:13px;line-height:1.6;margin-bottom:16px;">We're having trouble loading the store. Please check your connection.</p>
+      <button onclick="window.location.reload()" style="background:#E3BA45;color:#1B4332;border:none;border-radius:8px;padding:10px 24px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;">Retry</button>
+    </div>
   </div>
   <script>
     window._tjSplashStart = Date.now();
     window._tjPreloaderDone = false;
-    // Keep the splash visible for at least this long so it never just flashes by.
-    var TJ_SPLASH_MIN = 1300;
+    // Small floor so instant/cached loads don't flash — NOT a timeout that hides
+    // the loader; the loader is dismissed only when the required data is ready.
+    var TJ_SPLASH_MIN = 800;
 
     window.hidePreloader = function() {
       if (window._tjPreloaderDone) return;
@@ -3413,16 +3418,30 @@
         setTimeout(function () { preloader.remove(); }, 600);
       }
       if (window._tjSlowTimer) { clearTimeout(window._tjSlowTimer); window._tjSlowTimer = null; }
-      if (window._tjHardTimer) { clearTimeout(window._tjHardTimer); window._tjHardTimer = null; }
+      if (window._tjSafetyTimer) { clearTimeout(window._tjSafetyTimer); window._tjSafetyTimer = null; }
     };
 
-    // If the connection is slow, show a reassuring message instead of hiding early.
+    // Show an error state (with Retry) instead of hiding with incomplete content.
+    window.tjShowLoadError = function() {
+      if (window._tjPreloaderDone) return;
+      var dots = document.getElementById('tj-loader-dots');
+      var slow = document.getElementById('tj-preloader-slow');
+      var err = document.getElementById('tj-preloader-error');
+      if (dots) dots.style.display = 'none';
+      if (slow) slow.style.opacity = '0';
+      if (err) err.style.display = 'block';
+    };
+
+    // If the connection is slow, show a reassuring message (does NOT hide the loader).
     window._tjSlowTimer = setTimeout(function () {
       var msg = document.getElementById('tj-preloader-slow');
       if (msg) msg.style.opacity = '1';
     }, 7000);
-    // Hard safety cap so the splash can never get permanently stuck.
-    window._tjHardTimer = setTimeout(window.hidePreloader, 25000);
+    // Long backstop: if data still hasn't loaded after a long wait, show the error
+    // state (retry) rather than leaving the user stuck forever.
+    window._tjSafetyTimer = setTimeout(function () {
+      if (!window._tjPreloaderDone) window.tjShowLoadError();
+    }, 40000);
   </script>
   {% if template.type == '1' %}
     <script id='product-json' data-id='{{ product.id }}' type='application/json'>
@@ -5391,6 +5410,9 @@
       allCategories = catData;
       allSubcategories = subcatData;
       isCategoriesLoading = false;
+      // Mark categories as successfully loaded (only when the request itself succeeded),
+      // so the initial loader can gate on it and retry if it failed.
+      if (catRes && !catRes.error) { window._tjCategoriesLoaded = true; }
 
       // ── BACKGROUND: heavy filter/attribute + junction tables. These are only
       // needed by the filter sidebar and junction-based category matching, so
@@ -6433,7 +6455,7 @@
       if (trendingSec) trendingSec.style.display = sMap.trending_active !== 'false' ? 'block' : 'none';
       
       if (arrivalsSec) arrivalsSec.style.display = 'block';
-      if (bestsellersSec) bestsellersSec.style.display = 'block';
+      if (bestsellersSec) bestsellersSec.style.display = sMap.bestsellers_active !== 'false' ? 'block' : 'none';
       if (campaignSec) campaignSec.style.display = 'block';
       if (promisesSec) promisesSec.style.display = 'flex';
       if (reelsSec) reelsSec.style.display = 'block';
@@ -7245,18 +7267,45 @@
       renderProducts(paginatedProducts);
       renderPagination(currentPage, totalPages);
 
-      // Render best sellers (featured is true, or slice top 5)
-      let bestSellers = allProducts.filter(p => p.featured);
-      if (bestSellers.length === 0) {
-        bestSellers = allProducts.slice(0, 5);
-      }
-      renderBestSellers(bestSellers);
-
       // Render New Arrivals (first 4 newest products)
       const newArrivals = allProducts.slice(0, 4);
       renderNewArrivals(newArrivals);
 
       const sMap = window.tjStorefrontSettings || {};
+
+      // Render Best Seller Section (dynamic based on admin config)
+      const bestsellersOuter = document.getElementById('tj-bestsellers-section');
+      if (bestsellersOuter) {
+        if (currentCategory !== 'all' || sMap.bestsellers_active === 'false') {
+          bestsellersOuter.style.display = 'none';
+        } else {
+          const bestsellersTitleEl = bestsellersOuter.querySelector('.tj-section-title');
+          if (bestsellersTitleEl && sMap.bestsellers_title) {
+            bestsellersTitleEl.textContent = sMap.bestsellers_title;
+          }
+          let bestsellersFinal = [];
+          if (sMap.bestsellers_products) {
+            try {
+              const ids = JSON.parse(sMap.bestsellers_products);
+              if (Array.isArray(ids) && ids.length > 0) {
+                bestsellersFinal = allProducts.filter(p => ids.includes(p.id));
+              }
+            } catch (e) {
+              console.error("Error parsing bestsellers_products:", e);
+            }
+          }
+          if (bestsellersFinal.length === 0) {
+            const featuredSellers = allProducts.filter(p => p.featured);
+            bestsellersFinal = featuredSellers.length > 0 ? featuredSellers : allProducts.slice(0, 5);
+          }
+          if (bestsellersFinal.length >= 1) {
+            renderBestSellers(bestsellersFinal);
+            bestsellersOuter.style.display = 'block';
+          } else {
+            bestsellersOuter.style.display = 'none';
+          }
+        }
+      }
 
       // Render G.O.A.T. Deal Section
       const goatOuter = document.getElementById('tj-goat-deal-outer');
@@ -7480,15 +7529,11 @@
         if (productsSection) productsSection.style.display = 'block';
       }
 
-      // Hide preloader once data is loaded and DOM rendering is complete
-      if (typeof window.hidePreloader === 'function') {
-        window.hidePreloader();
-      }
+      // Products have rendered — mark ready. The preloader is dismissed centrally
+      // once ALL required data (settings, navbar, categories, products) is ready.
+      window._tjProductsReady = true;
     } catch (err) {
       console.error("Error loading products:", err);
-      if (typeof window.hidePreloader === 'function') {
-        window.hidePreloader();
-      }
     }
   }
 
@@ -8051,32 +8096,60 @@
   });
 
   // ─── INIT POLLING FOR SUPABASE READY ──────────────────────
+
+  // Run a required loader with retries. `checkOk` verifies the data actually loaded
+  // (loaders swallow their own errors, so we confirm the result was populated).
+  async function tjRunRequired(fn, name, checkOk, retries) {
+    retries = (typeof retries === 'number') ? retries : 2;
+    for (var attempt = 0; attempt <= retries; attempt++) {
+      try { await fn(); } catch (e) { console.error(name + ' error (attempt ' + (attempt + 1) + ')', e); }
+      try { if (!checkOk || checkOk()) return true; } catch (e) {}
+      if (attempt < retries) {
+        await new Promise(function (r) { setTimeout(r, 700 * (attempt + 1)); });
+      }
+    }
+    return false;
+  }
+
+  async function bootStorefront() {
+    // Instant, flicker-free first paint from cache: navbar (admin links) + category skeletons.
+    try { window.tjRenderNavbar(); } catch (e) {}
+    try { renderQuickCategories(); } catch (e) {}
+
+    // Load ALL required backend data. The loader stays up until these are ready.
+    // Settings/navbar/footer/hero come from loadSettings; categories from loadFilters;
+    // homepage products from loadProducts. Run in parallel with per-loader retries.
+    var results = await Promise.all([
+      tjRunRequired(loadSettings, 'settings', function () { return !!window.tjStorefrontSettings; }),
+      tjRunRequired(loadFilters,  'filters',  function () { return window._tjCategoriesLoaded === true; }),
+      tjRunRequired(loadProducts, 'products', function () { return window._tjProductsReady === true || Array.isArray(_cachedProducts); })
+    ]);
+
+    window._tjSettingsLoaded = true;
+
+    // Final, consistent render now that data is available (uses caches, no refetch).
+    try { window.tjRenderNavbar(); } catch (e) {}
+    try { window.renderPageViews(); } catch (e) {}
+    if (typeof renderSidebarFilters === 'function') { try { renderSidebarFilters(); } catch (e) {} }
+    try { loadReviews(); } catch (e) {}
+
+    var allOk = results.every(Boolean);
+    if (allOk) {
+      // Everything required is ready → smoothly fade out the loader.
+      if (typeof window.hidePreloader === 'function') window.hidePreloader();
+    } else {
+      // Something essential failed after retries → show a graceful error/retry state
+      // instead of rendering incomplete content.
+      console.warn('Required data failed to load after retries:', results);
+      if (typeof window.tjShowLoadError === 'function') window.tjShowLoadError();
+    }
+  }
+
   window.addEventListener('DOMContentLoaded', () => {
     const interval = setInterval(() => {
       if (initSupabase()) {
         clearInterval(interval);
-        // Render as soon as possible using cached data; settings + filters load in parallel.
-        const settingsP = loadSettings().catch(err => console.error('loadSettings', err));
-        const filtersP = loadFilters().catch(err => console.error('loadFilters', err));
-
-        // Kick off the initial view immediately (products render from cache instantly,
-        // then revalidate) instead of waiting for settings + filters to finish.
-        try { window.renderPageViews(); } catch (e) { console.error('renderPageViews', e); }
-        // Paint the navbar instantly from cached Admin Navbar Links (or a loading
-        // state) — never categories. loadSettings refreshes it when fresh data lands.
-        try { window.tjRenderNavbar(); } catch (e) {}
-        // Show category skeletons right away so no placeholder categories flash in.
-        try { renderQuickCategories(); } catch (e) {}
-
-        // Once filters/settings resolve, refresh dependent UI (sidebar filter groups, etc.)
-        Promise.allSettled([settingsP, filtersP]).then(() => {
-          window._tjSettingsLoaded = true;
-          // Finalise the navbar (renders admin links, or a clean empty nav — never categories).
-          if (typeof window.tjRenderNavbar === 'function') { try { window.tjRenderNavbar(); } catch (e) {} }
-          try { window.renderPageViews(); } catch (e) {}
-          if (typeof renderSidebarFilters === 'function') { try { renderSidebarFilters(); } catch (e) {} }
-          loadReviews();
-        });
+        bootStorefront();
       }
     }, 100);
   });

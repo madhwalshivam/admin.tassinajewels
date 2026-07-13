@@ -33,6 +33,11 @@ export default function DealsPage() {
     top_deals_more_url: '',
     top_deals_title: 'Top Deals',
 
+    bestsellers_active: 'true',
+    bestsellers_products: '[]',
+    bestsellers_more_url: '',
+    bestsellers_title: 'Best Seller',
+
     best_quality_active: 'true',
     best_quality_products: '[]',
     best_quality_more_url: '',
@@ -49,6 +54,7 @@ export default function DealsPage() {
   // Selected product lists for UI
   const [selectedGoatIds, setSelectedGoatIds] = useState<string[]>([])
   const [selectedTopIds, setSelectedTopIds] = useState<string[]>([])
+  const [selectedBestsellersIds, setSelectedBestsellersIds] = useState<string[]>([])
   const [selectedQualityIds, setSelectedQualityIds] = useState<string[]>([])
   const [selectedTrendingIds, setSelectedTrendingIds] = useState<string[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -57,6 +63,7 @@ export default function DealsPage() {
   // Redirect Link Types
   const [goatLinkType, setGoatLinkType] = useState('custom')
   const [topLinkType, setTopLinkType] = useState('custom')
+  const [bestsellersLinkType, setBestsellersLinkType] = useState('custom')
   const [qualityLinkType, setQualityLinkType] = useState('custom')
 
   useEffect(() => {
@@ -88,6 +95,11 @@ export default function DealsPage() {
           top_deals_more_url: m.top_deals_more_url || '',
           top_deals_title: m.top_deals_title || 'Top Deals',
 
+          bestsellers_active: m.bestsellers_active || 'true',
+          bestsellers_products: m.bestsellers_products || '[]',
+          bestsellers_more_url: m.bestsellers_more_url || '',
+          bestsellers_title: m.bestsellers_title || 'Best Seller',
+
           best_quality_active: m.best_quality_active || 'true',
           best_quality_products: m.best_quality_products || '[]',
           best_quality_more_url: m.best_quality_more_url || '',
@@ -105,6 +117,7 @@ export default function DealsPage() {
 
         try { setSelectedGoatIds(JSON.parse(newSettings.goat_deal_products)) } catch { setSelectedGoatIds([]) }
         try { setSelectedTopIds(JSON.parse(newSettings.top_deals_products)) } catch { setSelectedTopIds([]) }
+        try { setSelectedBestsellersIds(JSON.parse(newSettings.bestsellers_products)) } catch { setSelectedBestsellersIds([]) }
         try { setSelectedQualityIds(JSON.parse(newSettings.best_quality_products)) } catch { setSelectedQualityIds([]) }
         try { setSelectedTrendingIds(JSON.parse(newSettings.trending_products)) } catch { setSelectedTrendingIds([]) }
         try { setSelectedCatSlugs(JSON.parse((newSettings as any).shop_by_cat_slugs || '[]')) } catch { setSelectedCatSlugs([]) }
@@ -112,6 +125,7 @@ export default function DealsPage() {
         // Initialize redirect link types
         const goatVal = newSettings.goat_deal_more_url
         const topVal = newSettings.top_deals_more_url
+        const bestsellersVal = newSettings.bestsellers_more_url
         const qualVal = newSettings.best_quality_more_url
 
         if (goatVal.startsWith('/product/')) setGoatLinkType('product')
@@ -119,6 +133,9 @@ export default function DealsPage() {
 
         if (topVal.startsWith('/product/')) setTopLinkType('product')
         else setTopLinkType('custom')
+
+        if (bestsellersVal.startsWith('/product/')) setBestsellersLinkType('product')
+        else setBestsellersLinkType('custom')
 
         if (qualVal.startsWith('/product/')) setQualityLinkType('product')
         else setQualityLinkType('custom')
@@ -140,6 +157,11 @@ export default function DealsPage() {
       { key: 'top_deals_products', value: JSON.stringify(selectedTopIds) },
       { key: 'top_deals_more_url', value: settings.top_deals_more_url },
       { key: 'top_deals_title', value: settings.top_deals_title },
+
+      { key: 'bestsellers_active', value: settings.bestsellers_active },
+      { key: 'bestsellers_products', value: JSON.stringify(selectedBestsellersIds) },
+      { key: 'bestsellers_more_url', value: settings.bestsellers_more_url },
+      { key: 'bestsellers_title', value: settings.bestsellers_title },
 
       { key: 'best_quality_active', value: settings.best_quality_active },
       { key: 'best_quality_products', value: JSON.stringify(selectedQualityIds) },
@@ -175,6 +197,13 @@ export default function DealsPage() {
   }
   const removeTopProduct = (id: string) => {
     setSelectedTopIds(selectedTopIds.filter(x => x !== id))
+  }
+
+  const addBestsellersProduct = (id: string) => {
+    if (id && !selectedBestsellersIds.includes(id)) setSelectedBestsellersIds([...selectedBestsellersIds, id])
+  }
+  const removeBestsellersProduct = (id: string) => {
+    setSelectedBestsellersIds(selectedBestsellersIds.filter(x => x !== id))
   }
 
   const addQualityProduct = (id: string) => {
@@ -422,7 +451,120 @@ export default function DealsPage() {
             </div>
           </div>
 
-          {/* SECTION 3: BEST QUALITY (2x2 GRID) */}
+          {/* SECTION 3: BEST SELLER SECTION */}
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-xs">
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-50">
+              <div>
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-emerald-900 flex items-center gap-2">
+                  <span>★</span> Best Seller Section
+                </h3>
+                <p className="text-[11px] text-gray-400 mt-0.5">Appears as the Best Seller carousel on the homepage</p>
+              </div>
+              <button
+                onClick={() => setSettings({ ...settings, bestsellers_active: settings.bestsellers_active === 'true' ? 'false' : 'true' })}
+                className="px-3.5 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-semibold transition-all"
+                style={{
+                  background: settings.bestsellers_active === 'true' ? '#1B4332' : '#f3f4f6',
+                  color: settings.bestsellers_active === 'true' ? '#E3BA45' : '#6b7280'
+                }}
+              >
+                {settings.bestsellers_active === 'true' ? '✓ Enabled' : '✗ Disabled'}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <div className="mb-4">
+                  <label className="block text-[10px] uppercase tracking-wider font-semibold mb-2 text-gray-500">Section Name / Title</label>
+                  <input
+                    type="text"
+                    value={settings.bestsellers_title}
+                    onChange={(e) => setSettings({ ...settings, bestsellers_title: e.target.value })}
+                    placeholder="Best Seller"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400"
+                  />
+                </div>
+
+                <label className="block text-[10px] uppercase tracking-wider font-semibold mb-2 text-gray-500">Select Products to Add</label>
+                <select
+                  onChange={(e) => { addBestsellersProduct(e.target.value); e.target.value = '' }}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400"
+                >
+                  <option value="">-- Click to choose a product --</option>
+                  {products.map(p => (
+                    <option key={p.id} value={p.id}>{p.title} (${p.price})</option>
+                  ))}
+                </select>
+
+                <div className="mt-4">
+                  <label className="block text-[10px] uppercase tracking-wider font-semibold mb-2 text-gray-500">Redirect Landing URL ("More Deals")</label>
+                  <div className="flex gap-1 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => { setBestsellersLinkType('product'); setSettings(s => ({ ...s, bestsellers_more_url: products[0] ? `/product/${products[0].id}` : '' })) }}
+                      className={`px-3 py-1.5 text-center text-[9px] uppercase tracking-wider rounded-lg border font-normal transition-all ${
+                        bestsellersLinkType === 'product' ? 'border-emerald-600 bg-emerald-50/40 text-emerald-950 font-semibold' : 'border-gray-200 text-gray-500 bg-white'
+                      }`}
+                    >
+                      Product
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setBestsellersLinkType('custom'); setSettings(s => ({ ...s, bestsellers_more_url: '' })) }}
+                      className={`px-3 py-1.5 text-center text-[9px] uppercase tracking-wider rounded-lg border font-normal transition-all ${
+                        bestsellersLinkType === 'custom' ? 'border-emerald-600 bg-emerald-50/40 text-emerald-950 font-semibold' : 'border-gray-200 text-gray-500 bg-white'
+                      }`}
+                    >
+                      Custom Link
+                    </button>
+                  </div>
+
+                  {bestsellersLinkType === 'product' && (
+                    <select
+                      value={settings.bestsellers_more_url}
+                      onChange={(e) => setSettings({ ...settings, bestsellers_more_url: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 bg-white"
+                    >
+                      <option value="">-- Choose Product --</option>
+                      {products.map(p => (
+                        <option key={p.id} value={`/product/${p.id}`}>{p.title} (/product/{p.id})</option>
+                      ))}
+                    </select>
+                  )}
+
+                  {bestsellersLinkType === 'custom' && (
+                    <input
+                      type="text"
+                      value={settings.bestsellers_more_url}
+                      onChange={(e) => setSettings({ ...settings, bestsellers_more_url: e.target.value })}
+                      placeholder="/pages/deals or WhatsApp link"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-mono outline-none focus:border-yellow-400"
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider font-semibold mb-2 text-gray-500">Products in Section ({selectedBestsellersIds.length})</label>
+                <div className="border border-gray-100 rounded-xl p-3 max-h-48 overflow-y-auto space-y-2 bg-gray-50">
+                  {selectedBestsellersIds.map(id => {
+                    const p = products.find(x => x.id === id)
+                    return (
+                      <div key={id} className="flex justify-between items-center bg-white px-3 py-2 rounded-lg border border-gray-100">
+                        <span className="text-[11px] text-emerald-950 font-medium truncate pr-4">{p ? p.title : `Product ID: ${id}`}</span>
+                        <button onClick={() => removeBestsellersProduct(id)} className="text-[10px] text-red-500 hover:text-red-700 font-semibold px-2">✕</button>
+                      </div>
+                    )
+                  })}
+                  {selectedBestsellersIds.length === 0 && (
+                    <div className="text-center py-6 text-gray-400 text-[11px]">No products added. Fallbacks will apply.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 4: BEST QUALITY (2x2 GRID) */}
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-xs">
             <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-50">
               <div>
@@ -535,7 +677,7 @@ export default function DealsPage() {
             </div>
           </div>
 
-          {/* SECTION 4: TRENDING ITEMS */}
+          {/* SECTION 5: TRENDING ITEMS */}
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-xs">
             <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-50">
               <div>
@@ -571,7 +713,7 @@ export default function DealsPage() {
             </div>
           </div>
 
-          {/* SECTION 5: SHOP BY CATEGORY */}
+          {/* SECTION 6: SHOP BY CATEGORY */}
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-xs">
             <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-50">
               <div>
