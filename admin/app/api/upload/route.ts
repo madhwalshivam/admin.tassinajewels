@@ -10,6 +10,10 @@ const r2 = new S3Client({
   },
 })
 
+// The R2 public CDN base URL — images are accessible without the admin proxy.
+const R2_PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || 'https://pub-17a03ed838cff7b48ee24c1876e145fc.r2.dev'
+const R2_BUCKET = process.env.R2_BUCKET_NAME || 'tape'
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
@@ -26,17 +30,16 @@ export async function POST(req: NextRequest) {
 
     await r2.send(
       new PutObjectCommand({
-        Bucket: process.env.R2_BUCKET_NAME,
+        Bucket: R2_BUCKET,
         Key: key,
         Body: buffer,
         ContentType: file.type,
       })
     )
 
-    // Construct the absolute proxy URL dynamically based on the current domain
-    const host = req.headers.get('host') || 'localhost:3000'
-    const proto = req.headers.get('x-forwarded-proto') || 'http'
-    const publicUrl = `${proto}://${host}/api/image/${key}`
+    // Store the public CDN URL — works on the live storefront without the admin running.
+    // Format: https://pub-xxx.r2.dev/tape/dfix/filename.jpg
+    const publicUrl = `${R2_PUBLIC_URL}/${R2_BUCKET}/${key}`
 
     return NextResponse.json({ url: publicUrl })
   } catch (error: any) {

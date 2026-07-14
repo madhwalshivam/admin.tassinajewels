@@ -3426,18 +3426,31 @@
   #tj-pdp-thumbnails::-webkit-scrollbar { display: none; }
   /* ── Variant / option selector (PDP) ───────────────────────── */
   .tj-pdp-variation-group { margin-bottom: 20px; width: 100%; }
+  /* Group heading is hidden (REQ 3) but kept in the DOM for assistive tech. */
   .tj-pdp-variation-head {
-    display: flex; align-items: baseline; justify-content: space-between;
-    gap: 10px; margin: 0 0 9px;
-  }
-  .tj-pdp-variation-label {
-    font-size: 10.5px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 1.2px; color: #8a8578; margin: 0;
-  }
-  .tj-pdp-variation-selected {
-    font-size: 12px; font-weight: 600; color: #1B4332; letter-spacing: 0.2px;
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
   .tj-pdp-variation-options { display: flex; gap: 9px; flex-wrap: wrap; }
+
+  /* Options are real anchors (shareable, middle-clickable) — strip link chrome. */
+  .tj-pdp-variant-badge,
+  .tj-pdp-variant-tile {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+  .tj-pdp-variant-badge:hover,
+  .tj-pdp-variant-tile:hover { text-decoration: none; }
+
+  /* Sold-out options stay readable and linkable but never look clickable. */
+  .tj-pdp-variant-badge.is-disabled,
+  .tj-pdp-variant-tile.is-disabled { pointer-events: none; }
 
   .tj-pdp-variant-badge {
     position: relative;
@@ -4720,16 +4733,16 @@
                 </div>
               </div>
 
+              <!-- Variation options — directly under price, above Overview (Amazon order).
+                   No group titles: the options speak for themselves. -->
+              <div id="tj-pdp-variants-wrap" style="margin-bottom: 24px; display: none;">
+                <div id="tj-pdp-variants"></div>
+              </div>
+
               <!-- Short Description -->
               <div style="margin-bottom: 24px;">
                 <h4 style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #999; margin: 0 0 8px;">Overview</h4>
                 <p id="tj-pdp-short-desc" style="font-size: 14px; color: #4a5568; line-height: 1.6; margin: 0;"></p>
-              </div>
-
-              <!-- Available Variants / Custom Options -->
-              <div id="tj-pdp-variants-wrap" style="margin-bottom: 24px; display: none;">
-                <h4 style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #999; margin: 0 0 12px;">Select Your Specification</h4>
-                <div id="tj-pdp-variants"></div>
               </div>
             </div>
           </div>
@@ -5464,6 +5477,135 @@
     return (typeof getProductFallbackImage === 'function' && productForFallback)
       ? getProductFallbackImage(productForFallback)
       : 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?q=80&w=600&auto=format&fit=cover';
+  };
+
+  // ══════════════════════════════════════════════════════════
+  //  VARIANT MODEL
+  //  One source of truth for: which variations get their own page/card,
+  //  how they are addressed in the URL, and what data they carry.
+  // ══════════════════════════════════════════════════════════
+
+  // Which variation groups are promoted to standalone pages + listing cards?
+  //   'image-groups' — only groups whose options carry their own photo (Colour,
+  //                    Material). Size/length stay as in-page options. This is how
+  //                    Amazon behaves: each colour is its own listing, sizes are not.
+  //   'all-groups'   — every variation gets its own page and card.
+  //   'off'          — classic in-page selector only.
+  window.TJ_VARIANT_PAGE_MODE = window.TJ_VARIANT_PAGE_MODE || 'image-groups';
+
+  window.tjSlugify = function(str) {
+    return String(str == null ? '' : str)
+      .toLowerCase().trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'opt';
+  };
+
+  // Columns the admin panel might have used for an option's photo.
+  const TJ_VAR_IMG_KEYS = ['image_url', 'image', 'variation_image', 'variant_image',
+                           'img_url', 'img', 'photo', 'photo_url', 'thumbnail', 'thumb_url'];
+  const TJ_VAR_GALLERY_KEYS = ['images', 'image_urls', 'gallery', 'gallery_images', 'variation_images'];
+
+  function tjParseMaybeJson(val) {
+    if (typeof val === 'string') {
+      const t = val.trim();
+      if (t.startsWith('[') || t.startsWith('{')) {
+        try { return JSON.parse(t); } catch (e) { return null; }
+      }
+      return t ? [t] : null;
+    }
+    return val;
+  }
+
+  // Every image belonging to a variation, in order, de-duplicated.
+  window.tjVariationImages = function(v) {
+    if (!v) return [];
+    const out = [];
+    const push = (u) => {
+      if (typeof u !== 'string') return;
+      const t = u.trim();
+      if (t && out.indexOf(t) === -1) out.push(t);
+    };
+    for (const k of TJ_VAR_IMG_KEYS) push(v[k]);
+    for (const k of TJ_VAR_GALLERY_KEYS) {
+      const arr = tjParseMaybeJson(v[k]);
+      if (Array.isArray(arr)) {
+        arr.forEach(item => {
+          if (typeof item === 'string') push(item);
+          else if (item && typeof item === 'object') TJ_VAR_IMG_KEYS.forEach(kk => push(item[kk]));
+        });
+      }
+    }
+    return out;
+  };
+
+  // Primary photo for a variation, or null.
+  window.tjVariationImage = function(v) {
+    const imgs = window.tjVariationImages(v);
+    return imgs.length ? imgs[0] : null;
+  };
+
+  window.tjVariationOutOfStock = function(v) {
+    if (!v) return false;
+    return v.stock_status === 'out_of_stock' ||
+      (v.stock_quantity !== undefined && v.stock_quantity !== null && Number(v.stock_quantity) <= 0);
+  };
+
+  // Effective price of a variation against its parent.
+  window.tjVariationPrice = function(v, parent) {
+    const pPrice = parseFloat((parent && parent.price) || 0);
+    const pCompare = (parent && parent.compare_price) ? parseFloat(parent.compare_price) : null;
+    if (!v) return { price: pPrice, compare: pCompare };
+    const hasOwn = v.price !== undefined && v.price !== null && v.price !== '';
+    const base = hasOwn ? parseFloat(v.price) : pPrice;
+    const hasSale = v.sale_price !== undefined && v.sale_price !== null && parseFloat(v.sale_price) > 0;
+    if (hasSale) return { price: parseFloat(v.sale_price), compare: base };
+    const cmp = (v.compare_price !== undefined && v.compare_price !== null && v.compare_price !== '')
+      ? parseFloat(v.compare_price)
+      : (hasOwn ? null : pCompare);
+    return { price: base, compare: cmp };
+  };
+
+  // Group the flat variation rows by variation_name, preserving display_order.
+  window.tjGroupVariations = function(variations) {
+    const groups = {};
+    (variations || []).forEach(v => {
+      const g = v.variation_name || 'Option';
+      (groups[g] = groups[g] || []).push(v);
+    });
+    Object.keys(groups).forEach(g => {
+      groups[g].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+    });
+    return groups;
+  };
+
+  // Is this group page-worthy under the current mode?
+  window.tjGroupIsPageWorthy = function(opts) {
+    const mode = window.TJ_VARIANT_PAGE_MODE;
+    if (mode === 'off') return false;
+    if (mode === 'all-groups') return true;
+    return (opts || []).some(v => !!window.tjVariationImage(v));
+  };
+
+  // Stable, URL-safe key for a variation.
+  window.tjVariantKey = function(v) {
+    return window.tjSlugify(v.option_value);
+  };
+
+  // Resolve a ?variant= value back to a row: match id first, then option slug.
+  window.tjFindVariation = function(variations, key) {
+    if (!key || !variations || !variations.length) return null;
+    const k = String(key).toLowerCase();
+    return variations.find(v => String(v.id).toLowerCase() === k) ||
+           variations.find(v => window.tjVariantKey(v) === k) ||
+           null;
+  };
+
+  window.tjVariantUrl = function(product, v) {
+    const slug = (product && (product.slug || product.id)) || '';
+    if (v) {
+      return '/product/' + slug + '-' + window.tjVariantKey(v);
+    }
+    return '/product/' + slug;
   };
 
   // Inline onerror attribute: swap to the fallback once, never loop.
@@ -6754,6 +6896,8 @@
     const pathname = window.location.pathname;
     let catParam = urlParams.get('category');
     let productParam = urlParams.get('product');
+    // Variation address: /?product=<slug>&variant=<option-slug|id>
+    let variantParam = urlParams.get('variant');
     let openCatDirectory = (pageParam === 'categories');
 
     if (pathname.startsWith('/product/')) {
@@ -6828,7 +6972,7 @@
       if (productsSection) productsSection.style.display = 'none';
       if (productDetailPage) productDetailPage.style.display = 'block';
 
-      renderProductDetailsPage(productParam);
+      renderProductDetailsPage(productParam, variantParam);
       highlightNav('nav-home');
       window.scrollTo({ top: 0, behavior: 'auto' });
     }
@@ -6940,7 +7084,8 @@
     window.scrollTo({ top: 0, behavior: "auto" });
   };
 
-  window.renderProductDetailsPage = async function(slugOrId) {
+  // variantKey addresses one variation of this product (REQ 2). Absent → parent page.
+  window.renderProductDetailsPage = async function(slugOrId, variantKey) {
     if (!allProducts || allProducts.length === 0) {
       if (typeof loadProducts === 'function') {
         await loadProducts();
@@ -6949,7 +7094,54 @@
       }
     }
     
-    const p = allProducts.find(x => String(x.id) === String(slugOrId) || x.slug === slugOrId);
+    let p = null;
+    let activeVariation = null;
+    let activeVariantKey = variantKey;
+
+    // 1. Try direct match in allProducts
+    p = allProducts.find(x => String(x.id) === String(slugOrId) || x.slug === slugOrId);
+
+    // 2. Try prefix matching if not found directly
+    if (!p) {
+      const candidates = allProducts
+        .filter(x => {
+          const matchSlug = x.slug && slugOrId.startsWith(x.slug + '-');
+          const matchId = x.id && slugOrId.startsWith(String(x.id) + '-');
+          return matchSlug || matchId;
+        })
+        .sort((a, b) => {
+          const aLen = a.slug ? a.slug.length : String(a.id).length;
+          const bLen = b.slug ? b.slug.length : String(b.id).length;
+          return bLen - aLen;
+        });
+      
+      if (candidates.length > 0) {
+        p = candidates[0];
+        const pLen = p.slug && slugOrId.startsWith(p.slug + '-') ? p.slug.length : String(p.id).length;
+        activeVariantKey = slugOrId.substring(pLen + 1);
+      }
+    }
+
+    // 3. Try UUID direct lookup in product_variations if still not found
+    if (db && (!p || !activeVariation)) {
+      try {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
+        if (isUuid) {
+          const { data: varData } = await db.from('product_variations').select('*').eq('id', slugOrId).maybeSingle();
+          if (varData) {
+            activeVariation = varData;
+            const { data: prodData } = await db.from('products').select('*').eq('id', activeVariation.product_id).maybeSingle();
+            if (prodData) {
+              p = prodData;
+              activeVariantKey = window.tjVariantKey(activeVariation);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching via UUID direct lookup:', err);
+      }
+    }
+
     if (!p) {
       const pdp = document.getElementById('tj-product-detail-page');
       if (pdp) {
@@ -6963,9 +7155,6 @@
     }
 
     const catName = p.category || 'Fine Jewelry';
-    const bCrumb = document.getElementById('tj-pdp-breadcrumb');
-    if (bCrumb) bCrumb.innerHTML = `<a href="/">Home</a> &nbsp;/&nbsp; <a href="/?category=${p.category_slug || 'all'}">${catName}</a> &nbsp;/&nbsp; <span style="color: #1B4332; font-weight: 500;">${p.title}</span>`;
-
     window.tjCurrentPdpProduct = p;
 
     // Fetch fresh database variations and images for the specific product
@@ -6982,6 +7171,56 @@
       } catch (err) {
         console.error('Error fetching variations/images:', err);
       }
+    }
+
+    // Default variation selection logic if no specific variant was requested
+    if (!activeVariantKey && dbVariations && dbVariations.length > 0) {
+      const defaultVar = dbVariations.find(v => !window.tjVariationOutOfStock(v)) || dbVariations[0];
+      if (defaultVar) {
+        activeVariantKey = window.tjVariantKey(defaultVar);
+      }
+    }
+
+    if (!activeVariation && activeVariantKey) {
+      activeVariation = window.tjFindVariation(dbVariations, activeVariantKey);
+    }
+
+    // If variations exist, we MUST have a selected variation (no parent fallback when variations exist)
+    if (!activeVariation && dbVariations && dbVariations.length > 0) {
+      const defaultVar = dbVariations.find(v => !window.tjVariationOutOfStock(v)) || dbVariations[0];
+      if (defaultVar) {
+        activeVariation = defaultVar;
+        activeVariantKey = window.tjVariantKey(defaultVar);
+      }
+    }
+
+    window.tjActiveVariation = activeVariation;
+    window.tjCurrentVariantKey = activeVariantKey || null;
+
+    // Fetch variation gallery images from variation_images table (REQ 7)
+    let dbVarImages = [];
+    if (db && activeVariation) {
+      try {
+        const varImgsRes = await db.from('variation_images')
+          .select('*')
+          .eq('variation_id', activeVariation.id)
+          .order('display_order', { ascending: true });
+        if (!varImgsRes.error && varImgsRes.data) {
+          dbVarImages = varImgsRes.data;
+        }
+      } catch (err) {
+        console.error('Error fetching variation images:', err);
+      }
+    }
+
+    // Silently update browser URL if it doesn't match the selected variation's canonical path
+    if (activeVariation) {
+      try {
+        const expectedUrl = window.tjVariantUrl(p, activeVariation);
+        if (window.location.pathname !== expectedUrl) {
+          window.history.replaceState({}, '', expectedUrl);
+        }
+      } catch (e) {}
     }
 
     const mainImg = document.getElementById('tj-pdp-main-image');
@@ -7006,7 +7245,6 @@
       if (!mainImg || n === 0) return;
       mainImg.src = window.tjImgSrc(imgs[0], p);
       mainImg.alt = p.title || '';
-      // Without this a dead URL leaves a broken-image icon on the hero slot.
       mainImg.onerror = function () {
         this.onerror = null;
         this.src = getProductFallbackImage(p);
@@ -7093,54 +7331,94 @@
       });
     })();
 
-    // Build image list from DB or fallback
-    let images = [];
-    let mainImgUrl = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
-
-    if (dbImages.length > 0) {
-      const primary = dbImages.find(img => img.is_primary) || dbImages[0];
-      mainImgUrl = formatImageUrl(primary.image_url);
-      images = dbImages.map(img => img.image_url);
-    } else {
-      images = p.image_url ? [p.image_url] : [];
-      try {
-        if (p.gallery_images) {
-          const parsed = JSON.parse(p.gallery_images);
-          if (Array.isArray(parsed)) images = images.concat(parsed);
-        }
-      } catch(e) {}
-      if (images.length === 0) images = [getProductFallbackImage(p)];
+    // ── GALLERY SOURCES (REQ 1, 6, 7) ─────────────────────────
+    // De-dupe while preserving upload order.
+    function tjUniqueImages(list) {
+      const seen = new Set();
+      const out = [];
+      (list || []).forEach(u => {
+        if (typeof u !== 'string') return;
+        const t = u.trim();
+        if (!t) return;
+        const key = (formatImageUrl(t) || t);
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push(t);
+      });
+      return out;
     }
 
-    // Store base product images so variation swap can restore them
+    // Parent gallery — strictly the images uploaded against the product.
+    let parentImages = [];
+    if (dbImages.length > 0) {
+      const ordered = dbImages.slice().sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+      const primaryIdx = ordered.findIndex(img => img.is_primary);
+      if (primaryIdx > 0) ordered.unshift(ordered.splice(primaryIdx, 1)[0]);
+      parentImages = tjUniqueImages(ordered.map(img => img.image_url));
+    } else {
+      const legacy = [];
+      if (p.image_url) legacy.push(p.image_url);
+      try {
+        if (p.gallery_images) {
+          const parsed = (typeof p.gallery_images === 'string') ? JSON.parse(p.gallery_images) : p.gallery_images;
+          if (Array.isArray(parsed)) parsed.forEach(u => legacy.push(typeof u === 'string' ? u : (u && (u.image_url || u.url))));
+        }
+      } catch (e) {}
+      parentImages = tjUniqueImages(legacy);
+    }
+    window.tjParentGalleryImages = parentImages.slice();
+
+    // Variation gallery — that variation's own images, from variation_images or variation's main image
+    let variationImages = [];
+    if (activeVariation) {
+      if (dbVarImages.length > 0) {
+        variationImages = tjUniqueImages(dbVarImages.map(img => img.image_url));
+      } else {
+        variationImages = tjUniqueImages(window.tjVariationImages(activeVariation));
+      }
+    }
+
+    // The gallery shows exactly one set. A variation with no images of its own
+    // falls back to the parent's — it never mixes.
+    let images = activeVariation && variationImages.length ? variationImages : parentImages;
+    if (images.length === 0) images = [getProductFallbackImage(p)];
+
     window.tjBaseGalleryImages = images.slice();
     tjGalleryRender(images, 0);
 
-    // Make gallery globally accessible for the variation engine.
-    // Only swap when the variation photo actually resolves to a loadable URL —
-    // otherwise keep the product gallery rather than showing a blank frame.
-    window.tjSwitchGalleryForVariation = function(varImgUrl) {
-      const base = window.tjBaseGalleryImages || [];
-      if (!varImgUrl || !formatImageUrl(varImgUrl)) { tjGalleryRender(base, 0); return; }
-      const combined = [varImgUrl].concat(base.filter(u => u !== varImgUrl));
-      tjGalleryRender(combined, 0);
-    };
+    // Kept for compatibility: variation selection no longer touches the gallery,
+    // because selecting a variation now navigates to that variation's own page.
+    window.tjSwitchGalleryForVariation = function() { /* intentionally inert — see REQ 1 */ };
+
+    // ── VARIATION-AWARE FIELDS (REQ 2, 7) ─────────────────────
+    const V = activeVariation;
+    const vHas = (key) => V && V[key] !== undefined && V[key] !== null && String(V[key]).trim() !== '';
+    const pick = (key, fallback) => vHas(key) ? V[key] : fallback;
+
+    const displayTitle = V ? (p.title + ' — ' + V.option_value) : p.title;
+    const vPrice = window.tjVariationPrice(V, p);
+
+    const bCrumb = document.getElementById('tj-pdp-breadcrumb');
+    if (bCrumb) {
+      bCrumb.innerHTML = `<a href="/">Home</a> &nbsp;/&nbsp; <a href="/?category=${p.category_slug || 'all'}">${catName}</a>` +
+        (V ? ` &nbsp;/&nbsp; <a href="/product/${p.slug || p.id}">${p.title}</a> &nbsp;/&nbsp; <span style="color: #1B4332; font-weight: 500;">${V.option_value}</span>`
+           : ` &nbsp;/&nbsp; <span style="color: #1B4332; font-weight: 500;">${p.title}</span>`);
+    }
 
     const catBadge = document.getElementById('tj-pdp-category-badge');
     if (catBadge) catBadge.textContent = catName;
     const titleEl = document.getElementById('tj-pdp-title');
-    if (titleEl) titleEl.textContent = p.title;
+    if (titleEl) titleEl.textContent = displayTitle;
     const priceEl = document.getElementById('tj-pdp-price');
-    if (priceEl) priceEl.textContent = '$' + parseFloat(p.price || 0).toFixed(2);
+    if (priceEl) priceEl.textContent = '$' + vPrice.price.toFixed(2);
 
     const compEl = document.getElementById('tj-pdp-compare-price');
     const badgeEl = document.getElementById('tj-pdp-discount-badge');
     if (compEl && badgeEl) {
-      if (p.compare_price && parseFloat(p.compare_price) > parseFloat(p.price)) {
-        compEl.textContent = '$' + parseFloat(p.compare_price).toFixed(2);
+      if (vPrice.compare && vPrice.compare > vPrice.price) {
+        compEl.textContent = '$' + vPrice.compare.toFixed(2);
         compEl.style.display = 'inline-block';
-        const off = Math.round((1 - parseFloat(p.price) / parseFloat(p.compare_price)) * 100);
-        badgeEl.textContent = off + '% OFF';
+        badgeEl.textContent = Math.round((1 - vPrice.price / vPrice.compare) * 100) + '% OFF';
         badgeEl.style.display = 'inline-block';
       } else {
         compEl.style.display = 'none';
@@ -7148,23 +7426,60 @@
       }
     }
 
+    // Determine variation-specific specifications (if available in JSON format or columns)
+    let activeSpecs = {};
+    if (V && V.specifications) {
+      try {
+        activeSpecs = typeof V.specifications === 'string' ? JSON.parse(V.specifications) : V.specifications;
+      } catch (e) {}
+    }
+
+    const getSpec = (key, fallback) => {
+      if (activeSpecs && activeSpecs[key] !== undefined && activeSpecs[key] !== null) {
+        return activeSpecs[key];
+      }
+      if (V && V[key] !== undefined && V[key] !== null && String(V[key]).trim() !== '') {
+        return V[key];
+      }
+      return fallback;
+    };
+
+    const displayMaterial = getSpec('material', p.material) || getSpec('Material', p.material);
+    const displayWeight = getSpec('weight', p.weight) || getSpec('Weight', p.weight);
+    const displayMoq = getSpec('moq', p.moq) || getSpec('MOQ', p.moq);
+
     const moqEl = document.getElementById('tj-pdp-moq');
-    if (moqEl) moqEl.textContent = (p.moq || 2) + ' pieces';
+    if (moqEl) moqEl.textContent = (displayMoq || 2) + ' pieces';
     const matEl = document.getElementById('tj-pdp-material');
-    if (matEl) matEl.textContent = p.material || 'Premium Alloy & Plating';
+    if (matEl) matEl.textContent = displayMaterial || 'Premium Alloy & Plating';
     const wEl = document.getElementById('tj-pdp-weight');
-    if (wEl) wEl.textContent = p.weight || 'Standard';
+    if (wEl) wEl.textContent = displayWeight || 'Standard';
 
     const shortEl = document.getElementById('tj-pdp-short-desc');
-    if (shortEl) shortEl.textContent = p.short_description || 'A timeless, meticulously crafted masterpiece designed for elegance and durability. Available exclusively for our wholesale partners.';
-    
+    if (shortEl) shortEl.textContent = pick('short_description', p.short_description) || 'A timeless, meticulously crafted masterpiece designed for elegance and durability. Available exclusively for our wholesale partners.';
+
     const fullEl = document.getElementById('tj-pdp-full-desc');
-    if (fullEl) fullEl.textContent = p.description || 'Elevate your jewelry collection with this exquisite piece. Designed with absolute precision by master craftsmen, it offers unparalleled shine and longevity. Our rigorous quality control ensures that each item meets international premium standards, making it perfect for your retail storefront.\n\nAll our pieces undergo rigorous hypoallergenic testing and are guaranteed skin-friendly, giving your customers the ultimate comfort and confidence.';
+    if (fullEl) fullEl.textContent = pick('description', p.description) || 'Elevate your jewelry collection with this exquisite piece. Designed with absolute precision by master craftsmen, it offers unparalleled shine and longevity. Our rigorous quality control ensures that each item meets international premium standards, making it perfect for your retail storefront.\n\nAll our pieces undergo rigorous hypoallergenic testing and are guaranteed skin-friendly, giving your customers the ultimate comfort and confidence.';
 
     const tblMat = document.getElementById('tj-pdp-table-material');
-    if (tblMat) tblMat.textContent = p.material || 'Premium Gold Plated Alloy';
+    if (tblMat) tblMat.textContent = displayMaterial || 'Premium Gold Plated Alloy';
     const tblMoq = document.getElementById('tj-pdp-table-moq');
-    if (tblMoq) tblMoq.textContent = (p.moq || 2) + ' Units Minimum';
+    if (tblMoq) tblMoq.textContent = (displayMoq || 2) + ' Units Minimum';
+
+    // Page metadata + canonical follow the variation (REQ 2).
+    try {
+      const metaTitle = pick('meta_title', null) || (displayTitle + ' | Tassina Jewels');
+      document.title = metaTitle;
+      const metaDesc = pick('meta_description', p.meta_description) ||
+                       pick('short_description', p.short_description) || '';
+      let mdEl = document.querySelector('meta[name="description"]');
+      if (!mdEl) { mdEl = document.createElement('meta'); mdEl.setAttribute('name', 'description'); document.head.appendChild(mdEl); }
+      if (metaDesc) mdEl.setAttribute('content', String(metaDesc).slice(0, 300));
+
+      let linkEl = document.querySelector('link[rel="canonical"]');
+      if (!linkEl) { linkEl = document.createElement('link'); linkEl.setAttribute('rel', 'canonical'); document.head.appendChild(linkEl); }
+      linkEl.setAttribute('href', window.location.origin + window.tjVariantUrl(p, V));
+    } catch (e) {}
 
     const featWrap = document.getElementById('tj-pdp-features');
     if (featWrap) {
@@ -7175,266 +7490,58 @@
         <li><strong>Versatile Elegance:</strong> Perfect for both high-end events and daily chic styles.</li>
       `;
     }
-    const varWrap = document.getElementById('tj-pdp-variants-wrap');
-    const varBox = document.getElementById('tj-pdp-variants');
-    
-    // Clear selected variation initially
-    window.tjSelectedVariation = null;
-    
-    // Function to reset/set base product pricing, SKU and stock status
-    const resetPdpBaseInfo = () => {
-      const priceEl = document.getElementById('tj-pdp-price');
-      if (priceEl) priceEl.textContent = '$' + parseFloat(p.price || 0).toFixed(2);
-      
-      const compEl = document.getElementById('tj-pdp-compare-price');
-      const badgeEl = document.getElementById('tj-pdp-discount-badge');
-      if (compEl && badgeEl) {
-        if (p.compare_price && parseFloat(p.compare_price) > parseFloat(p.price)) {
-          compEl.textContent = '$' + parseFloat(p.compare_price).toFixed(2);
-          compEl.style.display = 'inline-block';
-          const off = Math.round((1 - parseFloat(p.price) / parseFloat(p.compare_price)) * 100);
-          badgeEl.textContent = off + '% OFF';
-          badgeEl.style.display = 'inline-block';
-        } else {
-          compEl.style.display = 'none';
-          badgeEl.style.display = 'none';
-        }
-      }
-      
-      const skuWrap = document.getElementById('tj-pdp-sku-wrap');
-      const skuEl = document.getElementById('tj-pdp-sku');
-      if (skuWrap && skuEl) {
-        if (p.sku) {
-          skuEl.textContent = p.sku;
-          skuWrap.style.display = 'block';
-        } else {
-          skuWrap.style.display = 'none';
-        }
-      }
-      
-      const stockDot = document.getElementById('tj-pdp-stock-dot');
-      const stockText = document.getElementById('tj-pdp-stock-text');
-      if (stockDot && stockText) {
-        const isOutOfStock = p.stock_status === 'out_of_stock' || (p.stock_quantity !== undefined && p.stock_quantity !== null && p.stock_quantity <= 0);
-        if (isOutOfStock) {
-          stockDot.style.background = '#e63946';
-          stockText.textContent = 'Out of Stock / Special Order Only';
-          stockText.parentElement.style.color = '#e63946';
-        } else {
-          stockDot.style.background = '#0f9d58';
-          stockText.textContent = 'In Stock / Wholesale Ready';
-          stockText.parentElement.style.color = '#0f9d58';
-        }
-      }
-    };
-    
-    // Call reset initially
-    resetPdpBaseInfo();
-
-    // ─── VARIATION ENGINE ────────────────────────────────────
-    // Multi-attribute aware: each variation_name (Size, Metal, Length…) keeps its
-    // own selection, and the price / SKU / stock / image reflect the combined
-    // choice rather than whichever badge was tapped last.
-    window.tjSelectedVariations = {};
-    window.tjActiveVariations = [];
+    // ─── VARIATION OPTIONS ───────────────────────────────────
+    // Each option is a LINK to that variation's own page (REQ 2). Nothing is
+    // mutated in place any more: the page you are on is the variation you chose,
+    // so price / gallery / SKU / stock / copy can never drift out of sync.
 
     const tjMoney = (n) => '$' + parseFloat(n || 0).toFixed(2);
 
-    const tjVarOutOfStock = (v) =>
-      v.stock_status === 'out_of_stock' ||
-      (v.stock_quantity !== undefined && v.stock_quantity !== null && v.stock_quantity <= 0);
-
-    // Effective price of a variation, falling back to the base product.
-    const tjVarPrice = (v) => {
-      if (!v) return { price: parseFloat(p.price || 0), compare: p.compare_price ? parseFloat(p.compare_price) : null };
-      const hasSale = v.sale_price !== undefined && v.sale_price !== null && parseFloat(v.sale_price) > 0;
-      const base = (v.price !== undefined && v.price !== null && v.price !== '') ? parseFloat(v.price) : parseFloat(p.price || 0);
-      if (hasSale) return { price: parseFloat(v.sale_price), compare: base };
-      return { price: base, compare: p.compare_price ? parseFloat(p.compare_price) : null };
-    };
-
-    // Find an option's photo without assuming a single column name.
-    const TJ_VAR_IMG_KEYS = ['image_url', 'image', 'variation_image', 'variant_image',
-                             'img_url', 'img', 'photo', 'photo_url', 'thumbnail', 'thumb_url'];
-    const tjVarImage = (v) => {
-      if (!v) return null;
-      for (const k of TJ_VAR_IMG_KEYS) {
-        const val = v[k];
-        if (typeof val === 'string' && val.trim()) return val.trim();
-      }
-      // Some admins store an array or a JSON string of images.
-      for (const k of ['images', 'image_urls', 'gallery', 'gallery_images']) {
-        let val = v[k];
-        if (typeof val === 'string' && val.trim().startsWith('[')) {
-          try { val = JSON.parse(val); } catch (e) { val = null; }
-        }
-        if (Array.isArray(val) && val.length) {
-          const first = val[0];
-          if (typeof first === 'string' && first.trim()) return first.trim();
-          if (first && typeof first === 'object') {
-            for (const kk of TJ_VAR_IMG_KEYS) {
-              if (typeof first[kk] === 'string' && first[kk].trim()) return first[kk].trim();
-            }
-          }
-        }
-      }
-      return null;
-    };
-
-    // A colour-ish option value → render as a swatch instead of a text pill.
-    const TJ_SWATCHES = {
-      'gold': '#D4AF37', 'yellow gold': '#E6C068', 'rose gold': '#E0A899',
-      'white gold': '#E8E8E6', 'silver': '#C9C9C9', 'sterling silver': '#C9C9C9',
-      'platinum': '#DCE0E1', 'black': '#1c1c1c', 'white': '#f7f7f5',
-      'green': '#1B4332', 'emerald': '#0f6b4a', 'ruby': '#9b111e', 'red': '#9b111e',
-      'sapphire': '#0f52ba', 'blue': '#0f52ba', 'pearl': '#f2ece1', 'copper': '#b87333',
-      'bronze': '#cd7f32', 'rhodium': '#d6d9db'
-    };
-    const tjSwatchColor = (groupName, value) => {
-      const g = String(groupName || '').toLowerCase();
-      if (!/colou?r|metal|finish|plating|tone|stone/.test(g)) return null;
-      return TJ_SWATCHES[String(value || '').trim().toLowerCase()] || null;
-    };
-
-    // Apply the current combined selection to price / SKU / stock / image.
-    window.tjApplyVariationSelection = function() {
-      const chosen = Object.keys(window.tjSelectedVariations)
-        .map(k => window.tjSelectedVariations[k])
-        .filter(Boolean);
-
-      // Price: prefer the variation that actually carries pricing.
-      const priced = chosen.find(v => (v.sale_price && parseFloat(v.sale_price) > 0) ||
-                                      (v.price !== undefined && v.price !== null && v.price !== ''));
-      const { price: displayPrice, compare: comparePrice } = tjVarPrice(priced);
-
-      const priceEl = document.getElementById('tj-pdp-price');
-      const compEl = document.getElementById('tj-pdp-compare-price');
-      const discEl = document.getElementById('tj-pdp-discount-badge');
-      if (priceEl) priceEl.textContent = tjMoney(displayPrice);
-      if (compEl && discEl) {
-        if (comparePrice && comparePrice > displayPrice) {
-          compEl.textContent = tjMoney(comparePrice);
-          compEl.style.display = 'inline-block';
-          discEl.textContent = Math.round((1 - displayPrice / comparePrice) * 100) + '% OFF';
-          discEl.style.display = 'inline-block';
-        } else {
-          compEl.style.display = 'none';
-          discEl.style.display = 'none';
-        }
-      }
-
-      // SKU: most specific variation SKU wins, else the product SKU.
-      const skuWrap = document.getElementById('tj-pdp-sku-wrap');
-      const skuEl = document.getElementById('tj-pdp-sku');
-      if (skuWrap && skuEl) {
-        const withSku = chosen.filter(v => v.sku);
-        const activeSku = withSku.length ? withSku[withSku.length - 1].sku : p.sku;
-        if (activeSku) { skuEl.textContent = activeSku; skuWrap.style.display = 'block'; }
-        else { skuWrap.style.display = 'none'; }
-      }
-
-      // Stock: any sold-out attribute in the combination makes it unavailable.
-      const stockDot = document.getElementById('tj-pdp-stock-dot');
-      const stockText = document.getElementById('tj-pdp-stock-text');
-      const baseOut = p.stock_status === 'out_of_stock' ||
-        (p.stock_quantity !== undefined && p.stock_quantity !== null && p.stock_quantity <= 0);
-      const anyOut = chosen.some(tjVarOutOfStock);
-      const isOut = chosen.length ? anyOut : baseOut;
-      if (stockDot && stockText) {
-        stockDot.style.background = isOut ? '#e63946' : '#0f9d58';
-        stockText.textContent = isOut ? 'Out of Stock / Special Order Only' : 'In Stock / Wholesale Ready';
-        if (stockText.parentElement) stockText.parentElement.style.color = isOut ? '#e63946' : '#0f9d58';
-      }
-
-      // Low-stock nudge — a real B2B signal, not decoration.
-      const noteEl = document.getElementById('tj-pdp-variant-note');
-      if (noteEl) {
-        const lows = chosen.filter(v => !tjVarOutOfStock(v) &&
-          v.stock_quantity !== undefined && v.stock_quantity !== null &&
-          v.stock_quantity > 0 && v.stock_quantity <= 5);
-        if (lows.length) {
-          noteEl.textContent = 'Only ' + Math.min.apply(null, lows.map(v => v.stock_quantity)) + ' left in this option — larger runs made to order.';
-          noteEl.style.display = 'block';
-        } else {
-          noteEl.style.display = 'none';
-        }
-      }
-
-      // Swap the gallery when a chosen variation has its own image. Uses the
-      // tolerant lookup so it works whichever column the admin panel wrote to.
-      const withImg = chosen.filter(v => tjVarImage(v));
-      if (typeof window.tjSwitchGalleryForVariation === 'function') {
-        const varImg = withImg.length ? tjVarImage(withImg[withImg.length - 1]) : null;
-        window.tjSwitchGalleryForVariation(varImg);
-      } else if (withImg.length) {
-        // Fallback: simple swap if the gallery engine is not initialised yet
-        const mainImg = document.getElementById('tj-pdp-main-image');
-        const src = tjVarImage(withImg[withImg.length - 1]);
-        if (mainImg && src && formatImageUrl(src)) {
-          mainImg.src = window.tjImgSrc(src, p);
-          document.querySelectorAll('.tj-pdp-thumb').forEach(t => t.classList.remove('active'));
-        }
-      }
-
-      // Summary line per group + the string carried into the quotation.
-      Object.keys(window.tjSelectedVariations).forEach(g => {
-        const el = document.getElementById('tj-var-sel-' + tjSlugKey(g));
-        if (el) el.textContent = window.tjSelectedVariations[g] ? window.tjSelectedVariations[g].option_value : '';
-      });
-
-      window.tjSelectedVariation = chosen.length ? chosen[chosen.length - 1] : null;
-      window.tjSelectedVariationLabel = Object.keys(window.tjSelectedVariations)
-        .filter(g => window.tjSelectedVariations[g])
-        .map(g => g + ': ' + window.tjSelectedVariations[g].option_value)
-        .join(' · ');
-
-      // Book button reflects availability instead of silently failing.
-      const bookBtn = document.getElementById('tj-pdp-book-btn');
-      if (bookBtn) {
-        bookBtn.textContent = isOut ? 'Request Special Order' : 'Book Wholesale Order';
-      }
-    };
-
-    function tjSlugKey(str) {
-      return String(str || 'opt').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    // Stock line reflects whatever this page represents.
+    const stockDot = document.getElementById('tj-pdp-stock-dot');
+    const stockText = document.getElementById('tj-pdp-stock-text');
+    const pageOut = V
+      ? window.tjVariationOutOfStock(V)
+      : (p.stock_status === 'out_of_stock' ||
+         (p.stock_quantity !== undefined && p.stock_quantity !== null && Number(p.stock_quantity) <= 0));
+    if (stockDot && stockText) {
+      stockDot.style.background = pageOut ? '#e63946' : '#0f9d58';
+      stockText.textContent = pageOut ? 'Out of Stock / Special Order Only' : 'In Stock / Wholesale Ready';
+      if (stockText.parentElement) stockText.parentElement.style.color = pageOut ? '#e63946' : '#0f9d58';
     }
 
-    window.tjSelectVariationOptionByIndex = function(index, badgeEl) {
-      const v = window.tjActiveVariations ? window.tjActiveVariations[index] : null;
-      if (!v) return;
-      if (badgeEl && badgeEl.classList.contains('is-disabled')) return;
+    const skuWrap = document.getElementById('tj-pdp-sku-wrap');
+    const skuEl = document.getElementById('tj-pdp-sku');
+    if (skuWrap && skuEl) {
+      const activeSku = (V && V.sku) ? V.sku : p.sku;
+      if (activeSku) { skuEl.textContent = activeSku; skuWrap.style.display = 'block'; }
+      else { skuWrap.style.display = 'none'; }
+    }
 
-      const groupName = v.variation_name || 'Option';
-      window.tjSelectedVariations[groupName] = v;
+    // What the quotation should record for this page.
+    window.tjSelectedVariation = V || null;
+    window.tjSelectedVariationLabel = V ? ((V.variation_name || 'Option') + ': ' + V.option_value) : '';
 
-      if (badgeEl && badgeEl.parentElement) {
-        badgeEl.parentElement.querySelectorAll('.tj-pdp-variant-badge, .tj-pdp-variant-tile').forEach(b => {
-          b.classList.remove('active');
-          b.setAttribute('aria-checked', 'false');
-        });
-        badgeEl.classList.add('active');
-        badgeEl.setAttribute('aria-checked', 'true');
-      }
-      window.tjApplyVariationSelection();
-    };
+    const bookBtn0 = document.getElementById('tj-pdp-book-btn');
+    if (bookBtn0) bookBtn0.textContent = pageOut ? 'Request Special Order' : 'Book Wholesale Order';
 
-    // ─── RENDER OPTION GROUPS ────────────────────────────────
+    const varWrap = document.getElementById('tj-pdp-variants-wrap');
+    const varBox = document.getElementById('tj-pdp-variants');
+
     if (varWrap && varBox) {
-      let groupsSource = null;
-
-      if (dbVariations && dbVariations.length > 0) {
-        groupsSource = dbVariations;
-      } else {
-        // Legacy `variants` JSON column → normalise into the same shape so both
-        // paths get identical, fully-wired behaviour.
+      // Normalise the legacy `variants` JSON column into the same row shape so
+      // both storage styles render identically.
+      let source = dbVariations;
+      if (!source || !source.length) {
         let legacy = [];
         try {
           if (p.variants) legacy = typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants;
         } catch (e) {}
-        if (Array.isArray(legacy) && legacy.length > 0) {
-          groupsSource = legacy.map((v, i) => ({
-            id: 'legacy-' + i,
-            variation_name: (v && v.group) || (v && v.variation_name) || 'Option',
+        if (Array.isArray(legacy) && legacy.length) {
+          source = legacy.map((v, idx) => ({
+            id: 'legacy-' + idx,
+            product_id: p.id,
+            variation_name: (v && (v.group || v.variation_name)) || 'Option',
             option_value: (v && (v.name || v.value || v.option_value)) || String(v),
             price: v && v.price,
             sale_price: v && v.sale_price,
@@ -7442,68 +7549,56 @@
             stock_status: v && v.stock_status,
             stock_quantity: v && v.stock_quantity,
             image_url: v && (v.image_url || v.image),
-            display_order: i
+            display_order: idx
           }));
         }
       }
 
-      if (groupsSource && groupsSource.length > 0) {
+      const groups = window.tjGroupVariations(source || []);
+      const groupNames = Object.keys(groups);
+
+      if (!groupNames.length) {
+        varWrap.style.display = 'none';
+        varBox.innerHTML = '';
+      } else {
         varWrap.style.display = 'block';
-        window.tjActiveVariations = groupsSource;
-        window.tjSelectedVariations = {};
-
-        const groups = {};
-        groupsSource.forEach(v => {
-          const g = v.variation_name || 'Option';
-          if (!groups[g]) groups[g] = [];
-          groups[g].push(v);
-        });
-
         let html = '';
-        Object.keys(groups).forEach(groupName => {
-          const key = tjSlugKey(groupName);
+
+        groupNames.forEach(groupName => {
           const opts = groups[groupName];
-
-          // Pre-select the first in-stock option so price, SKU and stock are
-          // truthful the moment the page paints — no "tap something to find out".
-          const firstAvailable = opts.find(v => !tjVarOutOfStock(v)) || opts[0];
-          window.tjSelectedVariations[groupName] = firstAvailable;
-
-          // Amazon-style: if any option in this group has its own photo, render the
-          // whole group as image tiles with prices. Otherwise keep text pills.
-          const groupHasImages = opts.some(v => tjVarImage(v) && formatImageUrl(tjVarImage(v)));
+          const useTiles = opts.some(v => {
+            const img = window.tjVariationImage(v);
+            return img && formatImageUrl(img);
+          });
 
           html += '<div class="tj-pdp-variation-group">' +
-            '<div class="tj-pdp-variation-head">' +
-              '<h4 class="tj-pdp-variation-label">' + groupName + '</h4>' +
-              '<span class="tj-pdp-variation-selected" id="tj-var-sel-' + key + '"></span>' +
-            '</div>' +
-            '<div class="tj-pdp-variation-options' + (groupHasImages ? ' is-tiles' : '') + '" role="radiogroup" aria-label="' + groupName + '">' +
+            // Hidden from sight (REQ 3), still announced to screen readers.
+            '<div class="tj-pdp-variation-head"><h4 class="tj-pdp-variation-label">' + groupName + '</h4></div>' +
+            '<div class="tj-pdp-variation-options' + (useTiles ? ' is-tiles' : '') + '" role="group" aria-label="' + groupName + '">' +
               opts.map(v => {
-                const gi = groupsSource.findIndex(x => x.id === v.id);
-                const out = tjVarOutOfStock(v);
-                const isSel = (v === firstAvailable);
+                const out = window.tjVariationOutOfStock(v);
+                const isActive = !!(V && String(V.id) === String(v.id));
                 const label = String(v.option_value == null ? '' : v.option_value);
                 const safeLabel = label.replace(/"/g, '&quot;');
-                const pr = tjVarPrice(v);
+                const pr = window.tjVariationPrice(v, p);
+                const href = window.tjVariantUrl(p, v);
 
-                const handlers = out ? '' :
-                  ' onclick="tjSelectVariationOptionByIndex(' + gi + ', this)"' +
-                  ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();tjSelectVariationOptionByIndex(' + gi + ', this);}"';
-                const a11y =
-                  ' role="radio" tabindex="' + (out ? '-1' : '0') + '"' +
-                  ' aria-checked="' + (isSel && !out ? 'true' : 'false') + '"' +
-                  ' aria-disabled="' + (out ? 'true' : 'false') + '"' +
-                  ' title="' + safeLabel + (out ? ' — sold out' : '') + '"';
+                // A real anchor: middle-click, long-press and "open in new tab"
+                // all behave the way a shopper expects on a marketplace.
+                const attrs =
+                  ' href="' + href + '"' +
+                  ' onclick="return tjSelectVariant(event, \'' + href + '\')"' +
+                  ' title="' + safeLabel + (out ? ' — sold out' : '') + '"' +
+                  ' aria-current="' + (isActive ? 'true' : 'false') + '"' +
+                  (out ? ' aria-disabled="true"' : '');
 
-                // ── Image tile ──
-                if (groupHasImages) {
-                  const raw = tjVarImage(v);
+                if (useTiles) {
+                  const raw = window.tjVariationImage(v);
                   const src = raw ? window.tjImgSrc(raw, p) : window.tjImgSrc(p.image_url, p);
-                  const tcls = ['tj-pdp-variant-tile'];
-                  if (isSel && !out) tcls.push('active');
-                  if (out) tcls.push('is-disabled');
-                  return '<div class="' + tcls.join(' ') + '"' + a11y + handlers + '>' +
+                  const cls = ['tj-pdp-variant-tile'];
+                  if (isActive) cls.push('active');
+                  if (out) cls.push('is-disabled');
+                  return '<a class="' + cls.join(' ') + '"' + attrs + '>' +
                     '<div class="tj-tile-img-wrap">' +
                       '<img class="tj-tile-img" src="' + src + '" alt="' + safeLabel + '" loading="lazy" ' + window.tjImgFallbackAttr(p) + '>' +
                     '</div>' +
@@ -7511,43 +7606,28 @@
                     '<span class="tj-tile-price">' + tjMoney(pr.price) + '</span>' +
                     ((pr.compare && pr.compare > pr.price) ? '<span class="tj-tile-compare">' + tjMoney(pr.compare) + '</span>' : '') +
                     '<span class="tj-tile-label">' + label + '</span>' +
-                  '</div>';
+                  '</a>';
                 }
 
-                // ── Text pill / colour dot ──
-                const swatch = tjSwatchColor(groupName, label);
-                const basePrice = tjVarPrice(firstAvailable).price;
-                const thisPrice = pr.price;
+                const cls = ['tj-pdp-variant-badge'];
+                if (isActive) cls.push('active');
+                if (out) cls.push('is-disabled');
+                const basePrice = window.tjVariationPrice(V || opts[0], p).price;
                 let sub = '';
                 if (out) sub = '<span class="tj-variant-sub">Sold out</span>';
-                else if (Math.abs(thisPrice - basePrice) >= 0.01) {
-                  const d = thisPrice - basePrice;
+                else if (Math.abs(pr.price - basePrice) >= 0.01) {
+                  const d = pr.price - basePrice;
                   sub = '<span class="tj-variant-sub">' + (d > 0 ? '+' : '−') + tjMoney(Math.abs(d)) + '</span>';
                 }
-                const cls = ['tj-pdp-variant-badge'];
-                if (isSel && !out) cls.push('active');
-                if (out) cls.push('is-disabled');
-                if (swatch) cls.push('is-swatch');
-                const inner = swatch
-                  ? '<span class="tj-variant-swatch" style="background:' + swatch + '"></span>'
-                  : '<span class="tj-variant-value">' + label + '</span>' + sub;
-
-                return '<div class="' + cls.join(' ') + '"' + a11y + handlers + '>' + inner + '</div>';
+                return '<a class="' + cls.join(' ') + '"' + attrs + '>' +
+                  '<span class="tj-variant-value">' + label + '</span>' + sub +
+                '</a>';
               }).join('') +
             '</div>' +
           '</div>';
         });
 
-        html += '<p class="tj-pdp-variant-note" id="tj-pdp-variant-note" style="display:none;"></p>';
         varBox.innerHTML = html;
-        varBox.style.display = 'block';
-        window.tjApplyVariationSelection();
-      } else {
-        varWrap.style.display = 'none';
-        window.tjActiveVariations = [];
-        window.tjSelectedVariations = {};
-        window.tjSelectedVariation = null;
-        window.tjSelectedVariationLabel = '';
       }
     }
 
@@ -8130,7 +8210,113 @@
   }
 
   // ─── LOAD PRODUCTS ────────────────────────────────────────
-  // Fetch products from the network and refresh the in-memory + persistent caches.
+  // Every variation in the catalog, fetched once so the listing can show each
+  // variation as its own card without a query per product.
+  let _cachedVariations = null;
+  const TJ_VARIATIONS_KEY = 'tj_variations_cache_v1';
+
+  async function tjFetchVariationsFresh() {
+    if (!db) return null;
+    const { data, error } = await db.from('product_variations')
+      .select('*')
+      .order('display_order', { ascending: true });
+    if (error) { console.warn('[TJ] variations fetch failed:', error.message || error); return null; }
+    const list = data || [];
+    _cachedVariations = list;
+    window.tjAllVariations = list;
+    try { localStorage.setItem(TJ_VARIATIONS_KEY, JSON.stringify({ ts: Date.now(), data: list })); } catch (_e) {}
+    return list;
+  }
+
+  function tjLoadCachedVariations() {
+    try {
+      const l = JSON.parse(localStorage.getItem(TJ_VARIATIONS_KEY) || 'null');
+      if (l && Array.isArray(l.data) && (Date.now() - l.ts) < TJ_PRODUCTS_MAX_AGE) return l.data;
+    } catch (_e) {}
+    return null;
+  }
+
+  // Variations belonging to one product.
+  window.tjVariationsFor = function(productId) {
+    const all = _cachedVariations || window.tjAllVariations || [];
+    return all.filter(v => String(v.product_id) === String(productId));
+  };
+
+  // ── CATALOG EXPANSION (REQ 4) ─────────────────────────────
+  // Turn the parent catalog into listing entries. A parent with page-worthy
+  // variations is replaced by one card per variation — the parent itself is not
+  // listed, exactly like a marketplace listing each colour separately.
+  // Entries are product-shaped so the existing filter/sort/search pipeline works
+  // on them unchanged.
+  window.tjBuildCatalogEntries = function(products) {
+    const entries = [];
+    (products || []).forEach(p => {
+      const vars = window.tjVariationsFor(p.id);
+      const groups = window.tjGroupVariations(vars);
+      const pageWorthy = Object.keys(groups).filter(g => window.tjGroupIsPageWorthy(groups[g]));
+
+      if (!pageWorthy.length) {
+        entries.push(Object.assign({}, p, {
+          _entryId: String(p.id),
+          _isVariant: false,
+          _parentId: p.id,
+          _variation: null
+        }));
+        return;
+      }
+
+      // Only the FIRST page-worthy group drives the listing. Expanding a second
+      // group here would multiply cards combinatorially (4 colours x 3 sizes = 12),
+      // which is not how a marketplace lists products.
+      const groupName = pageWorthy[0];
+      groups[groupName].forEach(v => {
+        const pr = window.tjVariationPrice(v, p);
+        const vImg = window.tjVariationImage(v);
+        entries.push(Object.assign({}, p, {
+          _entryId: String(p.id) + '::' + String(v.id),
+          _isVariant: true,
+          _parentId: p.id,
+          _parentTitle: p.title,
+          _variation: v,
+          _variantKey: window.tjVariantKey(v),
+          // Card-facing overrides (REQ 4: variation's own image/price/name/stock)
+          title: p.title + ' — ' + v.option_value,
+          price: pr.price,
+          compare_price: pr.compare,
+          image_url: vImg || p.image_url,
+          sku: v.sku || p.sku,
+          stock_quantity: v.stock_quantity !== undefined && v.stock_quantity !== null ? v.stock_quantity : p.stock_quantity,
+          stock_status: v.stock_status || p.stock_status
+        }));
+      });
+    });
+    window.tjCatalogEntries = entries;
+    return entries;
+  };
+
+  // Rails (New Arrivals / Best Sellers) show one representative card per parent.
+  // The main grid lists every variation; a rail of four near-identical colours of
+  // the same ring would be noise, not merchandising.
+  window.tjEntriesOnePerParent = function(entries) {
+    const seen = new Set();
+    const out = [];
+    (entries || []).forEach(e => {
+      const key = String(e._parentId);
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push(e);
+    });
+    return out;
+  };
+
+  window.tjEntriesForParent = function(parentId) {
+    return (window.tjCatalogEntries || []).filter(e => String(e._parentId) === String(parentId));
+  };
+
+  window.tjFindEntry = function(entryId) {
+    return (window.tjCatalogEntries || []).find(e => e._entryId === String(entryId)) || null;
+  };
+
   async function tjFetchProductsFresh() {
     if (!db) return null;
     const { data, error } = await db.from('products')
@@ -8180,13 +8366,33 @@
 
       allProducts = fullProducts;
 
+      // Variations drive the listing (REQ 4), so they must be present before we
+      // expand. Cache-first for instant paint, then revalidate in the background.
+      if (!_cachedVariations) {
+        const cachedVars = tjLoadCachedVariations();
+        if (cachedVars) {
+          _cachedVariations = cachedVars;
+          window.tjAllVariations = cachedVars;
+          tjFetchVariationsFresh().then(fresh => {
+            if (fresh && JSON.stringify(fresh) !== JSON.stringify(cachedVars)) loadProducts();
+          }).catch(() => {});
+        } else {
+          await tjFetchVariationsFresh();
+        }
+      }
+
+      // Parent catalog stays intact in allProducts; the listing renders entries.
+      window.tjBuildCatalogEntries(allProducts);
+
       // Render sidebar filters dynamically based on active products in this category
       if (typeof renderSidebarFilters === 'function') {
         renderSidebarFilters();
       }
 
-      // Filter locally — instant, no network call
-      let filteredProducts = allProducts;
+      // Filter locally — instant, no network call.
+      // Entries are product-shaped, so every filter below works unchanged while
+      // each variation is treated as its own listing item.
+      let filteredProducts = window.tjCatalogEntries || allProducts;
       if (currentCategory !== 'all') {
         filteredProducts = filteredProducts.filter(p => isProductInCategory(p, currentCategory));
       }
@@ -8272,8 +8478,8 @@
       renderProducts(filteredProducts.slice(0, tjVisibleCount));
       renderLoadMore();
 
-      // Render New Arrivals (first 4 newest products)
-      const newArrivals = allProducts.slice(0, 4);
+      // Render New Arrivals (first 4 newest products, one card per product)
+      const newArrivals = window.tjEntriesOnePerParent(window.tjCatalogEntries || allProducts).slice(0, 4);
       renderNewArrivals(newArrivals);
 
       const sMap = window.tjStorefrontSettings || {};
@@ -8293,15 +8499,18 @@
             try {
               const ids = JSON.parse(sMap.bestsellers_products);
               if (Array.isArray(ids) && ids.length > 0) {
-                bestsellersFinal = allProducts.filter(p => ids.includes(p.id));
+                bestsellersFinal = window.tjEntriesOnePerParent(
+                  (window.tjCatalogEntries || allProducts).filter(e => ids.includes(e._parentId || e.id))
+                );
               }
             } catch (e) {
               console.error("Error parsing bestsellers_products:", e);
             }
           }
           if (bestsellersFinal.length === 0) {
-            const featuredSellers = allProducts.filter(p => p.featured);
-            bestsellersFinal = featuredSellers.length > 0 ? featuredSellers : allProducts.slice(0, 5);
+            const allEntries = window.tjEntriesOnePerParent(window.tjCatalogEntries || allProducts);
+            const featuredSellers = allEntries.filter(e => e.featured);
+            bestsellersFinal = featuredSellers.length > 0 ? featuredSellers : allEntries.slice(0, 5);
           }
           if (bestsellersFinal.length >= 1) {
             renderBestSellers(bestsellersFinal);
@@ -8847,14 +9056,17 @@
   // loadProducts() calls them inside a try/catch, so their absence threw a
   // silent ReferenceError and the grid stayed on skeletons forever.
 
+  // `p` is a catalog ENTRY: either a parent product or one of its variations.
+  // Clicking it opens that entry's own page (REQ 4).
   function tjProductCard(p) {
-    const globalIdx = allProducts.findIndex(ap => ap.id === p.id);
-    const detailAction = globalIdx !== -1 ? `openProductDetail(${globalIdx})` : '';
-    const bookAction = globalIdx !== -1 ? `openModalByIndex(${globalIdx})` : '';
+    const entryId = p._entryId || String(p.id);
+    const detailAction = `tjOpenEntry('${entryId}')`;
+    const bookAction = `tjBookEntry('${entryId}')`;
     const imgUrl = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
     const hasSale = p.compare_price && parseFloat(p.compare_price) > parseFloat(p.price);
     const saleBadge = hasSale ? '<span class="tj-sale-badge">Sale</span>' : '';
-    const isWishlisted = localStorage.getItem('tj_wl_' + p.id) === '1';
+    // Wishlist is keyed per entry so favouriting Gold does not light up Silver.
+    const isWishlisted = localStorage.getItem('tj_wl_' + entryId) === '1';
     const moq = p.moq || 2;
     const outOfStock = p.stock_status === 'out_of_stock' ||
       (p.stock_quantity !== undefined && p.stock_quantity !== null && p.stock_quantity <= 0);
@@ -8865,8 +9077,8 @@
           ${saleBadge}
           <img class="tj-product-image" src="${imgUrl}" alt="${(p.title || '').replace(/"/g, '&quot;')}" loading="lazy"
                onerror="this.onerror=null;this.src='${getProductFallbackImage(p)}'">
-          <button class="tj-card-wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" id="wl-btn-${p.id}"
-                  onclick="event.stopPropagation(); toggleWishlist('${p.id}', this)" title="Wishlist"
+          <button class="tj-card-wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" id="wl-btn-${entryId}"
+                  onclick="event.stopPropagation(); toggleWishlist('${entryId}', this)" title="Wishlist"
                   style="position:absolute;top:10px;right:10px;z-index:5;width:32px;height:32px;border-radius:50%;border:1px solid rgba(27,67,50,0.12);display:flex;align-items:center;justify-content:center;background:${isWishlisted ? 'var(--green)' : 'rgba(255,255,255,0.92)'};color:${isWishlisted ? 'var(--gold)' : 'var(--green)'};cursor:pointer;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(0,0,0,0.12);">
             <svg width="16" height="16" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
@@ -8948,11 +9160,11 @@
 
   // Shared card markup for the horizontal "bestseller" style rails.
   function tjRailCard(p, wlSuffix) {
-    const globalIdx = allProducts.findIndex(ap => ap.id === p.id);
-    const detailAction = globalIdx !== -1 ? `openProductDetail(${globalIdx})` : '';
-    const bookAction = globalIdx !== -1 ? `openModalByIndex(${globalIdx})` : '';
-    const imgUrl = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
-    const isWishlisted = localStorage.getItem('tj_wl_' + p.id) === '1';
+    const entryId = p._entryId || String(p.id);
+    const detailAction = `tjOpenEntry('${entryId}')`;
+    const bookAction = `tjBookEntry('${entryId}')`;
+    const imgUrl = window.tjImgSrc(p.image_url, p);
+    const isWishlisted = localStorage.getItem('tj_wl_' + entryId) === '1';
     const moq = p.moq || 2;
     return `
       <div class="tj-bestseller-card">
@@ -8968,8 +9180,8 @@
           <div class="tj-bestseller-price">$${parseFloat(p.price || 0).toFixed(2)}</div>
           <div style="display:flex;gap:8px;width:100%;margin-top:10px;">
             <button class="tj-product-btn" style="flex:1;margin-top:0;padding:8px;" onclick="event.stopPropagation(); ${bookAction}">Book Now</button>
-            <button class="tj-card-wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" id="wl-new-${p.id}${wlSuffix || ''}"
-                    onclick="event.stopPropagation(); toggleWishlist('${p.id}', this)" title="Wishlist"
+            <button class="tj-card-wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" id="wl-new-${entryId}${wlSuffix || ''}"
+                    onclick="event.stopPropagation(); toggleWishlist('${entryId}', this)" title="Wishlist"
                     style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:1px solid var(--green);background:${isWishlisted ? 'var(--green)' : 'transparent'};color:${isWishlisted ? 'var(--gold)' : 'var(--green)'};cursor:pointer;transition:all 0.3s;">
               <svg width="16" height="16" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
@@ -10236,27 +10448,66 @@
   };
 
   // ─── PRODUCT DETAIL OVERLAY ───────────────────────────────
-  window.openProductDetail = function(index) {
-    const p = allProducts[index];
-    if (!p) return;
-    
-    const slug = p.slug || p.id;
-    // Query-param URL on the home path — always loads on refresh (HTTP 200, no 404)
-    const target = '/?product=' + encodeURIComponent(slug);
+  // Navigate to a URL through the client router, falling back to a hard load.
+  function tjGoTo(target) {
     if (typeof window.tjIsClientRoutable === 'function' ? window.tjIsClientRoutable() : true) {
       window.history.pushState({}, '', target);
       window.renderPageViews();
+      window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
     } else {
       window.location.href = target;
     }
+  }
+
+  // Variation option click → navigate to that variation's page.
+  // Returns false to cancel the anchor's default only when we handled it here;
+  // ctrl/cmd/middle-click fall through so "open in new tab" still works.
+  window.tjSelectVariant = function(event, href) {
+    if (!event) { tjGoTo(href); return false; }
+    if (event.defaultPrevented) return false;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button === 1) return true;
+    event.preventDefault();
+    tjGoTo(href);
+    return false;
+  };
+
+  // Open a catalog entry. A variation entry opens its OWN page via ?variant=,
+  // so the URL is shareable and survives refresh (REQ 2).
+  window.tjOpenEntry = function(entryId) {
+    const e = window.tjFindEntry(entryId);
+    if (!e) { showToast('That piece is no longer available.'); return; }
+    const parent = allProducts.find(x => String(x.id) === String(e._parentId));
+    if (!parent) { showToast('Product not found.'); return; }
+    const target = window.tjVariantUrl(parent, e._variation);
+    tjGoTo(target);
+  };
+
+  // Book straight from a card, carrying the variation through to the quotation.
+  window.tjBookEntry = function(entryId) {
+    const e = window.tjFindEntry(entryId);
+    if (!e) { showToast('That piece is no longer available.'); return; }
+    const parent = allProducts.find(x => String(x.id) === String(e._parentId)) || e;
+    const label = e._isVariant && e._variation
+      ? (e._variation.variation_name || 'Option') + ': ' + e._variation.option_value
+      : '';
+    window.openModal(parent, { price: e.price, variationLabel: label, title: e.title });
+  };
+
+  window.openProductDetail = function(index) {
+    const p = allProducts[index];
+    if (!p) return;
+    tjGoTo(window.tjVariantUrl(p, null));
   };
 
   // ─── B2B QUOTATION MODAL ──────────────────────────────────
   window.tjModalProduct = null;
 
-  window.openModal = function(product) {
+  // opts (optional) lets a listing card state the variation explicitly instead of
+  // relying on whatever the product page happens to have selected.
+  window.openModal = function(product, opts) {
     const overlay = document.getElementById('tj-modal');
     if (!overlay) return;
+    opts = opts || {};
 
     window.tjModalProduct = product || null;
 
@@ -10275,17 +10526,22 @@
     const titleIn = document.getElementById('tj-product-title');
     const varIn = document.getElementById('tj-product-variation');
 
-    // Only carry the variation when the modal was opened from the product page
-    // for THAT product — otherwise we would attach a stale selection.
+    // An explicit label from a card wins. Otherwise carry the product page's
+    // selection, but only when the modal was opened from that same product page —
+    // attaching a stale selection to a different product would be worse than none.
     const onSamePdp = product && window.tjCurrentPdpProduct && window.tjCurrentPdpProduct.id === product.id;
-    const varLabel = onSamePdp ? (window.tjSelectedVariationLabel || '') : '';
+    const varLabel = (typeof opts.variationLabel === 'string' && opts.variationLabel)
+      ? opts.variationLabel
+      : (onSamePdp ? (window.tjSelectedVariationLabel || '') : '');
 
     if (product) {
       if (infoBox) infoBox.style.display = 'block';
-      if (titleEl) titleEl.textContent = product.title || 'Selected Piece';
+      if (titleEl) titleEl.textContent = opts.title || product.title || 'Selected Piece';
 
       let shown = parseFloat(product.price || 0);
-      if (onSamePdp) {
+      if (opts.price !== undefined && opts.price !== null) {
+        shown = parseFloat(opts.price);
+      } else if (onSamePdp) {
         const live = document.getElementById('tj-pdp-price');
         if (live && live.textContent) shown = parseFloat(live.textContent.replace(/[^0-9.]/g, '')) || shown;
       }
@@ -10297,7 +10553,7 @@
         else { varEl.style.display = 'none'; varEl.textContent = ''; }
       }
       if (idIn) idIn.value = product.id || '';
-      if (titleIn) titleIn.value = product.title || '';
+      if (titleIn) titleIn.value = opts.title || product.title || '';
       if (varIn) varIn.value = varLabel;
 
       const qty = overlay.querySelector('[name="quantity"]');

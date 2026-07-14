@@ -24,11 +24,25 @@ const EMPTY: Omit<Product, 'id' | 'created_at'> = {
   stock_quantity: 0, stock_status: 'in_stock',
 }
 
+const R2_PUBLIC = 'https://pub-17a03ed838cff7b48ee24c1876e145fc.r2.dev'
+
 function formatImageUrl(url: string | null): string {
   if (!url) return ''
-  if (url.includes('/dfix/')) {
-    const parts = url.split('/dfix/')
-    return `/api/image/dfix/${parts[1]}`
+  url = url.trim()
+  // Already a full HTTPS URL (including the R2 CDN itself) — return as-is
+  if (url.startsWith('https://')) return url
+  // Admin-uploaded R2 images stored as dfix/filename or /dfix/filename
+  if (url.includes('dfix/')) {
+    const parts = url.split('dfix/')
+    const filename = (parts[parts.length - 1] || '').split('?')[0].replace(/^\/+/, '')
+    if (filename) return `${R2_PUBLIC}/tape/dfix/${filename}`
+    return ''
+  }
+  // Localhost proxy URL baked in during dev — extract the dfix filename
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(url)) {
+    const m = url.match(/dfix\/([^?#]+)/)
+    if (m) return `${R2_PUBLIC}/tape/dfix/${m[1]}`
+    return url
   }
   return url
 }
@@ -52,6 +66,13 @@ export default function ProductsPage() {
   const [variations, setVariations] = useState<Variation[]>([])
   const [activeTab, setActiveTab] = useState<'basic' | 'gallery' | 'variations' | 'filters'>('basic')
   const dragItem = useRef<number | null>(null)
+
+  // Product picker state (for importing a product as a variation)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerSearch, setPickerSearch] = useState('')
+  const [pickerResults, setPickerResults] = useState<Product[]>([])
+  const [pickerLoading, setPickerLoading] = useState(false)
+  const [pickerGroupName, setPickerGroupName] = useState('Color')
   const dragOverItem = useRef<number | null>(null)
 
   const [search, setSearch] = useState('')
@@ -219,6 +240,41 @@ export default function ProductsPage() {
   function addVariation() { setVariations(prev => [...prev, { ...EMPTY_VARIATION, display_order: prev.length }]) }
   function updateVariation(idx: number, field: keyof Variation, val: string) { setVariations(prev => prev.map((v, i) => i === idx ? { ...v, [field]: val } : v)) }
   function removeVariation(idx: number) { setVariations(prev => prev.filter((_, i) => i !== idx)) }
+
+  async function searchPickerProducts(q: string) {
+    setPickerLoading(true)
+    let query = supabase.from('products').select('*').order('created_at', { ascending: false }).limit(30)
+    if (q.trim()) query = query.ilike('title', `%${q.trim()}%`)
+    const { data } = await query
+    setPickerResults(data || [])
+    setPickerLoading(false)
+  }
+
+  function openProductPicker() {
+    setPickerSearch('')
+    setPickerResults([])
+    setPickerOpen(true)
+    searchPickerProducts('')
+  }
+
+  function addVariationFromProduct(prod: Product) {
+    const newVar: Variation = {
+      ...EMPTY_VARIATION,
+      variation_name: pickerGroupName || 'Color',
+      option_value: prod.title,
+      price: String(prod.price || ''),
+      sale_price: '',
+      sku: prod.sku || '',
+      barcode: '',
+      stock_quantity: String(prod.stock_quantity ?? 0),
+      stock_status: prod.stock_status || 'in_stock',
+      image_url: prod.image_url || '',
+      description: prod.description || '',
+      display_order: variations.length,
+    }
+    setVariations(prev => [...prev, newVar])
+    setPickerOpen(false)
+  }
 
   async function uploadVariationImage(idx: number, file: File) {
     updateVariation(idx, '_uploading' as any, 'true')
@@ -492,9 +548,9 @@ export default function ProductsPage() {
                       <p className="text-xs font-medium text-gray-700">Product Variations</p>
                       <p className="text-[10px] text-gray-400 mt-0.5">Color · Size · Material · Weight · Length — unlimited groups &amp; values</p>
                     </div>
-                    <button onClick={addVariation} className="px-4 py-2 rounded-xl text-[10px] uppercase tracking-wider font-normal border flex items-center gap-2" style={{ borderColor: '#1B4332', color: '#1B4332' }}>
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                      Add Variation
+                    <button onClick={openProductPicker} className="px-4 py-2 rounded-xl text-[10px] uppercase tracking-wider font-normal border flex items-center gap-2" style={{ borderColor: '#E3BA45', color: '#92620a', background: '#fffbeb' }}>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h7" /></svg>
+                      + Import from Product
                     </button>
                   </div>
 
@@ -522,7 +578,7 @@ export default function ProductsPage() {
                   {variations.length === 0 ? (
                     <div className="border-2 border-dashed border-gray-200 rounded-2xl p-10 text-center">
                       <svg className="w-8 h-8 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
-                      <p className="text-xs text-gray-400">No variations yet. Click &quot;Add Variation&quot; to create Color, Size, Material options.</p>
+                      <p className="text-xs text-gray-400">No variations yet. Click <strong>&quot;+ Import from Product&quot;</strong> to pick existing products as Color, Size, or Style variations.</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -665,6 +721,87 @@ export default function ProductsPage() {
               <button onClick={save} disabled={saving || !form.title || !form.price} className="flex-1 py-2.5 rounded-xl text-[10px] uppercase tracking-widest font-normal disabled:opacity-60 transition-all" style={{ background: '#1B4332', color: '#E3BA45' }}>
                 {saving ? 'Saving...' : modal === 'add' ? 'Create Product' : 'Save Changes'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Product Picker Modal */}
+      {pickerOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl border border-gray-100">
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
+              <div>
+                <h3 className="text-sm font-normal uppercase tracking-wide" style={{ color: '#1B4332' }}>Import Product as Variation</h3>
+                <p className="text-[10px] text-gray-400 mt-0.5">Select an existing product to auto-fill variation fields</p>
+              </div>
+              <button onClick={() => setPickerOpen(false)} className="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-400">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            {/* Group name + search */}
+            <div className="px-6 pt-4 pb-3 space-y-3 shrink-0">
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-[10px] text-gray-400 mb-1 font-medium">Variation Group Name</label>
+                  <input
+                    value={pickerGroupName}
+                    onChange={e => setPickerGroupName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400"
+                    placeholder="Color / Size / Style"
+                  />
+                </div>
+              </div>
+              <div className="relative">
+                <input
+                  value={pickerSearch}
+                  onChange={e => { setPickerSearch(e.target.value); searchPickerProducts(e.target.value) }}
+                  placeholder="Search products by name..."
+                  className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400"
+                />
+                <svg className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              </div>
+            </div>
+
+            {/* Results list */}
+            <div className="flex-1 overflow-y-auto px-6 pb-6">
+              {pickerLoading ? (
+                <div className="flex items-center justify-center py-10">
+                  <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : pickerResults.length === 0 ? (
+                <div className="text-center py-10 text-xs text-gray-400">No products found</div>
+              ) : (
+                <div className="space-y-2">
+                  {pickerResults.map(prod => (
+                    <button
+                      key={prod.id}
+                      onClick={() => addVariationFromProduct(prod)}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-emerald-400 hover:bg-emerald-50/30 transition-all text-left group"
+                    >
+                      {prod.image_url ? (
+                        <img src={formatImageUrl(prod.image_url)} alt="" className="w-12 h-12 rounded-lg object-cover border border-gray-100 shrink-0" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-gray-50 border border-gray-100 shrink-0 flex items-center justify-center">
+                          <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01" /></svg>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium truncate" style={{ color: '#1B4332' }}>{prod.title}</div>
+                        <div className="flex items-center gap-3 mt-0.5">
+                          <span className="text-[10px] font-semibold" style={{ color: '#92620a' }}>${prod.price?.toFixed(2)}</span>
+                          {prod.sku && <span className="text-[10px] text-gray-400 font-mono">SKU: {prod.sku}</span>}
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${prod.stock_status === 'in_stock' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-500'}`}>
+                            {prod.stock_status === 'in_stock' ? 'In Stock' : 'Out of Stock'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-[10px] uppercase tracking-wider font-semibold text-emerald-700 opacity-0 group-hover:opacity-100 transition-all shrink-0">Select →</div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
