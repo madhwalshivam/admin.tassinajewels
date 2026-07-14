@@ -3971,7 +3971,7 @@
               <h2 id="tj-trending-title" style="font-size:20px; font-weight:700; color:#1B4332; font-family:var(--font-serif); margin:0 0 4px;">Trending Items</h2>
               <p style="font-size:11px; color:#666; margin:0; text-transform:uppercase; letter-spacing:1px;">Handpicked bestsellers this week</p>
             </div>
-            <a href="javascript:void(0)" onclick="filterByCategory('all'); document.getElementById('tj-products-section').scrollIntoView({behavior:'smooth'})" style="font-size:10px; font-weight:700; color:#1B4332; text-transform:uppercase; letter-spacing:1px; border:1px solid #1B4332; padding:6px 14px; border-radius:20px; text-decoration:none; white-space:nowrap;">View All</a>
+            
           </div>
           <div id="tj-trending-mobile" style="display:none; grid-template-columns:1fr 1fr; gap:12px;"></div>
           <div class="tj-slider-wrapper" id="tj-trending-desktop-wrap">
@@ -4188,7 +4188,7 @@
               <h2 id="tj-best-quality-title" style="font-size:20px; font-weight:700; color:#1B4332; font-family:var(--font-serif); margin:0 0 4px;">Best Quality</h2>
               <p id="tj-best-quality-subtitle" style="font-size:11px; color:#666; margin:0; text-transform:uppercase; letter-spacing:1px;">Premium handcrafted masterpieces</p>
             </div>
-            <a href="javascript:void(0)" id="tj-best-quality-more-btn" style="font-size:10px; font-weight:700; color:#1B4332; text-transform:uppercase; letter-spacing:1px; border:1px solid #1B4332; padding:6px 14px; border-radius:20px; text-decoration:none; white-space:nowrap;">View All</a>
+            
           </div>
           <div id="tj-best-quality-mobile" style="display:none; grid-template-columns:1fr 1fr; gap:12px;"></div>
           <div class="tj-slider-wrapper" id="tj-best-quality-desktop-wrap">
@@ -4353,10 +4353,14 @@
                   </div>
                   <div>
                     <span style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px;">Availability</span>
-                    <span style="font-size: 14px; font-weight: 600; color: #0f9d58; display: flex; align-items: center; gap: 4px;">
-                      <span style="width: 8px; height: 8px; border-radius: 50%; background: #0f9d58; display: inline-block;"></span>
-                      In Stock / Wholesale Ready
+                    <span id="tj-pdp-stock-status" style="font-size: 14px; font-weight: 600; color: #0f9d58; display: flex; align-items: center; gap: 4px;">
+                      <span id="tj-pdp-stock-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #0f9d58; display: inline-block;"></span>
+                      <span id="tj-pdp-stock-text">In Stock / Wholesale Ready</span>
                     </span>
+                  </div>
+                  <div id="tj-pdp-sku-wrap" style="display: none;">
+                    <span style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px;">Product SKU</span>
+                    <span id="tj-pdp-sku" style="font-size: 14px; font-weight: 600; color: #1B4332;"></span>
                   </div>
                 </div>
 
@@ -4630,11 +4634,13 @@
         </div>
         <div class="tj-selected-product" id="tj-selected-product-info">
           <strong id="tj-selected-title">Product Name</strong>
+          <div id="tj-selected-variation-display" style="font-size:11px;color:#1B4332;margin-top:2px;font-weight:600;display:none;"></div>
           <span id="tj-selected-price" style="color:#6b7280;font-size:12px;"></span>
         </div>
         <form id="tj-inquiry-form">
           <input type="hidden" id="tj-product-id" name="product_id">
           <input type="hidden" id="tj-product-title" name="product_title">
+          <input type="hidden" id="tj-product-variation" name="product_variation">
           <div class="tj-form-row">
             <div class="tj-form-group">
               <label class="tj-form-label">Full Name *</label>
@@ -5412,12 +5418,50 @@
         } catch(e) {}
       }
 
+      // Refresh category slider since settings are now loaded
+      if (typeof refreshShopByCategory === 'function') {
+        try { refreshShopByCategory(); } catch (e) {}
+      }
+
     } catch (err) {
       console.warn('Could not load storefront settings:', err);
     }
   }
 
+  // Refresh the Shop by Category deals-style slider based on settings and loaded categories
+  function refreshShopByCategory() {
+    try {
+      const sMapCat = window.tjStorefrontSettings || {};
+      const catOuter = document.getElementById('tj-shop-by-category-outer');
+      if (!catOuter) return;
 
+      if (sMapCat.shop_by_cat_active !== 'false') {
+        const catTitleEl = catOuter.querySelector('.tj-deal-main-title');
+        if (catTitleEl && sMapCat.shop_by_cat_title) {
+          catTitleEl.textContent = sMapCat.shop_by_cat_title;
+        }
+
+        let catsToShow = allCategories || [];
+        if (sMapCat.shop_by_cat_slugs) {
+          try {
+            const selectedSlugs = JSON.parse(sMapCat.shop_by_cat_slugs || '[]');
+            if (Array.isArray(selectedSlugs) && selectedSlugs.length > 0) {
+              catsToShow = catsToShow.filter(c => selectedSlugs.includes(c.slug));
+            }
+          } catch (e) {
+            console.error("Error parsing shop_by_cat_slugs:", e);
+          }
+        }
+
+        renderCategoryDealSlider(catsToShow);
+        catOuter.style.display = 'block';
+      } else {
+        catOuter.style.display = 'none';
+      }
+    } catch (err) {
+      console.error("Error in refreshShopByCategory:", err);
+    }
+  }
 
   // ─── LOAD CATEGORIES & SUBCATEGORIES ──────────────────────
   async function loadFilters() {
@@ -5488,28 +5532,7 @@
       renderQuickCategories(allCategories);
 
       // Render Shop by Category deals-style section (respects admin setting)
-      {
-        const sMapCat = window.tjStorefrontSettings || {};
-        if (sMapCat.shop_by_cat_active !== 'false') {
-          // Update title if set from admin
-          const catTitleEl = document.querySelector('#tj-shop-by-category-outer .tj-deal-main-title');
-          if (catTitleEl && sMapCat.shop_by_cat_title) catTitleEl.textContent = sMapCat.shop_by_cat_title;
-
-          // Filter by admin-selected slugs if any are set
-          let catsToShow = allCategories;
-          try {
-            const selectedSlugs = JSON.parse(sMapCat.shop_by_cat_slugs || '[]');
-            if (selectedSlugs.length > 0) {
-              catsToShow = allCategories.filter(c => selectedSlugs.includes(c.slug));
-            }
-          } catch(e) {}
-
-          renderCategoryDealSlider(catsToShow);
-        } else {
-          const catOuter = document.getElementById('tj-shop-by-category-outer');
-          if (catOuter) catOuter.style.display = 'none';
-        }
-      }
+      refreshShopByCategory();
 
       // Populate the "Select Collection" filter dropdown from product categories
       const selectEl = document.getElementById('tj-category-select');
@@ -6557,9 +6580,45 @@
     const bCrumb = document.getElementById('tj-pdp-breadcrumb');
     if (bCrumb) bCrumb.innerHTML = `<a href="/">Home</a> &nbsp;/&nbsp; <a href="/?category=${p.category_slug || 'all'}">${catName}</a> &nbsp;/&nbsp; <span style="color: #1B4332; font-weight: 500;">${p.title}</span>`;
 
+    window.tjCurrentPdpProduct = p;
+
+    // Fetch fresh database variations and images for the specific product
+    let dbImages = [];
+    let dbVariations = [];
+    if (db) {
+      try {
+        const [imagesRes, variationsRes] = await Promise.all([
+          db.from('product_images').select('*').eq('product_id', p.id).order('display_order', { ascending: true }),
+          db.from('product_variations').select('*').eq('product_id', p.id).order('display_order', { ascending: true })
+        ]);
+        if (!imagesRes.error && imagesRes.data) dbImages = imagesRes.data;
+        if (!variationsRes.error && variationsRes.data) dbVariations = variationsRes.data;
+      } catch (err) {
+        console.error('Error fetching variations/images:', err);
+      }
+    }
+
     const mainImg = document.getElementById('tj-pdp-main-image');
+    let mainImgUrl = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
+    
+    let images = [];
+    if (dbImages.length > 0) {
+      const primary = dbImages.find(img => img.is_primary) || dbImages[0];
+      mainImgUrl = formatImageUrl(primary.image_url);
+      images = dbImages.map(img => img.image_url);
+    } else {
+      images = p.image_url ? [p.image_url] : [];
+      try {
+        if (p.gallery_images) {
+          const parsed = JSON.parse(p.gallery_images);
+          if (Array.isArray(parsed)) images = images.concat(parsed);
+        }
+      } catch(e) {}
+      if (images.length === 0) images = [getProductFallbackImage(p)];
+    }
+
     if (mainImg) {
-      mainImg.src = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
+      mainImg.src = mainImgUrl;
       mainImg.alt = p.title;
       
       const imgWrap = document.getElementById('tj-pdp-main-image-wrap');
@@ -6580,16 +6639,6 @@
 
     const thumbWrap = document.getElementById('tj-pdp-thumbnails');
     if (thumbWrap) {
-      let images = p.image_url ? [p.image_url] : [];
-      try {
-        if (p.gallery_images) {
-          const parsed = JSON.parse(p.gallery_images);
-          if (Array.isArray(parsed)) images = images.concat(parsed);
-        }
-      } catch(e) {}
-      
-      if (images.length === 0) images = [getProductFallbackImage(p)];
-      
       thumbWrap.innerHTML = images.map((img, idx) => `
         <img src="${formatImageUrl(img)}" class="tj-pdp-thumb ${idx === 0 ? 'active' : ''}" onclick="document.getElementById('tj-pdp-main-image').src=this.src; document.querySelectorAll('.tj-pdp-thumb').forEach(t=>t.classList.remove('active')); this.classList.add('active');" alt="Thumbnail">
       `).join('');
@@ -6644,22 +6693,185 @@
         <li><strong>Versatile Elegance:</strong> Perfect for both high-end events and daily chic styles.</li>
       `;
     }
-    
     const varWrap = document.getElementById('tj-pdp-variants-wrap');
     const varBox = document.getElementById('tj-pdp-variants');
-    if (varWrap && varBox) {
-      let variants = [];
-      try {
-        if (p.variants) {
-          variants = typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants;
-        }
-      } catch(e) {}
+    
+    // Clear selected variation initially
+    window.tjSelectedVariation = null;
+    
+    // Function to reset/set base product pricing, SKU and stock status
+    const resetPdpBaseInfo = () => {
+      const priceEl = document.getElementById('tj-pdp-price');
+      if (priceEl) priceEl.textContent = '$' + parseFloat(p.price || 0).toFixed(2);
       
-      if (Array.isArray(variants) && variants.length > 0) {
+      const compEl = document.getElementById('tj-pdp-compare-price');
+      const badgeEl = document.getElementById('tj-pdp-discount-badge');
+      if (compEl && badgeEl) {
+        if (p.compare_price && parseFloat(p.compare_price) > parseFloat(p.price)) {
+          compEl.textContent = '$' + parseFloat(p.compare_price).toFixed(2);
+          compEl.style.display = 'inline-block';
+          const off = Math.round((1 - parseFloat(p.price) / parseFloat(p.compare_price)) * 100);
+          badgeEl.textContent = off + '% OFF';
+          badgeEl.style.display = 'inline-block';
+        } else {
+          compEl.style.display = 'none';
+          badgeEl.style.display = 'none';
+        }
+      }
+      
+      const skuWrap = document.getElementById('tj-pdp-sku-wrap');
+      const skuEl = document.getElementById('tj-pdp-sku');
+      if (skuWrap && skuEl) {
+        if (p.sku) {
+          skuEl.textContent = p.sku;
+          skuWrap.style.display = 'block';
+        } else {
+          skuWrap.style.display = 'none';
+        }
+      }
+      
+      const stockDot = document.getElementById('tj-pdp-stock-dot');
+      const stockText = document.getElementById('tj-pdp-stock-text');
+      if (stockDot && stockText) {
+        const isOutOfStock = p.stock_status === 'out_of_stock' || (p.stock_quantity !== undefined && p.stock_quantity !== null && p.stock_quantity <= 0);
+        if (isOutOfStock) {
+          stockDot.style.background = '#e63946';
+          stockText.textContent = 'Out of Stock / Special Order Only';
+          stockText.parentElement.style.color = '#e63946';
+        } else {
+          stockDot.style.background = '#0f9d58';
+          stockText.textContent = 'In Stock / Wholesale Ready';
+          stockText.parentElement.style.color = '#0f9d58';
+        }
+      }
+    };
+    
+    // Call reset initially
+    resetPdpBaseInfo();
+
+    // Bind variation selection function to window
+    window.tjSelectVariationOptionByIndex = function(index, badgeEl) {
+      const v = window.tjActiveVariations ? window.tjActiveVariations[index] : null;
+      if (!v) return;
+      
+      if (badgeEl && badgeEl.parentElement) {
+        badgeEl.parentElement.querySelectorAll('.tj-pdp-variant-badge').forEach(b => b.classList.remove('active'));
+        badgeEl.classList.add('active');
+      }
+      
+      window.tjSelectedVariation = v;
+      
+      const priceEl = document.getElementById('tj-pdp-price');
+      const compEl = document.getElementById('tj-pdp-compare-price');
+      const badgeElDiscount = document.getElementById('tj-pdp-discount-badge');
+      
+      let displayPrice = v.price || p.price;
+      let comparePrice = v.sale_price ? v.price : (p.compare_price || null);
+      if (v.sale_price && parseFloat(v.sale_price) > 0) {
+        displayPrice = v.sale_price;
+        comparePrice = v.price;
+      }
+      
+      if (priceEl) priceEl.textContent = '$' + parseFloat(displayPrice || 0).toFixed(2);
+      
+      if (compEl && badgeElDiscount) {
+        if (comparePrice && parseFloat(comparePrice) > parseFloat(displayPrice)) {
+          compEl.textContent = '$' + parseFloat(comparePrice).toFixed(2);
+          compEl.style.display = 'inline-block';
+          const off = Math.round((1 - parseFloat(displayPrice) / parseFloat(comparePrice)) * 100);
+          badgeElDiscount.textContent = off + '% OFF';
+          badgeElDiscount.style.display = 'inline-block';
+        } else {
+          compEl.style.display = 'none';
+          badgeElDiscount.style.display = 'none';
+        }
+      }
+      
+      const skuWrap = document.getElementById('tj-pdp-sku-wrap');
+      const skuEl = document.getElementById('tj-pdp-sku');
+      if (skuWrap && skuEl) {
+        const activeSku = v.sku || p.sku;
+        if (activeSku) {
+          skuEl.textContent = activeSku;
+          skuWrap.style.display = 'block';
+        } else {
+          skuWrap.style.display = 'none';
+        }
+      }
+      
+      const stockDot = document.getElementById('tj-pdp-stock-dot');
+      const stockText = document.getElementById('tj-pdp-stock-text');
+      if (stockDot && stockText) {
+        const isOutOfStock = v.stock_status === 'out_of_stock' || (v.stock_quantity !== undefined && v.stock_quantity !== null && v.stock_quantity <= 0);
+        if (isOutOfStock) {
+          stockDot.style.background = '#e63946';
+          stockText.textContent = 'Out of Stock / Special Order Only';
+          stockText.parentElement.style.color = '#e63946';
+        } else {
+          stockDot.style.background = '#0f9d58';
+          stockText.textContent = 'In Stock / Wholesale Ready';
+          stockText.parentElement.style.color = '#0f9d58';
+        }
+      }
+    };
+
+    if (varWrap && varBox) {
+      if (dbVariations && dbVariations.length > 0) {
         varWrap.style.display = 'block';
-        varBox.innerHTML = variants.map((v, i) => `<div class="tj-pdp-variant-badge ${i===0?'active':''}" onclick="document.querySelectorAll('.tj-pdp-variant-badge').forEach(b=>b.classList.remove('active')); this.classList.add('active');">${v.name || v}</div>`).join('');
+        window.tjActiveVariations = dbVariations;
+        
+        // Group by variation_name
+        const groups = {};
+        dbVariations.forEach(v => {
+          const groupName = v.variation_name || 'Option';
+          if (!groups[groupName]) groups[groupName] = [];
+          groups[groupName].push(v);
+        });
+        
+        let htmlContent = '';
+        Object.keys(groups).forEach(groupName => {
+          htmlContent += `
+            <div class="tj-pdp-variation-group" style="margin-bottom: 16px; width: 100%;">
+              <h4 style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #999; margin: 0 0 8px;">${groupName}</h4>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                ${groups[groupName].map((v) => {
+                  const globalIdx = dbVariations.findIndex(x => x.id === v.id);
+                  return `
+                    <div class="tj-pdp-variant-badge" onclick="tjSelectVariationOptionByIndex(${globalIdx}, this)">
+                      ${v.option_value}
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        });
+        varBox.innerHTML = htmlContent;
       } else {
-        varWrap.style.display = 'none';
+        // Fallback to legacy variants field
+        let legacyVariants = [];
+        try {
+          if (p.variants) {
+            legacyVariants = typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants;
+          }
+        } catch(e) {}
+        
+        if (Array.isArray(legacyVariants) && legacyVariants.length > 0) {
+          varWrap.style.display = 'block';
+          varBox.innerHTML = `
+            <div class="tj-pdp-variation-group" style="width: 100%;">
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                ${legacyVariants.map((v, i) => `
+                  <div class="tj-pdp-variant-badge ${i===0?'active':''}" onclick="document.querySelectorAll('.tj-pdp-variant-badge').forEach(b=>b.classList.remove('active')); this.classList.add('active');">
+                    ${v.name || v}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else {
+          varWrap.style.display = 'none';
+        }
       }
     }
 
@@ -6732,7 +6944,7 @@
         relGrid.innerHTML = '<div style="text-align:center;width:100%;padding:20px;color:#999;font-size:12px;">No related pieces currently available.</div>';
       }
     }
-  };
+  }
 
   window.addEventListener('popstate', () => {
     window.renderPageViews();
@@ -6757,6 +6969,99 @@
     }
     return 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?q=80&w=600&auto=format&fit=cover';
   }
+  window.getCategoryFallbackImage = getCategoryFallbackImage;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+
+
+
+
+
+
+
+
+
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   // ─── HELPER FUNCTIONS FOR NAVIGATION AND CONTACTS ─────────
   window.scrollSection = function(elementId, direction) {
@@ -7878,377 +8183,163 @@
     if (title.includes('ear') || cat.includes('ear') || title.includes('stud') || cat.includes('stud')) {
       return 'https://images.unsplash.com/photo-1635767798638-3e25273a8236?q=80&w=600&auto=format&fit=cover';
     }
-    return 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?q=80&w=600&auto=format&fit=cover';
-  }
 
-  // ─── RENDER BEST SELLERS ──────────────────────────────────
-  function renderBestSellers(products) {
-    const container = document.getElementById('tj-bestsellers-container');
-    if (!container) return;
 
-    if (products.length === 0) {
-      container.innerHTML = `<div style="text-align:center;width:100%;color:#9ca3af;font-size:12px;grid-column: span 5;">No best sellers currently available.</div>`;
-      return;
-    }
 
-    container.innerHTML = products.map((p) => {
-      const globalIdx = allProducts.findIndex(ap => ap.id === p.id);
-      const detailAction = globalIdx !== -1 ? `openProductDetail(${globalIdx})` : '';
-      const bookAction = globalIdx !== -1 ? `openModalByIndex(${globalIdx})` : `openModal(${JSON.stringify(p)})`;
-      const imgUrl = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
-      const wlKey = 'tj_wl_' + p.id;
-      const isWishlisted = localStorage.getItem(wlKey) === '1';
 
-      return `
-      <div class="tj-bestseller-card" onclick="${detailAction}" style="cursor:pointer;">
-        <div class="tj-bestseller-img-wrap">
-          <img class="tj-bestseller-img" src="${imgUrl}" alt="${p.title}" loading="lazy">
-          <button class="tj-card-wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" id="wl-btn-${p.id}" onclick="event.stopPropagation(); toggleWishlist('${p.id}', this)" title="Wishlist" style="position: absolute; top: 10px; right: 10px; z-index: 5; width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(27,67,50,0.12); display: flex; align-items: center; justify-content: center; background: ${isWishlisted ? 'var(--green)' : 'rgba(255,255,255,0.92)'}; color: ${isWishlisted ? 'var(--gold)' : 'var(--green)'}; cursor: pointer; transition: all 0.25s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.12);">
-            <svg width="16" height="16" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          </button>
-        </div>
-        <div class="tj-bestseller-info">
-          <div class="tj-stars">★★★★★</div>
-          <h3 class="tj-bestseller-title">${p.title}</h3>
-          <div class="tj-bestseller-desc">${p.category || 'Fine Jewelry'} &bull; MOQ: ${p.moq || 10} pcs</div>
-          <div class="tj-bestseller-price">$${parseFloat(p.price).toFixed(2)}</div>
-          <button class="tj-product-btn" onclick="event.stopPropagation();${bookAction}">Book Now</button>
-        </div>
-      </div>
-      `;
-    }).join('');
-  }
 
-  // ─── RENDER NEW ARRIVALS ──────────────────────────────────
-  function renderNewArrivals(products) {
-    const container = document.getElementById('tj-new-arrivals-container');
-    if (!container) return;
 
-    if (products.length === 0) {
-      container.innerHTML = `<div style="text-align:center;width:100%;color:#9ca3af;font-size:12px;grid-column: span 4;">No new arrivals currently available.</div>`;
-      return;
-    }
 
-    container.innerHTML = products.map((p) => {
-      const globalIdx = allProducts.findIndex(ap => ap.id === p.id);
-      const detailAction = globalIdx !== -1 ? `openProductDetail(${globalIdx})` : '';
-      const bookAction = globalIdx !== -1 ? `openModalByIndex(${globalIdx})` : `openModal(${JSON.stringify(p)})`;
-      const imgUrl = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
-      const wlKey = 'tj_wl_' + p.id;
-      const isWishlisted = localStorage.getItem(wlKey) === '1';
 
-      return `
-      <div class="tj-bestseller-card" onclick="${detailAction}" style="cursor:pointer;">
-        <div class="tj-star-badge" style="background:#E3BA45; color:#fff; font-size:10px; font-weight:700; padding:3px 8px; border-radius:0;">NEW</div>
-        <div class="tj-bestseller-img-wrap">
-          <img class="tj-bestseller-img" src="${imgUrl}" alt="${p.title}" loading="lazy">
-          <button class="tj-card-wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" id="wl-new-${p.id}" onclick="event.stopPropagation(); toggleWishlist('${p.id}', this)" title="Wishlist" style="position: absolute; top: 10px; right: 10px; z-index: 5; width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(27,67,50,0.12); display: flex; align-items: center; justify-content: center; background: ${isWishlisted ? 'var(--green)' : 'rgba(255,255,255,0.92)'}; color: ${isWishlisted ? 'var(--gold)' : 'var(--green)'}; cursor: pointer; transition: all 0.25s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.12);">
-            <svg width="16" height="16" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          </button>
-        </div>
-        <div class="tj-bestseller-info">
-          <div class="tj-stars">★★★★★</div>
-          <h3 class="tj-bestseller-title">${p.title}</h3>
-          <div class="tj-bestseller-desc">${p.category || 'Fine Jewelry'} &bull; MOQ: ${p.moq || 10} pcs</div>
-          <div class="tj-bestseller-price">$${parseFloat(p.price).toFixed(2)}</div>
-          <button class="tj-product-btn" onclick="event.stopPropagation();${bookAction}">Book Now</button>
-        </div>
-      </div>
-      `;
-    }).join('');
-  }
 
-  // ─── RENDER PRODUCTS ──────────────────────────────────────
-  function renderProducts(products) {
-    const grid = document.getElementById('tj-products-grid');
-    if (!grid) return;
 
-    if (products.length === 0) {
-      grid.innerHTML = `
-        <div class="tj-no-products">
-          <svg class="tj-no-products-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-          </svg>
-          <h3 class="tj-no-products-title">No Products Found</h3>
-          <p class="tj-no-products-desc">
-            No products are currently listed in this category. We are regularly adding new designs to our wholesale collection.
-          </p>
-          <button onclick="openModal(null)" style="padding:10px 24px;background:#1B4332;color:#E3BA45;border:none;border-radius:4px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1px;cursor:pointer;">
-            Send General Inquiry
-          </button>
-        </div>`;
-      return;
-    }
 
-    grid.innerHTML = products.map((p, idx) => {
-      const globalIdx = allProducts.findIndex(ap => ap.id === p.id);
-      const detailAction = globalIdx !== -1 ? `openProductDetail(${globalIdx})` : '';
-      const bookAction = globalIdx !== -1 ? `openModalByIndex(${globalIdx})` : `openModal(${JSON.stringify(p)})`;
-      const imgUrl = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
-      const wlKey = 'tj_wl_' + (p.id || idx);
-      const isWishlisted = localStorage.getItem(wlKey) === '1';
-      const moq = p.moq || 2;
-      
-      return `
-      <div class="tj-bestseller-card" onclick="${detailAction}" style="cursor:pointer;">
-        <div class="tj-star-badge">★</div>
-        <div class="tj-bestseller-img-wrap">
-          <img class="tj-bestseller-img" src="${imgUrl}" alt="${p.title}" loading="lazy">
-        </div>
-        <div class="tj-bestseller-info">
-          <div class="tj-stars">★★★★★</div>
-          <h3 class="tj-bestseller-title">${p.title}</h3>
-          <div class="tj-bestseller-desc">${p.category || 'Fine Jewelry'} &bull; MOQ: ${moq} pcs</div>
-          <div class="tj-bestseller-price">$${parseFloat(p.price || 0).toFixed(2)}${p.compare_at_price ? ` - $${parseFloat(p.compare_at_price).toFixed(2)}` : ''}</div>
-          <div style="display: flex; gap: 8px; width: 100%; margin-top: 10px;">
-            <button class="tj-product-btn" style="flex: 1; margin-top: 0; padding: 8px;" onclick="event.stopPropagation(); ${bookAction}">Book Now</button>
-            <button class="tj-card-wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" id="wl-btn-${p.id || idx}" onclick="event.stopPropagation(); toggleWishlist('${p.id || idx}', this)" title="Wishlist" style="width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--green); background: ${isWishlisted ? 'var(--green)' : 'transparent'}; color: ${isWishlisted ? 'var(--gold)' : 'var(--green)'}; cursor: pointer; transition: all 0.3s;">
-              <svg width="16" height="16" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-      `;
-    }).join('');
-  }
 
-  // ─── RENDER PAGINATION ────────────────────────────────────
-  function renderPagination(currentPage, totalPages) {
-    const container = document.getElementById('tj-products-pagination');
-    if (!container) return;
 
-    if (totalPages <= 1) {
-      container.innerHTML = '';
-      return;
-    }
 
-    let html = '';
 
-    // Previous Button
-    const prevDisabled = currentPage === 1;
-    html += `
-      <button onclick="${prevDisabled ? '' : `changeProductPage(${currentPage - 1})`}" 
-              class="tj-pagination-btn"
-              ${prevDisabled ? 'disabled' : ''}>
-        ‹
-      </button>
-    `;
 
-    // Page Numbers
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - 2);
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
-    if (endPage - startPage < maxVisiblePages - 1) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    if (startPage > 1) {
-      html += `
-        <button onclick="changeProductPage(1)" class="tj-pagination-btn">
-          1
-        </button>
-      `;
-      if (startPage > 2) {
-        html += `<span class="tj-pagination-ellipsis">...</span>`;
-      }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      const isActive = i === currentPage;
-      html += `
-        <button onclick="changeProductPage(${i})" 
-                class="tj-pagination-btn ${isActive ? 'active' : ''}">
-          ${i}
-        </button>
-      `;
-    }
-
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        html += `<span class="tj-pagination-ellipsis">...</span>`;
-      }
-      html += `
-        <button onclick="changeProductPage(${totalPages})" class="tj-pagination-btn">
-          ${totalPages}
-        </button>
-      `;
-    }
-
-    // Next Button
-    const nextDisabled = currentPage === totalPages;
-    html += `
-      <button onclick="${nextDisabled ? '' : `changeProductPage(${currentPage + 1})`}" 
-              class="tj-pagination-btn"
-              ${nextDisabled ? 'disabled' : ''}>
-        ›
-      </button>
-    `;
-
-    container.innerHTML = html;
-  }
-
-  // ─── RENDER "LOAD MORE" BUTTON (replaces numbered pagination) ──
-  function renderLoadMore() {
-    const container = document.getElementById('tj-products-pagination');
-    if (!container) return;
-    const total = tjCurrentFiltered.length;
-    if (total === 0 || tjVisibleCount >= total) {
-      container.innerHTML = '';
-      return;
-    }
-    const remaining = total - tjVisibleCount;
-    const nextBatch = Math.min(TJ_PAGE_SIZE, remaining);
-    container.innerHTML =
-      '<button type="button" class="tj-load-more-btn" onclick="tjLoadMore()">'
-      + 'Load More <span class="tj-load-more-count">(' + nextBatch + ' of ' + remaining + ')</span>'
-      + '</button>';
-  }
-
-  window.tjLoadMore = function() {
-    tjVisibleCount += TJ_PAGE_SIZE;
-    if (tjVisibleCount > tjCurrentFiltered.length) tjVisibleCount = tjCurrentFiltered.length;
-    renderProducts(tjCurrentFiltered.slice(0, tjVisibleCount));
-    renderLoadMore();
-  };
-
-  window.changeProductPage = function(pageNumber) {
-    const url = new URL(window.location);
-    url.searchParams.set('p', pageNumber);
-    window.history.pushState({}, '', url);
-    loadProducts();
-    const productsSection = document.getElementById('tj-products-section');
-    if (productsSection) {
-      productsSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
 
 
-  // ─── FILTER BY CATEGORY ───────────────────────────────────
-  window.filterByCategory = function(categorySlug) {
-    navigateToCategory(categorySlug);
-  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   // ─── FILTER BY SUBCATEGORY ────────────────────────────────
-  function filterBySubcategory(subcatId, btnEl) {
-    currentSubcategory = subcatId;
+
     
-    document.querySelectorAll('.tj-subfilter-btn').forEach(btn => {
-      btn.classList.remove('active');
-    });
-    btnEl.classList.add('active');
 
-    loadProducts();
-  }
 
-  // ─── MODAL CONTROLS ───────────────────────────────────────
-  let selectedProduct = null;
 
-  function openModalByIndex(index) {
-    const product = allProducts[index];
-    openModal(product);
-  }
 
-  function openModal(product) {
-    selectedProduct = product;
-    const modal = document.getElementById('tj-modal');
-    if (!modal) return;
+
+
+
+
     
-    document.getElementById('tj-form-content').style.display = 'block';
-    document.getElementById('tj-success-content').style.display = 'none';
-    document.getElementById('tj-inquiry-form').reset();
 
-    if (product) {
-      document.getElementById('tj-product-id').value = product.id || '';
-      document.getElementById('tj-product-title').value = product.title || '';
-      document.getElementById('tj-selected-title').textContent = product.title;
-      document.getElementById('tj-selected-price').textContent = `$${parseFloat(product.price).toFixed(2)} / piece`;
-    } else {
-      document.getElementById('tj-product-id').value = '';
-      document.getElementById('tj-product-title').value = 'General Inquiry';
-      document.getElementById('tj-selected-title').textContent = 'General Wholesale Inquiry';
-      document.getElementById('tj-selected-price').textContent = '';
-    }
 
-    modal.classList.add('open');
-    document.body.style.overflow = 'hidden';
-    return false;
-  }
 
-  function closeModal() {
-    const modal = document.getElementById('tj-modal');
-    if (modal) modal.classList.remove('open');
-    document.body.style.overflow = '';
-  }
 
-  // Close on overlay click
-  const modalOverlay = document.getElementById('tj-modal');
-  if (modalOverlay) {
-    modalOverlay.addEventListener('click', function(e) {
-      if (e.target === this) closeModal();
-    });
-  }
 
-  // ─── SUBMIT INQUIRY ──────────────────────────────────────
-  const inquiryForm = document.getElementById('tj-inquiry-form');
-  if (inquiryForm) {
-    inquiryForm.addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const btn = document.getElementById('tj-submit-btn');
-      btn.disabled = true;
-      btn.textContent = 'Submitting...';
 
-      const formData = new FormData(e.target);
-      const data = {
-        product_id: formData.get('product_id') || null,
-        product_title: formData.get('product_title') || 'General Inquiry',
-        name: formData.get('name'),
-        company: formData.get('company'),
-        email: formData.get('email'),
-        whatsapp: formData.get('whatsapp'),
-        quantity: parseInt(formData.get('quantity')) || null,
-        message: formData.get('message'),
-        status: 'pending'
-      };
 
-      const { error } = await db.from('inquiries').insert([data]);
+      
 
-      if (error) {
-        alert('Error submitting. Please try again.');
-        btn.disabled = false;
-        btn.textContent = 'Submit Inquiry';
-        return;
-      }
 
-      document.getElementById('tj-form-content').style.display = 'none';
-      document.getElementById('tj-success-content').style.display = 'block';
-    });
-  }
 
-  // ─── FAB SCROLL SHOW/HIDE ─────────────────────────────────
-  const floatInquireBtn = document.getElementById('tj-fab');
-  window.addEventListener('scroll', () => {
-    if (floatInquireBtn) {
-      if (window.scrollY > 300) {
-        floatInquireBtn.style.display = 'flex';
-      } else {
-        floatInquireBtn.style.display = 'none';
-      }
-    }
-  });
 
-  // ─── ACTIVE NAV ───────────────────────────────────────────
-  const path = window.location.pathname;
-  document.querySelectorAll('.tj-bottom-nav a').forEach(link => {
-    if (link.getAttribute('href') === path) link.classList.add('active');
-  });
+        
+
+
+
 
   // ─── INIT POLLING FOR SUPABASE READY ──────────────────────
 
@@ -8281,6 +8372,9 @@
     ]);
 
     window._tjSettingsLoaded = true;
+
+    // Refresh Category deals with settings loaded
+    try { refreshShopByCategory(); } catch (e) {}
 
     // Final, consistent render now that data is available (uses caches, no refetch).
     try { window.tjRenderNavbar(); } catch (e) {}
