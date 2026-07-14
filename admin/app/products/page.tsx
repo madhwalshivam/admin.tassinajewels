@@ -14,9 +14,9 @@ type FilterGroup = { id: string; name: string; slug: string; is_enabled: boolean
 type FilterValue = { id: string; filter_group_id: string; value: string }
 type CategoryFilter = { category_id: string; filter_group_id: string }
 type ProductImage = { id?: string; image_url: string; is_primary: boolean; display_order: number; alt_text?: string; _uploading?: boolean }
-type Variation = { id?: string; variation_name: string; option_value: string; price: string; sale_price: string; sku: string; stock_quantity: string; stock_status: string; display_order: number }
+type Variation = { id?: string; variation_name: string; option_value: string; price: string; sale_price: string; sku: string; barcode: string; stock_quantity: string; stock_status: string; image_url: string; description: string; display_order: number; _uploading?: boolean }
 
-const EMPTY_VARIATION: Variation = { variation_name: '', option_value: '', price: '', sale_price: '', sku: '', stock_quantity: '0', stock_status: 'in_stock', display_order: 0 }
+const EMPTY_VARIATION: Variation = { variation_name: '', option_value: '', price: '', sale_price: '', sku: '', barcode: '', stock_quantity: '0', stock_status: 'in_stock', image_url: '', description: '', display_order: 0 }
 
 const EMPTY: Omit<Product, 'id' | 'created_at'> = {
   title: '', description: '', price: 0, compare_price: null, image_url: null,
@@ -134,7 +134,7 @@ export default function ProductsPage() {
     const imgs: ProductImage[] = imgRes.data?.map(i => ({ id: i.id, image_url: i.image_url, is_primary: i.is_primary, display_order: i.display_order, alt_text: i.alt_text })) || []
     if (imgs.length === 0 && p.image_url) imgs.push({ image_url: p.image_url, is_primary: true, display_order: 0 })
     setGalleryImages(imgs)
-    const vars: Variation[] = varRes.data?.map(v => ({ id: v.id, variation_name: v.variation_name, option_value: v.option_value, price: String(v.price || ''), sale_price: String(v.sale_price || ''), sku: v.sku || '', stock_quantity: String(v.stock_quantity || '0'), stock_status: v.stock_status || 'in_stock', display_order: v.display_order })) || []
+    const vars: Variation[] = varRes.data?.map(v => ({ id: v.id, variation_name: v.variation_name, option_value: v.option_value, price: String(v.price || ''), sale_price: String(v.sale_price || ''), sku: v.sku || '', barcode: v.barcode || '', stock_quantity: String(v.stock_quantity || '0'), stock_status: v.stock_status || 'in_stock', image_url: v.image_url || '', description: v.description || '', display_order: v.display_order })) || []
     setVariations(vars)
   }
 
@@ -172,7 +172,7 @@ export default function ProductsPage() {
       const validImgs = galleryImages.filter(i => i.image_url && !i._uploading)
       if (validImgs.length > 0) await supabase.from('product_images').insert(validImgs.map((img, idx) => ({ product_id: productId, image_url: img.image_url, is_primary: img.is_primary, display_order: idx, alt_text: img.alt_text || '' })))
       await supabase.from('product_variations').delete().eq('product_id', productId)
-      if (variations.length > 0) await supabase.from('product_variations').insert(variations.map((v, idx) => ({ product_id: productId, variation_name: v.variation_name, option_value: v.option_value, price: v.price ? parseFloat(v.price) : null, sale_price: v.sale_price ? parseFloat(v.sale_price) : null, sku: v.sku || null, stock_quantity: parseInt(v.stock_quantity) || 0, stock_status: v.stock_status || 'in_stock', display_order: idx })))
+      if (variations.length > 0) await supabase.from('product_variations').insert(variations.map((v, idx) => ({ product_id: productId, variation_name: v.variation_name, option_value: v.option_value, price: v.price ? parseFloat(v.price) : null, sale_price: v.sale_price ? parseFloat(v.sale_price) : null, sku: v.sku || null, barcode: v.barcode || null, stock_quantity: parseInt(v.stock_quantity) || 0, stock_status: v.stock_status || 'in_stock', image_url: v.image_url || null, description: v.description || null, display_order: idx })))
     }
     showToast('Product saved!', { type: 'success' }); setModal(null); load(); setSaving(false)
   }
@@ -219,6 +219,18 @@ export default function ProductsPage() {
   function addVariation() { setVariations(prev => [...prev, { ...EMPTY_VARIATION, display_order: prev.length }]) }
   function updateVariation(idx: number, field: keyof Variation, val: string) { setVariations(prev => prev.map((v, i) => i === idx ? { ...v, [field]: val } : v)) }
   function removeVariation(idx: number) { setVariations(prev => prev.filter((_, i) => i !== idx)) }
+
+  async function uploadVariationImage(idx: number, file: File) {
+    updateVariation(idx, '_uploading' as any, 'true')
+    const formData = new FormData(); formData.append('file', file)
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (data.url) { updateVariation(idx, 'image_url', data.url) }
+      else showToast('Image upload failed', { type: 'error' })
+    } catch { showToast('Upload error', { type: 'error' }) }
+    updateVariation(idx, '_uploading' as any, '')
+  }
 
   async function del(id: string) {
     const confirmed = await showConfirm('Delete this product?')
@@ -478,56 +490,124 @@ export default function ProductsPage() {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <p className="text-xs font-medium text-gray-700">Product Variations</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">Each variation can have its own price, SKU, and stock</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">Color · Size · Material · Weight · Length — unlimited groups &amp; values</p>
                     </div>
                     <button onClick={addVariation} className="px-4 py-2 rounded-xl text-[10px] uppercase tracking-wider font-normal border flex items-center gap-2" style={{ borderColor: '#1B4332', color: '#1B4332' }}>
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                       Add Variation
                     </button>
                   </div>
+
+                  {/* Visual preview of grouped options (Amazon style) */}
+                  {variations.length > 0 && (() => {
+                    const groups: Record<string, Variation[]> = {}
+                    variations.forEach(v => { const g = v.variation_name || 'Option'; if (!groups[g]) groups[g] = []; groups[g].push(v) })
+                    return (
+                      <div className="mb-5 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
+                        <p className="text-[10px] uppercase tracking-wider font-semibold text-emerald-700 mb-3">Storefront Preview</p>
+                        {Object.entries(groups).map(([gName, opts]) => (
+                          <div key={gName} className="mb-3">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mr-3">{gName}:</span>
+                            {opts.map((o, i) => (
+                              <span key={i} className="inline-block text-[11px] font-semibold border-2 rounded-lg px-3 py-1 mr-2 mb-1" style={{ borderColor: o.stock_status === 'out_of_stock' ? '#e5e7eb' : '#1B4332', color: o.stock_status === 'out_of_stock' ? '#9ca3af' : '#1B4332', background: o.stock_status === 'out_of_stock' ? '#fafafa' : '#fff' }}>
+                                {o.option_value || '—'}{o.stock_status === 'out_of_stock' ? ' ✗' : ''}
+                              </span>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  })()}
+
                   {variations.length === 0 ? (
                     <div className="border-2 border-dashed border-gray-200 rounded-2xl p-10 text-center">
-                      <p className="text-xs text-gray-400">No variations yet. Add size, color, material options above.</p>
+                      <svg className="w-8 h-8 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+                      <p className="text-xs text-gray-400">No variations yet. Click &quot;Add Variation&quot; to create Color, Size, Material options.</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {variations.map((v, idx) => (
-                        <div key={idx} className="border border-gray-200 rounded-xl p-4 bg-gray-50/50">
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-500">Variation #{idx + 1}</span>
-                            <button onClick={() => removeVariation(idx)} className="text-red-400 hover:text-red-600 text-xs font-medium">Remove</button>
+                        <div key={idx} className="border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                          {/* Card header */}
+                          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
+                            <div className="flex items-center gap-2">
+                              <span className="w-5 h-5 rounded-full bg-emerald-700 text-white text-[9px] font-bold flex items-center justify-center">{idx + 1}</span>
+                              <span className="text-[11px] font-semibold text-gray-700">{v.variation_name || 'Variation'}: <span className="text-emerald-800">{v.option_value || 'Value'}</span></span>
+                            </div>
+                            <button onClick={() => removeVariation(idx)} className="text-[10px] text-red-400 hover:text-red-600 font-medium px-2 py-1 rounded-lg hover:bg-red-50 transition-all">✕ Remove</button>
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[10px] text-gray-400 mb-1">Variation Name *</label>
-                              <input value={v.variation_name} onChange={e => updateVariation(idx, 'variation_name', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 bg-white" placeholder="e.g. Size, Color" />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] text-gray-400 mb-1">Option Value *</label>
-                              <input value={v.option_value} onChange={e => updateVariation(idx, 'option_value', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 bg-white" placeholder="e.g. Small, Red, 18K" />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] text-gray-400 mb-1">Price</label>
-                              <input type="number" step="0.01" value={v.price} onChange={e => updateVariation(idx, 'price', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 bg-white" placeholder="Override price" />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] text-gray-400 mb-1">Sale Price</label>
-                              <input type="number" step="0.01" value={v.sale_price} onChange={e => updateVariation(idx, 'sale_price', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 bg-white" placeholder="Optional sale price" />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] text-gray-400 mb-1">SKU</label>
-                              <input value={v.sku} onChange={e => updateVariation(idx, 'sku', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 bg-white font-mono" placeholder="SKU-S-RED" />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] text-gray-400 mb-1">Stock Qty</label>
-                              <input type="number" value={v.stock_quantity} onChange={e => updateVariation(idx, 'stock_quantity', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 bg-white" />
-                            </div>
-                            <div className="col-span-2">
-                              <label className="block text-[10px] text-gray-400 mb-1">Stock Status</label>
-                              <select value={v.stock_status} onChange={e => updateVariation(idx, 'stock_status', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 bg-white">
-                                <option value="in_stock">In Stock</option>
-                                <option value="out_of_stock">Out of Stock</option>
-                              </select>
+
+                          <div className="p-4">
+                            <div className="grid grid-cols-12 gap-3">
+                              {/* Left: image */}
+                              <div className="col-span-3">
+                                <label className="block text-[10px] text-gray-400 mb-1.5 font-medium">Featured Image</label>
+                                <label className="block cursor-pointer">
+                                  <div className="aspect-square rounded-xl border-2 border-dashed border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center relative hover:border-emerald-400 transition-colors">
+                                    {v.image_url ? (
+                                      <>
+                                        <img src={formatImageUrl(v.image_url)} alt="" className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-all flex items-center justify-center opacity-0 hover:opacity-100">
+                                          <span className="text-white text-[10px] font-semibold">Change</span>
+                                        </div>
+                                      </>
+                                    ) : v._uploading ? (
+                                      <div className="w-5 h-5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                      <div className="text-center">
+                                        <svg className="w-6 h-6 mx-auto text-gray-300 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01" /></svg>
+                                        <span className="text-[9px] text-gray-400">Upload</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadVariationImage(idx, e.target.files[0])} />
+                                </label>
+                              </div>
+
+                              {/* Right: fields */}
+                              <div className="col-span-9 grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="block text-[10px] text-gray-400 mb-1">Group Name *</label>
+                                  <input value={v.variation_name} onChange={e => updateVariation(idx, 'variation_name', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400" placeholder="Color / Size / Material" />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-gray-400 mb-1">Option Value *</label>
+                                  <input value={v.option_value} onChange={e => updateVariation(idx, 'option_value', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400" placeholder="Gold / Large / 925 Silver" />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-gray-400 mb-1">Price (USD)</label>
+                                  <input type="number" step="0.01" value={v.price} onChange={e => updateVariation(idx, 'price', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400" placeholder="0.00" />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-gray-400 mb-1">Sale Price</label>
+                                  <input type="number" step="0.01" value={v.sale_price} onChange={e => updateVariation(idx, 'sale_price', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400" placeholder="Optional" />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-gray-400 mb-1">SKU</label>
+                                  <input value={v.sku} onChange={e => updateVariation(idx, 'sku', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 font-mono" placeholder="SKU-GLD-L" />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-gray-400 mb-1">Barcode</label>
+                                  <input value={v.barcode} onChange={e => updateVariation(idx, 'barcode', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 font-mono" placeholder="EAN/UPC" />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-gray-400 mb-1">Stock Qty</label>
+                                  <input type="number" value={v.stock_quantity} onChange={e => updateVariation(idx, 'stock_quantity', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400" />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-gray-400 mb-1">Status</label>
+                                  <select value={v.stock_status} onChange={e => updateVariation(idx, 'stock_status', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 bg-white">
+                                    <option value="in_stock">✓ In Stock</option>
+                                    <option value="out_of_stock">✗ Out of Stock</option>
+                                  </select>
+                                </div>
+                              </div>
+
+                              {/* Description spanning full width */}
+                              <div className="col-span-12">
+                                <label className="block text-[10px] text-gray-400 mb-1">Variation Description (optional)</label>
+                                <textarea value={v.description} onChange={e => updateVariation(idx, 'description', e.target.value)} rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 resize-none" placeholder="Specific details shown when customer selects this variation..." />
+                              </div>
                             </div>
                           </div>
                         </div>

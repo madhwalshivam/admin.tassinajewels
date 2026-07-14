@@ -47,8 +47,156 @@
   </script>
   <script async crossorigin='anonymous' src='{{shop.cdn_domain}}cuttlefish/v1/spz.min.js'></script>
 
-  <!-- Supabase JS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Supabase JS — resilient multi-CDN loader.
+       jsDelivr is intermittently blocked by some ISPs and by in-app browsers
+       (WhatsApp / Instagram WebView). A single <script src> there means the whole
+       storefront never boots. We try mirrors in order, then fall back to a tiny
+       REST client that talks to Supabase directly over fetch(). -->
+  <script>
+  (function () {
+    var CDNS = [
+      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+      'https://unpkg.com/@supabase/supabase-js@2',
+      'https://cdn.skypack.dev/@supabase/supabase-js@2',
+      'https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.39.7/umd/supabase.min.js'
+    ];
+    window._tjSupabaseSource = null;
+
+    function loadNext(i) {
+      if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+        window._tjSupabaseSource = 'cdn';
+        window._tjSupabaseReady = true;
+        return;
+      }
+      if (i >= CDNS.length) {
+        // Every CDN failed → install the built-in REST fallback so the catalog
+        // still renders. api.supabase.co itself is what actually matters.
+        installRestFallback();
+        return;
+      }
+      var el = document.createElement('script');
+      el.src = CDNS[i];
+      el.async = false;
+      var settled = false;
+      var timer = setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        try { el.parentNode && el.parentNode.removeChild(el); } catch (e) {}
+        loadNext(i + 1);
+      }, 6000);
+      el.onload = function () {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+          window._tjSupabaseSource = 'cdn';
+          window._tjSupabaseReady = true;
+        } else {
+          loadNext(i + 1);
+        }
+      };
+      el.onerror = function () {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        loadNext(i + 1);
+      };
+      document.head.appendChild(el);
+    }
+
+    // ── Minimal Supabase REST client (read + insert only) ──
+    // Enough to run the storefront: settings, categories, products, images,
+    // variations, reviews, inquiry insert. Auth degrades to a no-op stub.
+    function installRestFallback() {
+      function Builder(base, table, key) {
+        this._base = base; this._table = table; this._key = key;
+        this._filters = []; this._order = null; this._limit = null;
+        this._select = '*'; this._insert = null; this._single = false;
+      }
+      Builder.prototype.select = function (cols) { this._select = cols || '*'; return this; };
+      Builder.prototype.eq  = function (c, v) { this._filters.push(c + '=eq.' + encodeURIComponent(v)); return this; };
+      Builder.prototype.neq = function (c, v) { this._filters.push(c + '=neq.' + encodeURIComponent(v)); return this; };
+      Builder.prototype.gt  = function (c, v) { this._filters.push(c + '=gt.' + encodeURIComponent(v)); return this; };
+      Builder.prototype.lt  = function (c, v) { this._filters.push(c + '=lt.' + encodeURIComponent(v)); return this; };
+      Builder.prototype.in  = function (c, a) { this._filters.push(c + '=in.(' + a.map(encodeURIComponent).join(',') + ')'); return this; };
+      Builder.prototype.limit = function (n) { this._limit = n; return this; };
+      Builder.prototype.single = function () { this._single = true; return this; };
+      Builder.prototype.maybeSingle = function () { this._single = true; return this; };
+      Builder.prototype.order = function (col, opts) {
+        var asc = !(opts && opts.ascending === false);
+        this._order = col + '.' + (asc ? 'asc' : 'desc');
+        return this;
+      };
+      Builder.prototype.insert = function (rows) {
+        this._insert = Array.isArray(rows) ? rows : [rows];
+        return this;
+      };
+      Builder.prototype._url = function () {
+        var q = this._filters.slice();
+        if (!this._insert) q.unshift('select=' + encodeURIComponent(this._select));
+        if (this._order) q.push('order=' + this._order);
+        if (this._limit != null) q.push('limit=' + this._limit);
+        return this._base + '/rest/v1/' + this._table + (q.length ? '?' + q.join('&') : '');
+      };
+      Builder.prototype._run = function () {
+        var self = this;
+        var headers = {
+          'apikey': this._key,
+          'Authorization': 'Bearer ' + this._key,
+          'Content-Type': 'application/json'
+        };
+        var opts = { method: this._insert ? 'POST' : 'GET', headers: headers };
+        if (this._insert) {
+          opts.body = JSON.stringify(this._insert);
+          headers['Prefer'] = 'return=representation';
+        }
+        return fetch(this._url(), opts).then(function (r) {
+          return r.text().then(function (t) {
+            var body = null;
+            try { body = t ? JSON.parse(t) : null; } catch (e) { body = null; }
+            if (!r.ok) return { data: null, error: { message: (body && body.message) || ('HTTP ' + r.status), status: r.status } };
+            var d = body;
+            if (self._single) d = (Array.isArray(body) && body.length) ? body[0] : null;
+            return { data: d, error: null };
+          });
+        }).catch(function (e) {
+          return { data: null, error: { message: (e && e.message) || 'network error' } };
+        });
+      };
+      Builder.prototype.then = function (res, rej) { return this._run().then(res, rej); };
+      Builder.prototype.catch = function (rej) { return this._run().catch(rej); };
+
+      var noAuth = function () {
+        return Promise.resolve({ data: { user: null, session: null }, error: { message: 'Sign-in is unavailable in offline mode. Please open the store in your main browser.' } });
+      };
+
+      window.supabase = {
+        createClient: function (url, key) {
+          return {
+            _tjRest: true,
+            from: function (table) { return new Builder(url.replace(/\/$/, ''), table, key); },
+            auth: {
+              onAuthStateChange: function () { return { data: { subscription: { unsubscribe: function () {} } } }; },
+              getSession: function () { return Promise.resolve({ data: { session: null }, error: null }); },
+              getUser: function () { return Promise.resolve({ data: { user: null }, error: null }); },
+              signInWithPassword: noAuth,
+              signInWithOtp: noAuth,
+              signUp: noAuth,
+              signOut: function () { return Promise.resolve({ error: null }); },
+              resetPasswordForEmail: noAuth
+            }
+          };
+        }
+      };
+      window._tjSupabaseSource = 'rest-fallback';
+      window._tjSupabaseReady = true;
+      try { console.warn('[TJ] Supabase CDN unreachable — using built-in REST fallback.'); } catch (e) {}
+    }
+
+    window._tjInstallRestFallback = installRestFallback;
+    loadNext(0);
+  })();
+  </script>
 
   <!-- Swiper Slider CDN -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
@@ -3255,41 +3403,204 @@
     color: #1B4332;
   }
   .tj-pdp-thumb {
-    width: 70px;
-    height: 70px;
+    width: 72px;
+    height: 72px;
     object-fit: cover;
-    border-radius: 8px;
-    border: 2px solid transparent;
+    border-radius: 10px;
+    border: 2.5px solid transparent;
     cursor: pointer;
     background: #ffffff;
-    transition: all 0.25s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: all 0.22s ease;
     flex-shrink: 0;
   }
   .tj-pdp-thumb.active {
+    border-color: #1B4332;
+    box-shadow: 0 0 0 3px rgba(27,67,50,0.15);
+    transform: scale(1.06);
+  }
+  .tj-pdp-thumb:hover:not(.active) {
     border-color: #E3BA45;
-    transform: scale(1.03);
+    transform: scale(1.04);
   }
-  .tj-pdp-thumb:hover {
-    border-color: rgba(227, 186, 69, 0.5);
+  #tj-pdp-thumbnails::-webkit-scrollbar { display: none; }
+  /* ── Variant / option selector (PDP) ───────────────────────── */
+  .tj-pdp-variation-group { margin-bottom: 20px; width: 100%; }
+  .tj-pdp-variation-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 10px; margin: 0 0 9px;
   }
+  .tj-pdp-variation-label {
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.2px; color: #8a8578; margin: 0;
+  }
+  .tj-pdp-variation-selected {
+    font-size: 12px; font-weight: 600; color: #1B4332; letter-spacing: 0.2px;
+  }
+  .tj-pdp-variation-options { display: flex; gap: 9px; flex-wrap: wrap; }
+
   .tj-pdp-variant-badge {
-    padding: 8px 16px;
+    position: relative;
+    min-width: 52px;
+    padding: 10px 16px;
     background: #ffffff;
-    border: 1px solid rgba(27, 67, 50, 0.1);
+    border: 1.5px solid rgba(27, 67, 50, 0.14);
     color: #1B4332;
-    border-radius: 8px;
-    font-size: 12px;
+    border-radius: 10px;
+    font-size: 12.5px;
     font-weight: 600;
+    letter-spacing: 0.3px;
+    text-align: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    user-select: none;
+    transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
   }
+  .tj-pdp-variant-badge:hover:not(.active):not(.is-disabled) {
+    border-color: #E3BA45;
+    transform: translateY(-1px);
+  }
+  .tj-pdp-variant-badge:active:not(.is-disabled) { transform: translateY(0); }
   .tj-pdp-variant-badge.active {
     background: #1B4332;
     color: #E3BA45;
     border-color: #1B4332;
+    box-shadow: 0 0 0 3px rgba(227, 186, 69, 0.22);
   }
-  .tj-pdp-variant-badge:hover:not(.active) {
+  .tj-pdp-variant-badge:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(227, 186, 69, 0.45);
+  }
+
+  /* Sold-out options stay visible (they inform) but are clearly unselectable */
+  .tj-pdp-variant-badge.is-disabled {
+    cursor: not-allowed;
+    color: #b9b5ac;
+    background: #faf9f7;
+    border-color: rgba(27, 67, 50, 0.07);
+    border-style: dashed;
+  }
+  .tj-pdp-variant-badge.is-disabled .tj-variant-value { text-decoration: line-through; }
+
+  .tj-pdp-variant-badge .tj-variant-sub {
+    display: block;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    margin-top: 3px;
+    opacity: 0.72;
+  }
+  .tj-pdp-variant-badge.active .tj-variant-sub { opacity: 0.85; }
+
+  /* Colour-dot swatch (used when an option has a known colour but no photo) */
+  .tj-pdp-variant-badge.is-swatch {
+    min-width: 0; padding: 5px; border-radius: 50%;
+    width: 40px; height: 40px; display: inline-flex;
+    align-items: center; justify-content: center;
+  }
+  .tj-pdp-variant-badge.is-swatch .tj-variant-swatch {
+    width: 100%; height: 100%; border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+
+  /* ── Amazon-style image tiles ──────────────────────────────
+     When an option carries its own photo, show the photo + its price,
+     the way a buyer expects to pick a colour/metal on a marketplace. */
+  .tj-pdp-variation-options.is-tiles {
+    gap: 10px;
+  }
+  .tj-pdp-variant-tile {
+    position: relative;
+    width: 78px;
+    padding: 4px 4px 6px;
+    background: #ffffff;
+    border: 1.5px solid rgba(27, 67, 50, 0.14);
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    text-align: center;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
+  }
+  .tj-pdp-variant-tile:hover:not(.active):not(.is-disabled) {
     border-color: #E3BA45;
+    transform: translateY(-1px);
+  }
+  .tj-pdp-variant-tile.active {
+    border-color: #1B4332;
+    border-width: 2px;
+    padding: 3.5px 3.5px 5.5px;
+    box-shadow: 0 0 0 3px rgba(227, 186, 69, 0.22);
+  }
+  .tj-pdp-variant-tile:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(227, 186, 69, 0.45);
+  }
+  .tj-pdp-variant-tile .tj-tile-img-wrap {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 7px;
+    overflow: hidden;
+    background: #faf9f7;
+  }
+  .tj-pdp-variant-tile .tj-tile-img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .tj-pdp-variant-tile .tj-tile-price {
+    display: block;
+    margin-top: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #1B4332;
+    letter-spacing: 0.2px;
+    line-height: 1.25;
+  }
+  .tj-pdp-variant-tile .tj-tile-compare {
+    display: block;
+    font-size: 9.5px;
+    font-weight: 500;
+    color: #9b9689;
+    text-decoration: line-through;
+    line-height: 1.3;
+  }
+  .tj-pdp-variant-tile .tj-tile-label {
+    display: block;
+    margin-top: 3px;
+    font-size: 9.5px;
+    font-weight: 600;
+    color: #6f6b60;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Sold-out tiles: visible but plainly unavailable */
+  .tj-pdp-variant-tile.is-disabled {
+    cursor: not-allowed;
+    border-style: dashed;
+    border-color: rgba(27, 67, 50, 0.07);
+  }
+  .tj-pdp-variant-tile.is-disabled .tj-tile-img-wrap { opacity: 0.4; }
+  .tj-pdp-variant-tile.is-disabled .tj-tile-price { color: #b9b5ac; text-decoration: line-through; }
+  .tj-pdp-variant-tile .tj-tile-soldout {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-8deg);
+    background: rgba(255,255,255,0.94);
+    color: #8a8578;
+    font-size: 8px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    padding: 2px 6px; border-radius: 4px;
+    border: 1px solid rgba(27,67,50,0.12);
+    pointer-events: none;
+  }
+
+  @media (max-width: 480px) {
+    .tj-pdp-variant-tile { width: 68px; }
+    .tj-pdp-variant-tile .tj-tile-price { font-size: 10px; }
+  }
+
+  .tj-pdp-variant-note {
+    font-size: 11px; color: #8a8578; margin: 10px 0 0; line-height: 1.5;
   }
   /* PDP Back Arrow (premium circular) */
   .tj-pdp-back-btn {
@@ -3419,8 +3730,11 @@
       Slow connection detected — loading your catalog, please wait…
     </div>
     <div id="tj-preloader-error" style="display:none;margin-top:20px;text-align:center;max-width:300px;padding:0 24px;font-family:'Montserrat',sans-serif;">
-      <p style="color:rgba(255,255,255,0.85);font-size:13px;line-height:1.6;margin-bottom:16px;">We're having trouble loading the store. Please check your connection.</p>
-      <button onclick="window.location.reload()" style="background:#E3BA45;color:#1B4332;border:none;border-radius:8px;padding:10px 24px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;">Retry</button>
+      <p id="tj-preloader-error-msg" style="color:rgba(255,255,255,0.85);font-size:13px;line-height:1.6;margin-bottom:16px;">We're having trouble loading the store. Please check your connection.</p>
+      <button id="tj-preloader-retry-btn" onclick="window.tjRetryBoot && window.tjRetryBoot()" style="background:#E3BA45;color:#1B4332;border:none;border-radius:8px;padding:10px 24px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;">Retry</button>
+      <div style="margin-top:14px;">
+        <a href="#" onclick="window.tjOpenInBrowser && window.tjOpenInBrowser(); return false;" style="color:rgba(227,186,69,0.85);font-size:10.5px;letter-spacing:0.8px;text-decoration:underline;">Open in your browser instead</a>
+      </div>
     </div>
   </div>
   <script>
@@ -3452,14 +3766,39 @@
     };
 
     // Show an error state (with Retry) instead of hiding with incomplete content.
-    window.tjShowLoadError = function() {
+    window.tjShowLoadError = function(msg) {
       if (window._tjPreloaderDone) return;
       var dots = document.getElementById('tj-loader-dots');
       var slow = document.getElementById('tj-preloader-slow');
       var err = document.getElementById('tj-preloader-error');
+      var msgEl = document.getElementById('tj-preloader-error-msg');
+      var btn = document.getElementById('tj-preloader-retry-btn');
       if (dots) dots.style.display = 'none';
       if (slow) slow.style.opacity = '0';
+      if (msgEl && msg) msgEl.textContent = msg;
+      if (btn) { btn.disabled = false; btn.textContent = 'Retry'; btn.style.opacity = '1'; }
       if (err) err.style.display = 'block';
+    };
+
+    // Put the loader back into its "working" state before a retry attempt.
+    window.tjResetLoadError = function() {
+      var dots = document.getElementById('tj-loader-dots');
+      var err = document.getElementById('tj-preloader-error');
+      if (err) err.style.display = 'none';
+      if (dots) dots.style.display = '';
+    };
+
+    // In-app browsers (WhatsApp / Instagram WebView) block some CDNs and storage.
+    // Give the shopper a one-tap escape hatch to a real browser.
+    window.tjOpenInBrowser = function() {
+      var url = window.location.href;
+      try {
+        if (/android/i.test(navigator.userAgent)) {
+          window.location.href = 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;end';
+          return;
+        }
+      } catch (e) {}
+      window.open(url, '_blank');
     };
 
     // If the connection is slow, show a reassuring message (does NOT hide the loader).
@@ -3471,7 +3810,7 @@
     // state (retry) rather than leaving the user stuck forever.
     window._tjSafetyTimer = setTimeout(function () {
       if (!window._tjPreloaderDone) window.tjShowLoadError();
-    }, 40000);
+    }, 25000);
   </script>
   {% if template.type == '1' %}
     <script id='product-json' data-id='{{ product.id }}' type='application/json'>
@@ -4304,16 +4643,27 @@
           <!-- Product Main Block (Gallery + Info) -->
           <div class="tj-pdp-main-grid" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; margin-bottom: 48px; align-items: start;">
             
-            <!-- Left Side: Image Gallery -->
+            <!-- Left Side: Image Gallery (Amazon-style) -->
             <div class="tj-pdp-gallery-wrap" style="position: sticky; top: 100px;">
               <!-- Main Large Image with zoom support -->
-              <div class="tj-pdp-main-image-wrap" id="tj-pdp-main-image-wrap" style="width:100%; aspect-ratio: 1; border-radius: 16px; overflow: hidden; background: #ffffff; border: 1px solid rgba(27,67,50,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.02); position: relative; cursor: zoom-in;">
-                <img id="tj-pdp-main-image" src="" alt="" style="width:100%; height:100%; object-fit: cover; transition: transform 0.15s ease-out; transform-origin: center center;">
+              <div class="tj-pdp-main-image-wrap" id="tj-pdp-main-image-wrap" style="width:100%; aspect-ratio:1; border-radius:16px; overflow:hidden; background:#ffffff; border:1px solid rgba(27,67,50,0.05); box-shadow:0 4px 20px rgba(0,0,0,0.04); position:relative; cursor:zoom-in;">
+                <img id="tj-pdp-main-image" src="" alt="" style="width:100%; height:100%; object-fit:cover; transition:transform 0.18s ease-out; transform-origin:center center; user-select:none; -webkit-user-drag:none;">
+                <!-- Prev / Next arrows -->
+                <button id="tj-pdp-prev-btn" onclick="tjGalleryNav(-1)" aria-label="Previous" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.92); border:1px solid rgba(27,67,50,0.12); display:none; align-items:center; justify-content:center; cursor:pointer; z-index:4; box-shadow:0 2px 8px rgba(0,0,0,0.12); transition:all 0.2s;">
+                  <svg width="14" height="14" fill="none" stroke="#1B4332" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+                <button id="tj-pdp-next-btn" onclick="tjGalleryNav(1)" aria-label="Next" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.92); border:1px solid rgba(27,67,50,0.12); display:none; align-items:center; justify-content:center; cursor:pointer; z-index:4; box-shadow:0 2px 8px rgba(0,0,0,0.12); transition:all 0.2s;">
+                  <svg width="14" height="14" fill="none" stroke="#1B4332" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+                <!-- Image counter badge -->
+                <div id="tj-pdp-img-counter" style="position:absolute; bottom:10px; right:12px; background:rgba(0,0,0,0.45); color:#fff; font-size:10px; font-weight:600; padding:3px 9px; border-radius:20px; display:none; letter-spacing:0.5px;"></div>
               </div>
-              
-              <!-- Thumbnails Grid -->
-              <div class="tj-pdp-thumbnails" id="tj-pdp-thumbnails" style="display: flex; gap: 12px; margin-top: 16px; overflow-x: auto; padding-bottom: 4px;">
-                <!-- Dynamically loaded thumbnails -->
+
+              <!-- Thumbnail strip with scroll -->
+              <div style="position:relative; margin-top:14px;">
+                <div class="tj-pdp-thumbnails" id="tj-pdp-thumbnails" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; scroll-behavior:smooth; scrollbar-width:none;">
+                  <!-- Dynamically loaded thumbnails -->
+                </div>
               </div>
             </div>
 
@@ -4378,8 +4728,8 @@
 
               <!-- Available Variants / Custom Options -->
               <div id="tj-pdp-variants-wrap" style="margin-bottom: 24px; display: none;">
-                <h4 style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #999; margin: 0 0 10px;">Available Options</h4>
-                <div id="tj-pdp-variants" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+                <h4 style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #999; margin: 0 0 12px;">Select Your Specification</h4>
+                <div id="tj-pdp-variants"></div>
               </div>
             </div>
           </div>
@@ -5052,41 +5402,77 @@
     }
   } catch(_e) {}
 
+  // Resolve a stored image reference into something the live page can actually load.
+  // Returns '' when the URL cannot be made safe — callers treat '' as "use fallback",
+  // which is honest, rather than silently swapping in an unrelated picture.
   function formatImageUrl(url) {
     if (!url || typeof url !== 'string') return '';
-    
-    // If the image is already a secure remote URL (like Cloudinary or Unsplash), return it as is
-    if (url.startsWith('https://')) {
-      return url;
-    }
-    
+    url = url.trim();
+    if (!url) return '';
+
+    // Already safe.
+    if (url.startsWith('https://')) return url;
+    if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+    // Protocol-relative → inherit the page protocol.
+    if (url.startsWith('//')) return window.location.protocol + url;
+
     const isPageSecure = window.location.protocol === 'https:';
-    const adminDomain = window.ADMIN_DOMAIN || 'http://localhost:3000';
-    
-    // Mixed content protection: fallback only if we are loading local images over secure HTTPS
-    if (isPageSecure && adminDomain.startsWith('http://localhost')) {
-      if (url.startsWith('http://localhost') || url.includes('dfix/')) {
-        return 'https://res.cloudinary.com/dxiasatlk/image/upload/v1783425078/Screenshot_20260707_171938_WhatsApp.jpg_nw1spq.jpg';
+    const rawAdmin = (window.ADMIN_DOMAIN || '').trim().replace(/\/+$/, '');
+    const adminIsUsable = !!rawAdmin && !/^https?:\/\/localhost/i.test(rawAdmin) && !/^https?:\/\/127\./.test(rawAdmin);
+
+    // Admin-hosted assets (private R2 bucket) must be proxied through the admin API.
+    if (url.includes('dfix/')) {
+      if (!adminIsUsable) {
+        // No admin domain configured (or settings have not loaded yet) — we cannot
+        // build a working URL. Say so instead of inventing one.
+        if (!window._tjWarnedAdminDomain) {
+          window._tjWarnedAdminDomain = true;
+          console.warn('[TJ] storefront_settings.admin_domain is not set — admin-hosted (dfix/) images cannot be resolved.');
+        }
+        return '';
       }
+      const parts = url.split('dfix/');
+      const filename = (parts[1] || '').split('?')[0];
+      const cleanFilename = filename.startsWith('/') ? filename.substring(1) : filename;
+      if (!cleanFilename) return '';
+      return rawAdmin + '/api/image/dfix/' + cleanFilename;
     }
 
-    let targetDomain = adminDomain;
-    if (url.startsWith('http://localhost:3000') && targetDomain !== 'http://localhost:3000') {
-      url = url.replace('http://localhost:3000', targetDomain);
+    // Localhost URLs baked in by the admin panel: rewrite to the real admin domain.
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(url)) {
+      if (!adminIsUsable) return '';
+      return url.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, rawAdmin);
     }
-    if (url.includes('dfix/')) {
-      const parts = url.split('dfix/');
-      const filename = parts[1].split('?')[0];
-      const cleanFilename = filename.startsWith('/') ? filename.substring(1) : filename;
-      
-      // Always proxy through the admin API because the direct R2 bucket is private (returns 401)
-      return `${targetDomain}/api/image/dfix/${cleanFilename}`;
+
+    // Plain http:// on an https:// page is blocked as mixed content. Try https,
+    // and let the element's onerror fall back if the host does not support it.
+    if (url.startsWith('http://')) {
+      return isPageSecure ? url.replace(/^http:\/\//i, 'https://') : url;
     }
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
+
+    // Root-relative or bare path against the admin domain.
+    if (url.startsWith('/')) return adminIsUsable ? rawAdmin + url : url;
+
     return url;
   }
+
+  // Single place that decides what a product image element should show, and what it
+  // should fall back to when the network or the URL lets us down.
+  window.tjImgSrc = function(rawUrl, productForFallback) {
+    const resolved = formatImageUrl(rawUrl);
+    if (resolved) return resolved;
+    return (typeof getProductFallbackImage === 'function' && productForFallback)
+      ? getProductFallbackImage(productForFallback)
+      : 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?q=80&w=600&auto=format&fit=cover';
+  };
+
+  // Inline onerror attribute: swap to the fallback once, never loop.
+  window.tjImgFallbackAttr = function(productForFallback) {
+    const fb = (typeof getProductFallbackImage === 'function' && productForFallback)
+      ? getProductFallbackImage(productForFallback)
+      : 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?q=80&w=600&auto=format&fit=cover';
+    return `onerror="this.onerror=null;this.src='${fb}'"`;
+  };
 
   window.renderHeroSlider = function(container, slides) {
     const isMobile = window.innerWidth <= 768;
@@ -6599,9 +6985,118 @@
     }
 
     const mainImg = document.getElementById('tj-pdp-main-image');
-    let mainImgUrl = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
-    
+
+    // ── GALLERY ENGINE ────────────────────────────────────────
+    window.tjGalleryImages = [];
+    window.tjGalleryIndex = 0;
+
+    function tjGalleryRender(images, startIdx) {
+      window.tjGalleryImages = images || [];
+      window.tjGalleryIndex = startIdx || 0;
+
+      const mainImg = document.getElementById('tj-pdp-main-image');
+      const thumbWrap = document.getElementById('tj-pdp-thumbnails');
+      const prevBtn = document.getElementById('tj-pdp-prev-btn');
+      const nextBtn = document.getElementById('tj-pdp-next-btn');
+      const counter = document.getElementById('tj-pdp-img-counter');
+
+      const imgs = window.tjGalleryImages;
+      const n = imgs.length;
+
+      if (!mainImg || n === 0) return;
+      mainImg.src = window.tjImgSrc(imgs[0], p);
+      mainImg.alt = p.title || '';
+      // Without this a dead URL leaves a broken-image icon on the hero slot.
+      mainImg.onerror = function () {
+        this.onerror = null;
+        this.src = getProductFallbackImage(p);
+      };
+
+      // Thumbnails
+      if (thumbWrap) {
+        if (n <= 1) {
+          thumbWrap.innerHTML = '';
+        } else {
+          thumbWrap.innerHTML = imgs.map((src, i) => {
+            const fsrc = window.tjImgSrc(src, p);
+            return `<img src="${fsrc}" class="tj-pdp-thumb${i === 0 ? ' active' : ''}" data-idx="${i}" onclick="tjGalleryGoTo(${i})" alt="Image ${i+1}" loading="lazy" ${window.tjImgFallbackAttr(p)}>`;
+          }).join('');
+        }
+      }
+
+      // Arrows
+      if (prevBtn) prevBtn.style.display = n > 1 ? 'flex' : 'none';
+      if (nextBtn) nextBtn.style.display = n > 1 ? 'flex' : 'none';
+      if (counter) { counter.textContent = '1 / ' + n; counter.style.display = n > 1 ? 'block' : 'none'; }
+
+      if (startIdx && startIdx > 0) tjGalleryGoTo(startIdx);
+    }
+
+    window.tjGalleryGoTo = function(idx) {
+      const imgs = window.tjGalleryImages;
+      if (!imgs || imgs.length === 0) return;
+      idx = ((idx % imgs.length) + imgs.length) % imgs.length;
+      window.tjGalleryIndex = idx;
+
+      const mainImg = document.getElementById('tj-pdp-main-image');
+      if (mainImg) {
+        mainImg.style.opacity = '0';
+        mainImg.style.transform = 'scale(0.97)';
+        setTimeout(() => {
+          mainImg.src = window.tjImgSrc(imgs[idx], p);
+          mainImg.style.opacity = '1';
+          mainImg.style.transform = 'scale(1)';
+        }, 120);
+        mainImg.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+      }
+
+      document.querySelectorAll('.tj-pdp-thumb').forEach((t, i) => {
+        t.classList.toggle('active', i === idx);
+        if (i === idx) t.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      });
+
+      const counter = document.getElementById('tj-pdp-img-counter');
+      if (counter) counter.textContent = (idx + 1) + ' / ' + imgs.length;
+    };
+
+    window.tjGalleryNav = function(dir) { tjGalleryGoTo(window.tjGalleryIndex + dir); };
+
+    // Swipe support on the main image
+    (function() {
+      const wrap = document.getElementById('tj-pdp-main-image-wrap');
+      if (!wrap) return;
+      let sx = 0;
+      wrap.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
+      wrap.addEventListener('touchend', e => {
+        const dx = e.changedTouches[0].clientX - sx;
+        if (Math.abs(dx) > 40) window.tjGalleryNav(dx < 0 ? 1 : -1);
+      }, { passive: true });
+    })();
+
+    // Desktop zoom on hover
+    (function() {
+      const imgWrap = document.getElementById('tj-pdp-main-image-wrap');
+      const mainImg = document.getElementById('tj-pdp-main-image');
+      if (!imgWrap || !mainImg) return;
+      imgWrap.addEventListener('mousemove', e => {
+        const rect = imgWrap.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        mainImg.style.transformOrigin = `${x}% ${y}%`;
+        mainImg.style.transform = 'scale(2)';
+        mainImg.style.transition = 'transform 0.1s ease-out';
+      });
+      imgWrap.addEventListener('mouseleave', () => {
+        mainImg.style.transform = 'scale(1)';
+        mainImg.style.transformOrigin = 'center center';
+        mainImg.style.transition = 'transform 0.25s ease';
+      });
+    })();
+
+    // Build image list from DB or fallback
     let images = [];
+    let mainImgUrl = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
+
     if (dbImages.length > 0) {
       const primary = dbImages.find(img => img.is_primary) || dbImages[0];
       mainImgUrl = formatImageUrl(primary.image_url);
@@ -6617,32 +7112,19 @@
       if (images.length === 0) images = [getProductFallbackImage(p)];
     }
 
-    if (mainImg) {
-      mainImg.src = mainImgUrl;
-      mainImg.alt = p.title;
-      
-      const imgWrap = document.getElementById('tj-pdp-main-image-wrap');
-      if (imgWrap) {
-        imgWrap.onmousemove = function(e) {
-          const rect = imgWrap.getBoundingClientRect();
-          const x = ((e.clientX - rect.left) / rect.width) * 100;
-          const y = ((e.clientY - rect.top) / rect.height) * 100;
-          mainImg.style.transformOrigin = `${x}% ${y}%`;
-          mainImg.style.transform = 'scale(1.8)';
-        };
-        imgWrap.onmouseleave = function() {
-          mainImg.style.transform = 'scale(1)';
-          mainImg.style.transformOrigin = 'center center';
-        };
-      }
-    }
+    // Store base product images so variation swap can restore them
+    window.tjBaseGalleryImages = images.slice();
+    tjGalleryRender(images, 0);
 
-    const thumbWrap = document.getElementById('tj-pdp-thumbnails');
-    if (thumbWrap) {
-      thumbWrap.innerHTML = images.map((img, idx) => `
-        <img src="${formatImageUrl(img)}" class="tj-pdp-thumb ${idx === 0 ? 'active' : ''}" onclick="document.getElementById('tj-pdp-main-image').src=this.src; document.querySelectorAll('.tj-pdp-thumb').forEach(t=>t.classList.remove('active')); this.classList.add('active');" alt="Thumbnail">
-      `).join('');
-    }
+    // Make gallery globally accessible for the variation engine.
+    // Only swap when the variation photo actually resolves to a loadable URL —
+    // otherwise keep the product gallery rather than showing a blank frame.
+    window.tjSwitchGalleryForVariation = function(varImgUrl) {
+      const base = window.tjBaseGalleryImages || [];
+      if (!varImgUrl || !formatImageUrl(varImgUrl)) { tjGalleryRender(base, 0); return; }
+      const combined = [varImgUrl].concat(base.filter(u => u !== varImgUrl));
+      tjGalleryRender(combined, 0);
+    };
 
     const catBadge = document.getElementById('tj-pdp-category-badge');
     if (catBadge) catBadge.textContent = catName;
@@ -6749,129 +7231,323 @@
     // Call reset initially
     resetPdpBaseInfo();
 
-    // Bind variation selection function to window
-    window.tjSelectVariationOptionByIndex = function(index, badgeEl) {
-      const v = window.tjActiveVariations ? window.tjActiveVariations[index] : null;
-      if (!v) return;
-      
-      if (badgeEl && badgeEl.parentElement) {
-        badgeEl.parentElement.querySelectorAll('.tj-pdp-variant-badge').forEach(b => b.classList.remove('active'));
-        badgeEl.classList.add('active');
+    // ─── VARIATION ENGINE ────────────────────────────────────
+    // Multi-attribute aware: each variation_name (Size, Metal, Length…) keeps its
+    // own selection, and the price / SKU / stock / image reflect the combined
+    // choice rather than whichever badge was tapped last.
+    window.tjSelectedVariations = {};
+    window.tjActiveVariations = [];
+
+    const tjMoney = (n) => '$' + parseFloat(n || 0).toFixed(2);
+
+    const tjVarOutOfStock = (v) =>
+      v.stock_status === 'out_of_stock' ||
+      (v.stock_quantity !== undefined && v.stock_quantity !== null && v.stock_quantity <= 0);
+
+    // Effective price of a variation, falling back to the base product.
+    const tjVarPrice = (v) => {
+      if (!v) return { price: parseFloat(p.price || 0), compare: p.compare_price ? parseFloat(p.compare_price) : null };
+      const hasSale = v.sale_price !== undefined && v.sale_price !== null && parseFloat(v.sale_price) > 0;
+      const base = (v.price !== undefined && v.price !== null && v.price !== '') ? parseFloat(v.price) : parseFloat(p.price || 0);
+      if (hasSale) return { price: parseFloat(v.sale_price), compare: base };
+      return { price: base, compare: p.compare_price ? parseFloat(p.compare_price) : null };
+    };
+
+    // Find an option's photo without assuming a single column name.
+    const TJ_VAR_IMG_KEYS = ['image_url', 'image', 'variation_image', 'variant_image',
+                             'img_url', 'img', 'photo', 'photo_url', 'thumbnail', 'thumb_url'];
+    const tjVarImage = (v) => {
+      if (!v) return null;
+      for (const k of TJ_VAR_IMG_KEYS) {
+        const val = v[k];
+        if (typeof val === 'string' && val.trim()) return val.trim();
       }
-      
-      window.tjSelectedVariation = v;
-      
-      const priceEl = document.getElementById('tj-pdp-price');
-      const compEl = document.getElementById('tj-pdp-compare-price');
-      const badgeElDiscount = document.getElementById('tj-pdp-discount-badge');
-      
-      let displayPrice = v.price || p.price;
-      let comparePrice = v.sale_price ? v.price : (p.compare_price || null);
-      if (v.sale_price && parseFloat(v.sale_price) > 0) {
-        displayPrice = v.sale_price;
-        comparePrice = v.price;
-      }
-      
-      if (priceEl) priceEl.textContent = '$' + parseFloat(displayPrice || 0).toFixed(2);
-      
-      if (compEl && badgeElDiscount) {
-        if (comparePrice && parseFloat(comparePrice) > parseFloat(displayPrice)) {
-          compEl.textContent = '$' + parseFloat(comparePrice).toFixed(2);
-          compEl.style.display = 'inline-block';
-          const off = Math.round((1 - parseFloat(displayPrice) / parseFloat(comparePrice)) * 100);
-          badgeElDiscount.textContent = off + '% OFF';
-          badgeElDiscount.style.display = 'inline-block';
-        } else {
-          compEl.style.display = 'none';
-          badgeElDiscount.style.display = 'none';
+      // Some admins store an array or a JSON string of images.
+      for (const k of ['images', 'image_urls', 'gallery', 'gallery_images']) {
+        let val = v[k];
+        if (typeof val === 'string' && val.trim().startsWith('[')) {
+          try { val = JSON.parse(val); } catch (e) { val = null; }
+        }
+        if (Array.isArray(val) && val.length) {
+          const first = val[0];
+          if (typeof first === 'string' && first.trim()) return first.trim();
+          if (first && typeof first === 'object') {
+            for (const kk of TJ_VAR_IMG_KEYS) {
+              if (typeof first[kk] === 'string' && first[kk].trim()) return first[kk].trim();
+            }
+          }
         }
       }
-      
+      return null;
+    };
+
+    // A colour-ish option value → render as a swatch instead of a text pill.
+    const TJ_SWATCHES = {
+      'gold': '#D4AF37', 'yellow gold': '#E6C068', 'rose gold': '#E0A899',
+      'white gold': '#E8E8E6', 'silver': '#C9C9C9', 'sterling silver': '#C9C9C9',
+      'platinum': '#DCE0E1', 'black': '#1c1c1c', 'white': '#f7f7f5',
+      'green': '#1B4332', 'emerald': '#0f6b4a', 'ruby': '#9b111e', 'red': '#9b111e',
+      'sapphire': '#0f52ba', 'blue': '#0f52ba', 'pearl': '#f2ece1', 'copper': '#b87333',
+      'bronze': '#cd7f32', 'rhodium': '#d6d9db'
+    };
+    const tjSwatchColor = (groupName, value) => {
+      const g = String(groupName || '').toLowerCase();
+      if (!/colou?r|metal|finish|plating|tone|stone/.test(g)) return null;
+      return TJ_SWATCHES[String(value || '').trim().toLowerCase()] || null;
+    };
+
+    // Apply the current combined selection to price / SKU / stock / image.
+    window.tjApplyVariationSelection = function() {
+      const chosen = Object.keys(window.tjSelectedVariations)
+        .map(k => window.tjSelectedVariations[k])
+        .filter(Boolean);
+
+      // Price: prefer the variation that actually carries pricing.
+      const priced = chosen.find(v => (v.sale_price && parseFloat(v.sale_price) > 0) ||
+                                      (v.price !== undefined && v.price !== null && v.price !== ''));
+      const { price: displayPrice, compare: comparePrice } = tjVarPrice(priced);
+
+      const priceEl = document.getElementById('tj-pdp-price');
+      const compEl = document.getElementById('tj-pdp-compare-price');
+      const discEl = document.getElementById('tj-pdp-discount-badge');
+      if (priceEl) priceEl.textContent = tjMoney(displayPrice);
+      if (compEl && discEl) {
+        if (comparePrice && comparePrice > displayPrice) {
+          compEl.textContent = tjMoney(comparePrice);
+          compEl.style.display = 'inline-block';
+          discEl.textContent = Math.round((1 - displayPrice / comparePrice) * 100) + '% OFF';
+          discEl.style.display = 'inline-block';
+        } else {
+          compEl.style.display = 'none';
+          discEl.style.display = 'none';
+        }
+      }
+
+      // SKU: most specific variation SKU wins, else the product SKU.
       const skuWrap = document.getElementById('tj-pdp-sku-wrap');
       const skuEl = document.getElementById('tj-pdp-sku');
       if (skuWrap && skuEl) {
-        const activeSku = v.sku || p.sku;
-        if (activeSku) {
-          skuEl.textContent = activeSku;
-          skuWrap.style.display = 'block';
-        } else {
-          skuWrap.style.display = 'none';
-        }
+        const withSku = chosen.filter(v => v.sku);
+        const activeSku = withSku.length ? withSku[withSku.length - 1].sku : p.sku;
+        if (activeSku) { skuEl.textContent = activeSku; skuWrap.style.display = 'block'; }
+        else { skuWrap.style.display = 'none'; }
       }
-      
+
+      // Stock: any sold-out attribute in the combination makes it unavailable.
       const stockDot = document.getElementById('tj-pdp-stock-dot');
       const stockText = document.getElementById('tj-pdp-stock-text');
+      const baseOut = p.stock_status === 'out_of_stock' ||
+        (p.stock_quantity !== undefined && p.stock_quantity !== null && p.stock_quantity <= 0);
+      const anyOut = chosen.some(tjVarOutOfStock);
+      const isOut = chosen.length ? anyOut : baseOut;
       if (stockDot && stockText) {
-        const isOutOfStock = v.stock_status === 'out_of_stock' || (v.stock_quantity !== undefined && v.stock_quantity !== null && v.stock_quantity <= 0);
-        if (isOutOfStock) {
-          stockDot.style.background = '#e63946';
-          stockText.textContent = 'Out of Stock / Special Order Only';
-          stockText.parentElement.style.color = '#e63946';
+        stockDot.style.background = isOut ? '#e63946' : '#0f9d58';
+        stockText.textContent = isOut ? 'Out of Stock / Special Order Only' : 'In Stock / Wholesale Ready';
+        if (stockText.parentElement) stockText.parentElement.style.color = isOut ? '#e63946' : '#0f9d58';
+      }
+
+      // Low-stock nudge — a real B2B signal, not decoration.
+      const noteEl = document.getElementById('tj-pdp-variant-note');
+      if (noteEl) {
+        const lows = chosen.filter(v => !tjVarOutOfStock(v) &&
+          v.stock_quantity !== undefined && v.stock_quantity !== null &&
+          v.stock_quantity > 0 && v.stock_quantity <= 5);
+        if (lows.length) {
+          noteEl.textContent = 'Only ' + Math.min.apply(null, lows.map(v => v.stock_quantity)) + ' left in this option — larger runs made to order.';
+          noteEl.style.display = 'block';
         } else {
-          stockDot.style.background = '#0f9d58';
-          stockText.textContent = 'In Stock / Wholesale Ready';
-          stockText.parentElement.style.color = '#0f9d58';
+          noteEl.style.display = 'none';
         }
+      }
+
+      // Swap the gallery when a chosen variation has its own image. Uses the
+      // tolerant lookup so it works whichever column the admin panel wrote to.
+      const withImg = chosen.filter(v => tjVarImage(v));
+      if (typeof window.tjSwitchGalleryForVariation === 'function') {
+        const varImg = withImg.length ? tjVarImage(withImg[withImg.length - 1]) : null;
+        window.tjSwitchGalleryForVariation(varImg);
+      } else if (withImg.length) {
+        // Fallback: simple swap if the gallery engine is not initialised yet
+        const mainImg = document.getElementById('tj-pdp-main-image');
+        const src = tjVarImage(withImg[withImg.length - 1]);
+        if (mainImg && src && formatImageUrl(src)) {
+          mainImg.src = window.tjImgSrc(src, p);
+          document.querySelectorAll('.tj-pdp-thumb').forEach(t => t.classList.remove('active'));
+        }
+      }
+
+      // Summary line per group + the string carried into the quotation.
+      Object.keys(window.tjSelectedVariations).forEach(g => {
+        const el = document.getElementById('tj-var-sel-' + tjSlugKey(g));
+        if (el) el.textContent = window.tjSelectedVariations[g] ? window.tjSelectedVariations[g].option_value : '';
+      });
+
+      window.tjSelectedVariation = chosen.length ? chosen[chosen.length - 1] : null;
+      window.tjSelectedVariationLabel = Object.keys(window.tjSelectedVariations)
+        .filter(g => window.tjSelectedVariations[g])
+        .map(g => g + ': ' + window.tjSelectedVariations[g].option_value)
+        .join(' · ');
+
+      // Book button reflects availability instead of silently failing.
+      const bookBtn = document.getElementById('tj-pdp-book-btn');
+      if (bookBtn) {
+        bookBtn.textContent = isOut ? 'Request Special Order' : 'Book Wholesale Order';
       }
     };
 
+    function tjSlugKey(str) {
+      return String(str || 'opt').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    }
+
+    window.tjSelectVariationOptionByIndex = function(index, badgeEl) {
+      const v = window.tjActiveVariations ? window.tjActiveVariations[index] : null;
+      if (!v) return;
+      if (badgeEl && badgeEl.classList.contains('is-disabled')) return;
+
+      const groupName = v.variation_name || 'Option';
+      window.tjSelectedVariations[groupName] = v;
+
+      if (badgeEl && badgeEl.parentElement) {
+        badgeEl.parentElement.querySelectorAll('.tj-pdp-variant-badge, .tj-pdp-variant-tile').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-checked', 'false');
+        });
+        badgeEl.classList.add('active');
+        badgeEl.setAttribute('aria-checked', 'true');
+      }
+      window.tjApplyVariationSelection();
+    };
+
+    // ─── RENDER OPTION GROUPS ────────────────────────────────
     if (varWrap && varBox) {
+      let groupsSource = null;
+
       if (dbVariations && dbVariations.length > 0) {
-        varWrap.style.display = 'block';
-        window.tjActiveVariations = dbVariations;
-        
-        // Group by variation_name
-        const groups = {};
-        dbVariations.forEach(v => {
-          const groupName = v.variation_name || 'Option';
-          if (!groups[groupName]) groups[groupName] = [];
-          groups[groupName].push(v);
-        });
-        
-        let htmlContent = '';
-        Object.keys(groups).forEach(groupName => {
-          htmlContent += `
-            <div class="tj-pdp-variation-group" style="margin-bottom: 16px; width: 100%;">
-              <h4 style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #999; margin: 0 0 8px;">${groupName}</h4>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                ${groups[groupName].map((v) => {
-                  const globalIdx = dbVariations.findIndex(x => x.id === v.id);
-                  return `
-                    <div class="tj-pdp-variant-badge" onclick="tjSelectVariationOptionByIndex(${globalIdx}, this)">
-                      ${v.option_value}
-                    </div>
-                  `;
-                }).join('')}
-              </div>
-            </div>
-          `;
-        });
-        varBox.innerHTML = htmlContent;
+        groupsSource = dbVariations;
       } else {
-        // Fallback to legacy variants field
-        let legacyVariants = [];
+        // Legacy `variants` JSON column → normalise into the same shape so both
+        // paths get identical, fully-wired behaviour.
+        let legacy = [];
         try {
-          if (p.variants) {
-            legacyVariants = typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants;
-          }
-        } catch(e) {}
-        
-        if (Array.isArray(legacyVariants) && legacyVariants.length > 0) {
-          varWrap.style.display = 'block';
-          varBox.innerHTML = `
-            <div class="tj-pdp-variation-group" style="width: 100%;">
-              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                ${legacyVariants.map((v, i) => `
-                  <div class="tj-pdp-variant-badge ${i===0?'active':''}" onclick="document.querySelectorAll('.tj-pdp-variant-badge').forEach(b=>b.classList.remove('active')); this.classList.add('active');">
-                    ${v.name || v}
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-          `;
-        } else {
-          varWrap.style.display = 'none';
+          if (p.variants) legacy = typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants;
+        } catch (e) {}
+        if (Array.isArray(legacy) && legacy.length > 0) {
+          groupsSource = legacy.map((v, i) => ({
+            id: 'legacy-' + i,
+            variation_name: (v && v.group) || (v && v.variation_name) || 'Option',
+            option_value: (v && (v.name || v.value || v.option_value)) || String(v),
+            price: v && v.price,
+            sale_price: v && v.sale_price,
+            sku: v && v.sku,
+            stock_status: v && v.stock_status,
+            stock_quantity: v && v.stock_quantity,
+            image_url: v && (v.image_url || v.image),
+            display_order: i
+          }));
         }
+      }
+
+      if (groupsSource && groupsSource.length > 0) {
+        varWrap.style.display = 'block';
+        window.tjActiveVariations = groupsSource;
+        window.tjSelectedVariations = {};
+
+        const groups = {};
+        groupsSource.forEach(v => {
+          const g = v.variation_name || 'Option';
+          if (!groups[g]) groups[g] = [];
+          groups[g].push(v);
+        });
+
+        let html = '';
+        Object.keys(groups).forEach(groupName => {
+          const key = tjSlugKey(groupName);
+          const opts = groups[groupName];
+
+          // Pre-select the first in-stock option so price, SKU and stock are
+          // truthful the moment the page paints — no "tap something to find out".
+          const firstAvailable = opts.find(v => !tjVarOutOfStock(v)) || opts[0];
+          window.tjSelectedVariations[groupName] = firstAvailable;
+
+          // Amazon-style: if any option in this group has its own photo, render the
+          // whole group as image tiles with prices. Otherwise keep text pills.
+          const groupHasImages = opts.some(v => tjVarImage(v) && formatImageUrl(tjVarImage(v)));
+
+          html += '<div class="tj-pdp-variation-group">' +
+            '<div class="tj-pdp-variation-head">' +
+              '<h4 class="tj-pdp-variation-label">' + groupName + '</h4>' +
+              '<span class="tj-pdp-variation-selected" id="tj-var-sel-' + key + '"></span>' +
+            '</div>' +
+            '<div class="tj-pdp-variation-options' + (groupHasImages ? ' is-tiles' : '') + '" role="radiogroup" aria-label="' + groupName + '">' +
+              opts.map(v => {
+                const gi = groupsSource.findIndex(x => x.id === v.id);
+                const out = tjVarOutOfStock(v);
+                const isSel = (v === firstAvailable);
+                const label = String(v.option_value == null ? '' : v.option_value);
+                const safeLabel = label.replace(/"/g, '&quot;');
+                const pr = tjVarPrice(v);
+
+                const handlers = out ? '' :
+                  ' onclick="tjSelectVariationOptionByIndex(' + gi + ', this)"' +
+                  ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();tjSelectVariationOptionByIndex(' + gi + ', this);}"';
+                const a11y =
+                  ' role="radio" tabindex="' + (out ? '-1' : '0') + '"' +
+                  ' aria-checked="' + (isSel && !out ? 'true' : 'false') + '"' +
+                  ' aria-disabled="' + (out ? 'true' : 'false') + '"' +
+                  ' title="' + safeLabel + (out ? ' — sold out' : '') + '"';
+
+                // ── Image tile ──
+                if (groupHasImages) {
+                  const raw = tjVarImage(v);
+                  const src = raw ? window.tjImgSrc(raw, p) : window.tjImgSrc(p.image_url, p);
+                  const tcls = ['tj-pdp-variant-tile'];
+                  if (isSel && !out) tcls.push('active');
+                  if (out) tcls.push('is-disabled');
+                  return '<div class="' + tcls.join(' ') + '"' + a11y + handlers + '>' +
+                    '<div class="tj-tile-img-wrap">' +
+                      '<img class="tj-tile-img" src="' + src + '" alt="' + safeLabel + '" loading="lazy" ' + window.tjImgFallbackAttr(p) + '>' +
+                    '</div>' +
+                    (out ? '<span class="tj-tile-soldout">Sold out</span>' : '') +
+                    '<span class="tj-tile-price">' + tjMoney(pr.price) + '</span>' +
+                    ((pr.compare && pr.compare > pr.price) ? '<span class="tj-tile-compare">' + tjMoney(pr.compare) + '</span>' : '') +
+                    '<span class="tj-tile-label">' + label + '</span>' +
+                  '</div>';
+                }
+
+                // ── Text pill / colour dot ──
+                const swatch = tjSwatchColor(groupName, label);
+                const basePrice = tjVarPrice(firstAvailable).price;
+                const thisPrice = pr.price;
+                let sub = '';
+                if (out) sub = '<span class="tj-variant-sub">Sold out</span>';
+                else if (Math.abs(thisPrice - basePrice) >= 0.01) {
+                  const d = thisPrice - basePrice;
+                  sub = '<span class="tj-variant-sub">' + (d > 0 ? '+' : '−') + tjMoney(Math.abs(d)) + '</span>';
+                }
+                const cls = ['tj-pdp-variant-badge'];
+                if (isSel && !out) cls.push('active');
+                if (out) cls.push('is-disabled');
+                if (swatch) cls.push('is-swatch');
+                const inner = swatch
+                  ? '<span class="tj-variant-swatch" style="background:' + swatch + '"></span>'
+                  : '<span class="tj-variant-value">' + label + '</span>' + sub;
+
+                return '<div class="' + cls.join(' ') + '"' + a11y + handlers + '>' + inner + '</div>';
+              }).join('') +
+            '</div>' +
+          '</div>';
+        });
+
+        html += '<p class="tj-pdp-variant-note" id="tj-pdp-variant-note" style="display:none;"></p>';
+        varBox.innerHTML = html;
+        varBox.style.display = 'block';
+        window.tjApplyVariationSelection();
+      } else {
+        varWrap.style.display = 'none';
+        window.tjActiveVariations = [];
+        window.tjSelectedVariations = {};
+        window.tjSelectedVariation = null;
+        window.tjSelectedVariationLabel = '';
       }
     }
 
@@ -8166,7 +8842,188 @@
     });
   }
 
+  // ─── CATALOG RENDERERS ────────────────────────────────────
+  // These were lost in the same edit that truncated getProductFallbackImage().
+  // loadProducts() calls them inside a try/catch, so their absence threw a
+  // silent ReferenceError and the grid stayed on skeletons forever.
+
+  function tjProductCard(p) {
+    const globalIdx = allProducts.findIndex(ap => ap.id === p.id);
+    const detailAction = globalIdx !== -1 ? `openProductDetail(${globalIdx})` : '';
+    const bookAction = globalIdx !== -1 ? `openModalByIndex(${globalIdx})` : '';
+    const imgUrl = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
+    const hasSale = p.compare_price && parseFloat(p.compare_price) > parseFloat(p.price);
+    const saleBadge = hasSale ? '<span class="tj-sale-badge">Sale</span>' : '';
+    const isWishlisted = localStorage.getItem('tj_wl_' + p.id) === '1';
+    const moq = p.moq || 2;
+    const outOfStock = p.stock_status === 'out_of_stock' ||
+      (p.stock_quantity !== undefined && p.stock_quantity !== null && p.stock_quantity <= 0);
+
+    return `
+      <div class="tj-product-card">
+        <div class="tj-product-image-wrap" onclick="${detailAction}">
+          ${saleBadge}
+          <img class="tj-product-image" src="${imgUrl}" alt="${(p.title || '').replace(/"/g, '&quot;')}" loading="lazy"
+               onerror="this.onerror=null;this.src='${getProductFallbackImage(p)}'">
+          <button class="tj-card-wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" id="wl-btn-${p.id}"
+                  onclick="event.stopPropagation(); toggleWishlist('${p.id}', this)" title="Wishlist"
+                  style="position:absolute;top:10px;right:10px;z-index:5;width:32px;height:32px;border-radius:50%;border:1px solid rgba(27,67,50,0.12);display:flex;align-items:center;justify-content:center;background:${isWishlisted ? 'var(--green)' : 'rgba(255,255,255,0.92)'};color:${isWishlisted ? 'var(--gold)' : 'var(--green)'};cursor:pointer;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(0,0,0,0.12);">
+            <svg width="16" height="16" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="tj-product-info">
+          <div class="tj-product-category">${p.category || 'Fine Jewelry'}</div>
+          <h3 class="tj-product-title" onclick="${detailAction}">${p.title || 'Untitled Piece'}</h3>
+          <div class="tj-product-price">
+            $${parseFloat(p.price || 0).toFixed(2)}
+            ${hasSale ? `<span style="font-size:11px;color:#999;text-decoration:line-through;margin-left:6px;font-weight:400;">$${parseFloat(p.compare_price).toFixed(2)}</span>` : ''}
+          </div>
+          <div style="font-size:10px;color:#8a8578;letter-spacing:0.5px;margin-bottom:10px;">MOQ: ${moq} pcs${outOfStock ? ' · Made to order' : ''}</div>
+          <button class="tj-product-btn" onclick="event.stopPropagation(); ${bookAction}">${outOfStock ? 'Request Special Order' : 'Book Now'}</button>
+        </div>
+      </div>`;
+  }
+
+  function tjNoProductsHtml() {
+    return `
+      <div class="tj-no-products">
+        <svg class="tj-no-products-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <div class="tj-no-products-title">No Pieces Found</div>
+        <div class="tj-no-products-desc">Nothing matches these filters right now. Try a different category, or clear your filters to see the full collection.</div>
+        <button class="tj-load-more-btn" onclick="filterByCategory('all')">View All Collections</button>
+      </div>`;
+  }
+
+  function renderProducts(products) {
+    const grid = document.getElementById('tj-products-grid');
+    if (!grid) return;
+    if (!Array.isArray(products) || products.length === 0) {
+      grid.innerHTML = tjNoProductsHtml();
+      return;
+    }
+    grid.innerHTML = products.map(tjProductCard).join('');
+  }
+
+  // "Load more" lives directly under the grid and is created on demand, so it
+  // cannot drift out of sync with the grid's markup.
+  function renderLoadMore() {
+    const grid = document.getElementById('tj-products-grid');
+    if (!grid) return;
+
+    let wrap = document.getElementById('tj-load-more-wrap');
+    const total = Array.isArray(tjCurrentFiltered) ? tjCurrentFiltered.length : 0;
+    const shown = Math.min(tjVisibleCount, total);
+
+    if (total === 0 || shown >= total) {
+      if (wrap) wrap.remove();
+      return;
+    }
+
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.id = 'tj-load-more-wrap';
+      wrap.style.cssText = 'text-align:center;width:100%;margin:32px 0 8px;';
+      const slider = grid.closest('.tj-slider-wrapper') || grid;
+      slider.parentNode.insertBefore(wrap, slider.nextSibling);
+    }
+
+    const remaining = total - shown;
+    const next = Math.min(TJ_PAGE_SIZE, remaining);
+    wrap.innerHTML = `
+      <button class="tj-load-more-btn" onclick="tjLoadMore()">
+        Load ${next} More
+        <span class="tj-load-more-count">(${shown} of ${total})</span>
+      </button>`;
+  }
+
+  window.tjLoadMore = function() {
+    tjVisibleCount += TJ_PAGE_SIZE;
+    renderProducts(tjCurrentFiltered.slice(0, tjVisibleCount));
+    renderLoadMore();
+  };
+
+  // Shared card markup for the horizontal "bestseller" style rails.
+  function tjRailCard(p, wlSuffix) {
+    const globalIdx = allProducts.findIndex(ap => ap.id === p.id);
+    const detailAction = globalIdx !== -1 ? `openProductDetail(${globalIdx})` : '';
+    const bookAction = globalIdx !== -1 ? `openModalByIndex(${globalIdx})` : '';
+    const imgUrl = p.image_url ? formatImageUrl(p.image_url) : getProductFallbackImage(p);
+    const isWishlisted = localStorage.getItem('tj_wl_' + p.id) === '1';
+    const moq = p.moq || 2;
+    return `
+      <div class="tj-bestseller-card">
+        <div class="tj-star-badge">★</div>
+        <div class="tj-bestseller-img-wrap" onclick="${detailAction}" style="cursor:pointer;">
+          <img class="tj-bestseller-img" src="${imgUrl}" alt="${(p.title || '').replace(/"/g, '&quot;')}" loading="lazy"
+               onerror="this.onerror=null;this.src='${getProductFallbackImage(p)}'">
+        </div>
+        <div class="tj-bestseller-info">
+          <div class="tj-stars">★★★★★</div>
+          <h3 class="tj-bestseller-title" onclick="${detailAction}" style="cursor:pointer;">${p.title || 'Untitled Piece'}</h3>
+          <div class="tj-bestseller-desc">${p.category || 'Fine Jewelry'} &bull; MOQ: ${moq} pcs</div>
+          <div class="tj-bestseller-price">$${parseFloat(p.price || 0).toFixed(2)}</div>
+          <div style="display:flex;gap:8px;width:100%;margin-top:10px;">
+            <button class="tj-product-btn" style="flex:1;margin-top:0;padding:8px;" onclick="event.stopPropagation(); ${bookAction}">Book Now</button>
+            <button class="tj-card-wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" id="wl-new-${p.id}${wlSuffix || ''}"
+                    onclick="event.stopPropagation(); toggleWishlist('${p.id}', this)" title="Wishlist"
+                    style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:1px solid var(--green);background:${isWishlisted ? 'var(--green)' : 'transparent'};color:${isWishlisted ? 'var(--gold)' : 'var(--green)'};cursor:pointer;transition:all 0.3s;">
+              <svg width="16" height="16" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function renderBestSellers(products) {
+    const cont = document.getElementById('tj-bestsellers-container');
+    if (!cont) return;
+    if (!Array.isArray(products) || products.length === 0) { cont.innerHTML = ''; return; }
+    cont.innerHTML = products.map(p => tjRailCard(p, '-bs')).join('');
+  }
+
+  // The New Arrivals rail is optional markup — render only if its container is
+  // actually on the page, otherwise stay silent rather than throwing.
+  function renderNewArrivals(products) {
+    const cont = document.getElementById('tj-new-arrivals-container') ||
+                 document.querySelector('.tj-new-arrivals-grid');
+    if (!cont) return;
+    const section = cont.closest('section');
+    if (!Array.isArray(products) || products.length === 0) {
+      cont.innerHTML = '';
+      if (section) section.style.display = 'none';
+      return;
+    }
+    cont.innerHTML = products.map(p => tjRailCard(p, '-na')).join('');
+    if (section) section.style.display = '';
+  }
+
+  // Category switch. Delegates to navigateToCategory so there is exactly one
+  // routing path in the theme — the URL stays shareable and refresh-safe, and
+  // renderPageViews() re-applies currentCategory + loadProducts() for us.
+  window.filterByCategory = function(slug) {
+    tjVisibleCount = TJ_PAGE_SIZE;
+    const sel = document.getElementById('tj-category-select');
+    if (sel && sel.value !== (slug || 'all')) sel.value = slug || 'all';
+
+    if (typeof window.navigateToCategory === 'function') {
+      window.navigateToCategory(slug || 'all');
+    } else {
+      currentCategory = slug || 'all';
+      if (typeof loadProducts === 'function') loadProducts();
+    }
+
+    const section = document.getElementById('tj-products-section');
+    if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   // Get premium fallback product lifestyle image based on keywords
+
   function getProductFallbackImage(p) {
     if (!p) return 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?q=80&w=600&auto=format&fit=cover';
     const title = (p.title || '').toLowerCase();
@@ -8183,134 +9040,27 @@
     if (title.includes('ear') || cat.includes('ear') || title.includes('stud') || cat.includes('stud')) {
       return 'https://images.unsplash.com/photo-1635767798638-3e25273a8236?q=80&w=600&auto=format&fit=cover';
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    if (title.includes('bangle') || cat.includes('bangle')) {
+      return 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=600&auto=format&fit=cover';
+    }
+    if (title.includes('chain') || cat.includes('chain')) {
+      return 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=600&auto=format&fit=cover';
+    }
+    if (title.includes('anklet') || cat.includes('anklet') || title.includes('toe') || cat.includes('toe')) {
+      return 'https://images.unsplash.com/photo-1611652022419-a9419f74343d?q=80&w=600&auto=format&fit=cover';
+    }
+    if (title.includes('brooch') || cat.includes('brooch') || title.includes('pin') || cat.includes('pin')) {
+      return 'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?q=80&w=600&auto=format&fit=cover';
+    }
+    if (title.includes('watch') || cat.includes('watch')) {
+      return 'https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=600&auto=format&fit=cover';
+    }
+    if (title.includes('set') || cat.includes('set') || title.includes('bridal') || cat.includes('bridal')) {
+      return 'https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?q=80&w=600&auto=format&fit=cover';
+    }
+    // Generic fine-jewelry fallback
+    return 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?q=80&w=600&auto=format&fit=cover';
+  }
 
   // ─── FILTER BY SUBCATEGORY ────────────────────────────────
 
@@ -8382,26 +9132,88 @@
     if (typeof renderSidebarFilters === 'function') { try { renderSidebarFilters(); } catch (e) {} }
     try { loadReviews(); } catch (e) {}
 
-    var allOk = results.every(Boolean);
-    if (allOk) {
-      // Everything required is ready → smoothly fade out the loader.
+    // Products are the only genuinely blocking requirement. Settings and category
+    // filters degrade gracefully (defaults + cached navbar), so a hiccup on either
+    // must NOT hand the shopper a dead "check your connection" screen while a
+    // perfectly good catalog sits in cache.
+    var settingsOk = results[0], filtersOk = results[1], productsOk = results[2];
+    var haveProducts = (Array.isArray(allProducts) && allProducts.length > 0) ||
+                       (Array.isArray(_cachedProducts) && _cachedProducts.length > 0);
+
+    if (haveProducts) {
+      if (!settingsOk || !filtersOk) {
+        console.warn('[TJ] Booted with partial data — settings:', settingsOk, 'filters:', filtersOk);
+      }
       if (typeof window.hidePreloader === 'function') window.hidePreloader();
-    } else {
-      // Something essential failed after retries → show a graceful error/retry state
-      // instead of rendering incomplete content.
-      console.warn('Required data failed to load after retries:', results);
-      if (typeof window.tjShowLoadError === 'function') window.tjShowLoadError();
+      // Quietly keep trying for whatever missed, so the page self-heals.
+      if (!settingsOk) { tjRunRequired(loadSettings, 'settings-late', function () { return !!window.tjStorefrontSettings; }, 3).then(function (ok) { if (ok) { try { window.tjRenderNavbar(); } catch (e) {} try { refreshShopByCategory(); } catch (e) {} } }); }
+      if (!filtersOk)  { tjRunRequired(loadFilters, 'filters-late', function () { return window._tjCategoriesLoaded === true; }, 3).then(function (ok) { if (ok) { try { renderQuickCategories(); } catch (e) {} try { window.tjRenderNavbar(); } catch (e) {} } }); }
+      return;
+    }
+
+    // Nothing to render at all → honest error with a working Retry.
+    console.warn('Required data failed to load after retries:', results);
+    if (typeof window.tjShowLoadError === 'function') {
+      window.tjShowLoadError(productsOk
+        ? 'No products are available right now. Please try again in a moment.'
+        : "We couldn't load the catalog. Check your connection and try again.");
     }
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
-    const interval = setInterval(() => {
-      if (initSupabase()) {
-        clearInterval(interval);
-        bootStorefront();
+  // Wait for the Supabase client to exist, but never wait forever. If every CDN
+  // and the REST fallback are unreachable we surface an actionable error instead
+  // of spinning until the safety timer fires.
+  function tjWaitForSupabase(timeoutMs) {
+    timeoutMs = timeoutMs || 15000;
+    return new Promise(function (resolve) {
+      if (initSupabase()) return resolve(true);
+      var started = Date.now();
+      var interval = setInterval(function () {
+        if (initSupabase()) { clearInterval(interval); return resolve(true); }
+        if (Date.now() - started > timeoutMs) {
+          clearInterval(interval);
+          // Last resort: force the built-in REST client and try once more.
+          if (typeof window._tjInstallRestFallback === 'function' && !window._tjRestForced) {
+            window._tjRestForced = true;
+            try { window._tjInstallRestFallback(); } catch (e) {}
+            if (initSupabase()) return resolve(true);
+          }
+          resolve(false);
+        }
+      }, 100);
+    });
+  }
+
+  window.tjStartBoot = async function () {
+    var ready = await tjWaitForSupabase(15000);
+    if (!ready) {
+      if (typeof window.tjShowLoadError === 'function') {
+        window.tjShowLoadError('Could not reach our catalog service. This often happens inside in-app browsers — try opening the store in Chrome or Safari.');
       }
-    }, 100);
-  });
+      return;
+    }
+    await bootStorefront();
+  };
+
+  // Retry without a full page reload: reset the caches that gate the loader and
+  // run the boot sequence again. Falling back to reload() would just repeat the
+  // same failing path (and lose the REST fallback we may already have installed).
+  window.tjRetryBoot = async function () {
+    var btn = document.getElementById('tj-preloader-retry-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Retrying…'; btn.style.opacity = '0.6'; }
+    if (typeof window.tjResetLoadError === 'function') window.tjResetLoadError();
+    window._tjCategoriesLoaded = false;
+    window._tjProductsReady = false;
+    window._tjBootAttempt = (window._tjBootAttempt || 0) + 1;
+    // On the second failure, force the REST fallback — the CDN clearly isn't coming.
+    if (window._tjBootAttempt >= 2 && typeof window._tjInstallRestFallback === 'function' && !window._tjRestForced) {
+      window._tjRestForced = true;
+      try { window._tjInstallRestFallback(); db = null; initSupabase(); } catch (e) {}
+    }
+    await window.tjStartBoot();
+  };
+
+  window.addEventListener('DOMContentLoaded', function () { window.tjStartBoot(); });
 
   // Category select updates handled via inline onchange
 
@@ -9438,6 +10250,191 @@
       window.location.href = target;
     }
   };
+
+  // ─── B2B QUOTATION MODAL ──────────────────────────────────
+  window.tjModalProduct = null;
+
+  window.openModal = function(product) {
+    const overlay = document.getElementById('tj-modal');
+    if (!overlay) return;
+
+    window.tjModalProduct = product || null;
+
+    // Reset to the form view — a returning shopper must not land on the
+    // success screen from a previous inquiry.
+    const formC = document.getElementById('tj-form-content');
+    const okC = document.getElementById('tj-success-content');
+    if (formC) formC.style.display = 'block';
+    if (okC) okC.style.display = 'none';
+
+    const infoBox = document.getElementById('tj-selected-product-info');
+    const titleEl = document.getElementById('tj-selected-title');
+    const priceEl = document.getElementById('tj-selected-price');
+    const varEl = document.getElementById('tj-selected-variation-display');
+    const idIn = document.getElementById('tj-product-id');
+    const titleIn = document.getElementById('tj-product-title');
+    const varIn = document.getElementById('tj-product-variation');
+
+    // Only carry the variation when the modal was opened from the product page
+    // for THAT product — otherwise we would attach a stale selection.
+    const onSamePdp = product && window.tjCurrentPdpProduct && window.tjCurrentPdpProduct.id === product.id;
+    const varLabel = onSamePdp ? (window.tjSelectedVariationLabel || '') : '';
+
+    if (product) {
+      if (infoBox) infoBox.style.display = 'block';
+      if (titleEl) titleEl.textContent = product.title || 'Selected Piece';
+
+      let shown = parseFloat(product.price || 0);
+      if (onSamePdp) {
+        const live = document.getElementById('tj-pdp-price');
+        if (live && live.textContent) shown = parseFloat(live.textContent.replace(/[^0-9.]/g, '')) || shown;
+      }
+      const moq = product.moq || 2;
+      if (priceEl) priceEl.textContent = '$' + shown.toFixed(2) + ' · MOQ ' + moq + ' pcs';
+
+      if (varEl) {
+        if (varLabel) { varEl.textContent = varLabel; varEl.style.display = 'block'; }
+        else { varEl.style.display = 'none'; varEl.textContent = ''; }
+      }
+      if (idIn) idIn.value = product.id || '';
+      if (titleIn) titleIn.value = product.title || '';
+      if (varIn) varIn.value = varLabel;
+
+      const qty = overlay.querySelector('[name="quantity"]');
+      if (qty) { qty.min = moq; qty.placeholder = 'Min ' + moq; }
+    } else {
+      // General "Inquire Now" — no product attached.
+      if (infoBox) infoBox.style.display = 'none';
+      if (idIn) idIn.value = '';
+      if (titleIn) titleIn.value = 'General Inquiry';
+      if (varIn) varIn.value = '';
+      if (varEl) varEl.style.display = 'none';
+    }
+
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    // Prefill from the signed-in account so a buyer never retypes their details.
+    try {
+      const u = window.currentUser;
+      if (u) {
+        const em = overlay.querySelector('[name="email"]');
+        if (em && !em.value) em.value = u.email || '';
+        const nm = overlay.querySelector('[name="name"]');
+        const meta = u.user_metadata || {};
+        if (nm && !nm.value) nm.value = meta.full_name || meta.name || '';
+        const co = overlay.querySelector('[name="company"]');
+        if (co && !co.value) co.value = meta.company || '';
+      }
+    } catch (e) {}
+
+    setTimeout(function () {
+      const first = overlay.querySelector('[name="name"]');
+      if (first && window.innerWidth > 768) first.focus();
+    }, 120);
+  };
+
+  window.openModalByIndex = function(index) {
+    const p = allProducts[index];
+    if (!p) { showToast('That piece is no longer available.'); return; }
+    window.openModal(p);
+  };
+
+  window.closeModal = function() {
+    const overlay = document.getElementById('tj-modal');
+    if (!overlay) return;
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+    window.tjModalProduct = null;
+  };
+
+  // Click the backdrop or press Escape to dismiss.
+  (function () {
+    const overlay = document.getElementById('tj-modal');
+    if (overlay) {
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) window.closeModal();
+      });
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      const o = document.getElementById('tj-modal');
+      if (o && o.classList.contains('open')) window.closeModal();
+    });
+  })();
+
+  // ─── QUOTATION SUBMIT ─────────────────────────────────────
+  (function () {
+    const form = document.getElementById('tj-inquiry-form');
+    if (!form) return;
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const btn = document.getElementById('tj-submit-btn');
+      const fd = new FormData(form);
+
+      const name = (fd.get('name') || '').toString().trim();
+      const email = (fd.get('email') || '').toString().trim();
+      if (!name || !email) { showToast('Please add your name and email.'); return; }
+
+      const product = window.tjModalProduct;
+      const moq = product && product.moq ? parseInt(product.moq, 10) : 1;
+      let qty = parseInt(fd.get('quantity'), 10);
+      if (!qty || qty < 1) qty = moq;
+
+      const payload = {
+        product_id: (fd.get('product_id') || '').toString() || null,
+        product_title: (fd.get('product_title') || 'General Inquiry').toString(),
+        product_variation: (fd.get('product_variation') || '').toString() || null,
+        name: name,
+        company: (fd.get('company') || '').toString() || null,
+        email: email,
+        whatsapp: (fd.get('whatsapp') || '').toString() || null,
+        quantity: qty,
+        message: (fd.get('message') || '').toString() || null,
+        status: 'pending'
+      };
+
+      if (btn) { btn.disabled = true; btn.dataset.label = btn.textContent; btn.textContent = 'Submitting…'; btn.style.opacity = '0.7'; }
+
+      let saved = false;
+      try {
+        if (db) {
+          const res = await db.from('inquiries').insert(payload);
+          if (res && res.error) console.error('Inquiry insert failed:', res.error);
+          else saved = true;
+        }
+      } catch (err) {
+        console.error('Inquiry submit error:', err);
+      }
+
+      if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label || 'Submit Quotation Request'; btn.style.opacity = '1'; }
+
+      if (saved) {
+        const formC = document.getElementById('tj-form-content');
+        const okC = document.getElementById('tj-success-content');
+        if (formC) formC.style.display = 'none';
+        if (okC) okC.style.display = 'block';
+        form.reset();
+        return;
+      }
+
+      // Saving failed — do not swallow the lead. Hand it to WhatsApp instead.
+      const lines = [
+        'B2B Quotation Request',
+        'Product: ' + payload.product_title,
+        payload.product_variation ? 'Option: ' + payload.product_variation : '',
+        'Quantity: ' + payload.quantity + ' pcs',
+        'Name: ' + payload.name,
+        payload.company ? 'Company: ' + payload.company : '',
+        'Email: ' + payload.email,
+        payload.whatsapp ? 'WhatsApp: ' + payload.whatsapp : '',
+        payload.message ? 'Requirements: ' + payload.message : ''
+      ].filter(Boolean).join('\n');
+      showToast('Network issue — opening WhatsApp so your request still reaches us.');
+      window.open('https://wa.me/8615986738500?text=' + encodeURIComponent(lines), '_blank');
+    });
+  })();
 
   window.toggleWishlistDetail = function(productId, index) {
     const key = 'tj_wl_' + productId;
