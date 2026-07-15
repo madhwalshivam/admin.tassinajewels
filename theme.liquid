@@ -222,6 +222,22 @@
     display: none !important;
   }
 
+  /* On routes this theme renders itself (home, /product/*, /categories*), the
+     platform's own sections must stay hidden. The Liquid above only covers the
+     index template, which left the default "Site-wide promotion" block visible
+     above the footer on every product page. */
+  body.tj-spa-route #tj-content-for-layout,
+  body.tj-spa-route .main-content > .breadcrumb-nav {
+    display: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+  body.tj-spa-route .main-content > *:not(#tj-content-for-layout):not([id^="tj-"]):not([class*="tj-"]) {
+    display: none !important;
+  }
+
   :root {
     --green: #1B4332;
     --gold: #E3BA45;
@@ -1433,6 +1449,29 @@
     animation: shimmer 1.5s infinite;
   }
   @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  /* ---- PRODUCT PAGE SKELETON ---- */
+  #tj-pdp-skeleton { display: none; }
+  #tj-product-detail-page.is-loading > div:not(#tj-pdp-skeleton) { display: none !important; }
+  #tj-product-detail-page.is-loading #tj-pdp-skeleton { display: block; }
+  .tj-sk { background: linear-gradient(90deg,#ececec 25%,#e0e0e0 50%,#ececec 75%);
+           background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 8px; }
+  .tj-sk-grid {
+    display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px;
+    max-width: 1280px; margin: 0 auto; align-items: start;
+  }
+  .tj-sk-hero { width: 100%; aspect-ratio: 1/1; border-radius: 14px; }
+  .tj-sk-line { height: 13px; margin-bottom: 12px; }
+  .tj-sk-card { background: #fff; border-radius: 14px; padding: 22px; margin: 18px 0;
+                border: 1px solid rgba(27,67,50,0.06); }
+  .tj-sk-tiles { display: flex; gap: 10px; margin-top: 16px; }
+  .tj-sk-tile { width: 78px; height: 104px; border-radius: 10px; }
+  @media (max-width: 900px) {
+    .tj-sk-grid { grid-template-columns: 1fr; gap: 22px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tj-sk, .tj-skeleton { animation: none; }
+  }
 
   /* ---- B2B INQUIRY MODAL ---- */
   .tj-modal-overlay {
@@ -3663,15 +3702,11 @@
   }
   .tj-pdp-back-btn:active { transform: scale(0.92); }
   .tj-pdp-back-btn svg { width: 20px; height: 20px; }
-  /* Thumbnail strip — visible on all screen sizes, scrolls horizontally on mobile */
+  /* Thumbnail strip hidden by request — images live in the slider only.
+     The element stays in the DOM: tjGalleryGoTo/tjGalleryNav still track the
+     active thumb, and the arrows + counter + swipe drive the slides. */
   #tj-product-detail-page #tj-pdp-thumbnails {
-    display: flex !important;
-    gap: 8px;
-    overflow-x: auto;
-    padding: 12px 0 4px;
-    scroll-behavior: smooth;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
+    display: none !important;
   }
   #tj-product-detail-page #tj-pdp-thumbnails::-webkit-scrollbar { display: none; }
   #tj-product-detail-page .tj-pdp-thumb {
@@ -4696,6 +4731,50 @@
 
       <!-- ===== PRODUCT DETAIL PAGE SECTION (inspired by Amazon) ===== -->
       <section class="tj-section" id="tj-product-detail-page" style="display: none; background: #FAF9F6; min-height: 85vh; padding: 30px 16px 60px;">
+        <!-- Shown while product data loads, so the page is never blank. -->
+        <div id="tj-pdp-skeleton" aria-hidden="true">
+          <div class="tj-sk-grid">
+            <div>
+              <div class="tj-sk tj-sk-hero"></div>
+            </div>
+            <div>
+              <div class="tj-sk tj-sk-line" style="width: 28%; height: 9px;"></div>
+              <div class="tj-sk tj-sk-line" style="width: 92%; height: 22px; margin-top: 14px;"></div>
+              <div class="tj-sk tj-sk-line" style="width: 64%; height: 22px;"></div>
+              <div class="tj-sk tj-sk-line" style="width: 40%; height: 11px; margin-top: 16px;"></div>
+              <div class="tj-sk-card">
+                <div class="tj-sk tj-sk-line" style="width: 34%; height: 28px;"></div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:22px 0 6px;">
+                  <div>
+                    <div class="tj-sk tj-sk-line" style="width: 70%; height: 8px;"></div>
+                    <div class="tj-sk tj-sk-line" style="width: 45%;"></div>
+                  </div>
+                  <div>
+                    <div class="tj-sk tj-sk-line" style="width: 70%; height: 8px;"></div>
+                    <div class="tj-sk tj-sk-line" style="width: 60%;"></div>
+                  </div>
+                  <div>
+                    <div class="tj-sk tj-sk-line" style="width: 70%; height: 8px;"></div>
+                    <div class="tj-sk tj-sk-line" style="width: 40%;"></div>
+                  </div>
+                  <div>
+                    <div class="tj-sk tj-sk-line" style="width: 70%; height: 8px;"></div>
+                    <div class="tj-sk tj-sk-line" style="width: 72%;"></div>
+                  </div>
+                </div>
+                <div class="tj-sk" style="height: 46px; border-radius: 10px; margin-top: 18px;"></div>
+              </div>
+              <div class="tj-sk-tiles">
+                <div class="tj-sk tj-sk-tile"></div>
+                <div class="tj-sk tj-sk-tile"></div>
+                <div class="tj-sk tj-sk-tile"></div>
+              </div>
+              <div class="tj-sk tj-sk-line" style="width: 22%; height: 8px; margin-top: 26px;"></div>
+              <div class="tj-sk tj-sk-line" style="width: 100%;"></div>
+              <div class="tj-sk tj-sk-line" style="width: 78%;"></div>
+            </div>
+          </div>
+        </div>
         <div style="max-width: 1280px; margin: 0 auto;">
           <!-- Back Arrow (Product Details Page) -->
           <button class="tj-pdp-back-btn" onclick="tjGoBack()" aria-label="Go back" title="Go back">
@@ -4712,7 +4791,7 @@
             <!-- Left Side: Image Gallery (Amazon-style) -->
             <div class="tj-pdp-gallery-wrap" style="position: sticky; top: 100px;">
               <!-- Main Large Image with zoom support -->
-              <div class="tj-pdp-main-image-wrap" id="tj-pdp-main-image-wrap" style="width:100%; aspect-ratio:1; border-radius:16px; overflow:hidden; background:#ffffff; border:1px solid rgba(27,67,50,0.05); box-shadow:0 4px 20px rgba(0,0,0,0.04); position:relative; cursor:zoom-in;">
+              <div class="tj-pdp-main-image-wrap" id="tj-pdp-main-image-wrap" style="width:100%; aspect-ratio:1; border-radius:16px; overflow:hidden; background:#ffffff; border:1px solid rgba(27,67,50,0.05); box-shadow:0 4px 20px rgba(0,0,0,0.04); position:relative;">
                 <img id="tj-pdp-main-image" src="" alt="" style="width:100%; height:100%; object-fit:cover; transition:transform 0.18s ease-out; transform-origin:center center; user-select:none; -webkit-user-drag:none;">
                 <!-- Prev / Next arrows -->
                 <button id="tj-pdp-prev-btn" onclick="tjGalleryNav(-1)" aria-label="Previous" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.92); border:1px solid rgba(27,67,50,0.12); display:none; align-items:center; justify-content:center; cursor:pointer; z-index:4; box-shadow:0 2px 8px rgba(0,0,0,0.12); transition:all 0.2s;">
@@ -5787,14 +5866,22 @@
 
   window.tjVariantUrl = function(product, v) {
     const slug = (product && (product.slug || product.id)) || '';
-    return '/product/' + slug;
+    // The second argument had stopped being honoured, but four call sites still
+    // pass one. The damaging case is the canonical-URL sync: landing on
+    // /product/<slug>-gold computed an "expected" URL of /product/<slug>, saw a
+    // mismatch, and replaceState-ed the variant out of the address bar — so a
+    // shared or refreshed variation link silently fell back to the parent.
+    // Callers that want the parent URL pass no variation (or null), which still
+    // returns '/product/<slug>' — the in-place switcher is unaffected.
+    const key = v ? window.tjVariantKey(v) : '';
+    return key ? ('/product/' + slug + '-' + key) : ('/product/' + slug);
   };
 
   window.tjFindProductByVariation = function(v, currentProductId) {
     if (!v || !allProducts || allProducts.length === 0) return null;
-    const optVal = String(v.option_value || '').trim().toLowerCase();
-    if (!optVal) return null;
-    const match = allProducts.find(p => String(p.title || '').trim().toLowerCase() === optVal);
+    const vName = String(v.variation_name || '').trim().toLowerCase();
+    if (!vName) return null;
+    const match = allProducts.find(p => String(p.title || '').trim().toLowerCase() === vName);
     if (match && String(match.id) !== String(currentProductId)) {
       return match;
     }
@@ -6298,10 +6385,76 @@
     }));
   };
 
+  // Dynamic navbar click routing handler.
+  // Supports categories, products (/product/id), custom URIs, hash scroll, and empty dropdown toggles.
+  window.tjHandleNavbarClick = function(event, slug, hasDropdown) {
+    if (!slug || slug === '#' || slug === 'javascript:void(0)') {
+      if (event) event.preventDefault();
+      return;
+    }
+
+    // Product Link
+    if (slug.startsWith('/product/')) {
+      if (event) event.preventDefault();
+      if (typeof window.tjGoTo === 'function') {
+        window.tjGoTo(slug);
+      } else {
+        window.location.href = slug;
+      }
+      return;
+    }
+
+    // Custom Link / Hash Scroll
+    if (slug.startsWith('http') || slug.startsWith('/') || slug.startsWith('#')) {
+      if (slug.startsWith('#')) {
+        const el = document.querySelector(slug);
+        if (el) {
+          if (event) event.preventDefault();
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      } else {
+        if (event) event.preventDefault();
+        if (typeof window.tjGoTo === 'function') {
+          window.tjGoTo(slug);
+        } else {
+          window.location.href = slug;
+        }
+      }
+      return;
+    }
+
+    // Category Slug
+    if (event) event.preventDefault();
+    if (typeof window.navigateToCategory === 'function') {
+      window.navigateToCategory(slug);
+    }
+  };
+
   // Renders the navigation menu from the given Admin Panel navbar links ONLY.
   // (Categories are never passed here.)
   window.renderNavigation = function(tree) {
     tree = Array.isArray(tree) ? tree : [];
+
+    function getLinkAttrs(slug, hasDropdown) {
+      if (!slug || slug === '#' || slug === 'javascript:void(0)') {
+        return `href="javascript:void(0)" onclick="window.tjHandleNavbarClick(event, '', ${hasDropdown})"`;
+      }
+      if (slug.startsWith('/product/') || slug.startsWith('http') || slug.startsWith('/') || slug.startsWith('#')) {
+        return `href="${slug}" onclick="window.tjHandleNavbarClick(event, '${slug}', ${hasDropdown})"`;
+      }
+      return `href="#tj-products-section" onclick="window.tjHandleNavbarClick(event, '${slug}', ${hasDropdown})"`;
+    }
+
+    function getMobileLinkAttrs(slug, hasDropdown) {
+      if (!slug || slug === '#' || slug === 'javascript:void(0)') {
+        return `href="javascript:void(0)" onclick="event.preventDefault();"`;
+      }
+      const onclick = `toggleMobileMenu(); window.tjHandleNavbarClick(event, '${slug}', ${hasDropdown})`;
+      if (slug.startsWith('/product/') || slug.startsWith('http') || slug.startsWith('/') || slug.startsWith('#')) {
+        return `href="${slug}" onclick="${onclick}"`;
+      }
+      return `href="#tj-products-section" onclick="${onclick}"`;
+    }
 
     // 1. Desktop Nav Rendering — admin navbar links only
     const navLinks = document.querySelector('.tj-nav-links');
@@ -6310,19 +6463,19 @@
           if (cat.subcategories && cat.subcategories.length > 0) {
             return `
               <div class="tj-nav-item">
-                <a href="#tj-products-section" onclick="navigateToCategory('${cat.slug}')" class="tj-nav-link-with-arrow">
+                <a ${getLinkAttrs(cat.slug, true)} class="tj-nav-link-with-arrow">
                   ${cat.name}
                   <svg class="tj-dropdown-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-left:4px;display:inline-block;vertical-align:middle;"><path d="m6 9 6 6 6-6"/></svg>
                 </a>
                 <div class="tj-nav-dropdown-content">
                   ${cat.subcategories.map(sub => `
-                    <a href="#tj-products-section" onclick="navigateToCategory('${sub.slug}')">${sub.name}</a>
+                    <a ${getLinkAttrs(sub.slug, false)}>${sub.name}</a>
                   `).join('')}
                 </div>
               </div>
             `;
           } else {
-            return `<a href="#tj-products-section" onclick="navigateToCategory('${cat.slug}')">${cat.name}</a>`;
+            return `<a ${getLinkAttrs(cat.slug, false)}>${cat.name}</a>`;
           }
         }).join('');
     }
@@ -6335,20 +6488,20 @@
             return `
               <div class="tj-drawer-item">
                 <div class="tj-drawer-row">
-                  <a href="#tj-products-section" onclick="toggleMobileMenu(); navigateToCategory('${cat.slug}')">${cat.name}</a>
+                  <a ${getMobileLinkAttrs(cat.slug, true)}>${cat.name}</a>
                   <button class="tj-drawer-toggle-btn" onclick="toggleMobileSubmenu(event, this)">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                 </div>
                 <div class="tj-drawer-submenu">
                   ${cat.subcategories.map(sub => `
-                    <a href="#tj-products-section" onclick="toggleMobileMenu(); navigateToCategory('${sub.slug}')">${sub.name}</a>
+                    <a ${getMobileLinkAttrs(sub.slug, false)}>${sub.name}</a>
                   `).join('')}
                 </div>
               </div>
             `;
           } else {
-            return `<a href="#tj-products-section" onclick="toggleMobileMenu(); navigateToCategory('${cat.slug}')">${cat.name}</a>`;
+            return `<a ${getMobileLinkAttrs(cat.slug, false)}>${cat.name}</a>`;
           }
         }).join('') + `
         <a href="javascript:void(0)" onclick="toggleMobileMenu(); handleAccountNav()">Login</a>
@@ -6877,6 +7030,15 @@
            p.startsWith('/categories') || p.startsWith('/product/');
   };
 
+  // Mark theme-owned routes so the CSS above can suppress platform sections.
+  // Re-applied on every navigation because the SPA changes route without reload.
+  window.tjMarkSpaRoute = function() {
+    try {
+      document.body.classList.toggle('tj-spa-route', window.tjIsClientRoutable());
+    } catch (e) {}
+  };
+  window.tjMarkSpaRoute();
+
   // Navigate to a category — query-param URL on the home path (refresh-safe, 200 OK)
   window.navigateToCategory = function(slug) {
     const target = (slug === 'all' || !slug) ? '/' : '/?category=' + encodeURIComponent(slug);
@@ -7072,6 +7234,9 @@
   window.renderPageViews = function() {
     // Strip tracking params (spm etc.) and normalize legacy links to clean paths
     if (typeof tjCleanUrl === 'function') { try { tjCleanUrl(); } catch(_e){} }
+
+    // Route changed without a reload — re-mark so platform sections stay hidden.
+    if (typeof window.tjMarkSpaRoute === 'function') window.tjMarkSpaRoute();
 
     // If the server delivered a 404 for a client-routed URL, hide that platform
     // content so our own view renders in its place (keeps the clean URL intact).
@@ -7594,38 +7759,11 @@
         }, { passive: true });
       }
 
-      if (wrap && mainImg) {
-        // ── Hover zoom (pointer devices only) ──
-        // A coarse pointer means touch: zooming there fights scrolling and leaves
-        // the image stuck scaled after a tap.
-        const finePointer = () => {
-          try { return window.matchMedia('(hover: hover) and (pointer: fine)').matches; }
-          catch (e) { return window.innerWidth > 900; }
-        };
-
-        wrap.addEventListener('mouseenter', () => {
-          if (!finePointer()) return;
-          window._tjZooming = true;
-          wrap.style.cursor = 'zoom-in';
-        });
-
-        wrap.addEventListener('mousemove', e => {
-          if (!window._tjZooming || !finePointer()) return;
-          const rect = wrap.getBoundingClientRect();
-          const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-          const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
-          mainImg.style.transformOrigin = x + '% ' + y + '%';
-          mainImg.style.transform = 'scale(' + (window.TJ_PDP_ZOOM || 2.2) + ')';
-          mainImg.style.transition = 'transform 0.08s ease-out';
-        });
-
-        wrap.addEventListener('mouseleave', () => {
-          window._tjZooming = false;
-          mainImg.style.transform = 'scale(1)';
-          mainImg.style.transformOrigin = 'center center';
-          mainImg.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
-        });
-      }
+      // Hover zoom removed by request — the hero image no longer magnifies on
+      // hover. _tjZooming stays defined (always false) because the gallery
+      // crossfade reads it.
+      window._tjZooming = false;
+      if (wrap) wrap.style.cursor = '';
     }
 
     // Leaving zoom state behind would keep the next product's hero scaled 2.2x.
@@ -7925,7 +8063,9 @@
 
                 // Resolve to standalone product if it was imported separately.
                 const targetProduct = window.tjFindProductByVariation(v, p.id);
-                const targetUrl = targetProduct ? ('/product/' + (targetProduct.slug || targetProduct.id)) : window.tjVariantUrl(p);
+                // href is the real deep link so middle-click / "open in new tab" land on the
+                // right variation; the onclick still switches in place for normal clicks.
+                const targetUrl = targetProduct ? ('/product/' + (targetProduct.slug || targetProduct.id)) : window.tjVariantUrl(p, v);
                 const onClickAttr = targetProduct 
                   ? 'onclick="event.preventDefault(); tjGoTo(\'' + targetUrl + '\')"' 
                   : 'onclick="event.preventDefault(); tjSwitchVariant(this)"';
@@ -8043,6 +8183,41 @@
   });
 
   // Get premium fallback category lifestyle image based on keywords
+  // ── Skeleton gate for the product page ──
+  // renderPageViews reveals #tj-product-detail-page immediately, then calls the
+  // async render, which may await the catalog plus fetches for images, variations
+  // and reviews. clearStalePdp() blanks every field first, so without this the
+  // visitor stares at an empty panel. Wrapping (rather than editing the body)
+  // means the try/finally clears the skeleton on every exit path, errors included.
+  (function wrapPdpWithSkeleton() {
+    const inner = window.renderProductDetailsPage;
+    if (typeof inner !== 'function' || inner.__tjSkeletonWrapped) return;
+
+    const wrapped = async function(slugOrId, variantKey) {
+      const sec = document.getElementById('tj-product-detail-page');
+
+      // Cold load (nothing rendered yet, or the catalog is still coming): show the
+      // skeleton at once — the panel is genuinely empty.
+      // Warm navigation (product → product, variant switch): only reveal it if the
+      // render actually drags, so a quick switch never flashes the layout away.
+      const cold = !window.tjCurrentPdpProduct || !allProducts || allProducts.length === 0;
+      let timer = null;
+      if (sec) {
+        if (cold) sec.classList.add('is-loading');
+        else timer = setTimeout(() => sec.classList.add('is-loading'), 140);
+      }
+
+      try {
+        return await inner.call(this, slugOrId, variantKey);
+      } finally {
+        if (timer) clearTimeout(timer);
+        if (sec) sec.classList.remove('is-loading');
+      }
+    };
+    wrapped.__tjSkeletonWrapped = true;
+    window.renderProductDetailsPage = wrapped;
+  })();
+
   function getCategoryFallbackImage(cat) {
     if (!cat) return 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?q=80&w=600&auto=format&fit=cover';
     const slug = (cat.slug || '').toLowerCase();

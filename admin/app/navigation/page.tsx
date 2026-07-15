@@ -364,7 +364,7 @@ export default function NavigationPage() {
                             <span className="text-[9px] bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded-full uppercase tracking-wider font-light">Hidden</span>
                           )}
                         </div>
-                        <div className="text-[10px] text-gray-400 font-mono mt-0.5">Link Slug: {item.slug || '(Unassigned)'}</div>
+                        <div className="text-[10px] text-gray-400 font-mono mt-0.5">Link Slug: {item.slug || '(None - Dropdown only)'}</div>
                       </div>
                     </div>
 
@@ -447,7 +447,7 @@ export default function NavigationPage() {
                                   <span className="text-[8px] bg-gray-50 text-gray-400 px-1 py-0.2 rounded-full uppercase tracking-wider font-light">Hidden</span>
                                 )}
                               </div>
-                              <span className="text-[9px] text-gray-400 font-mono">Link Slug: {sub.slug || '(Unassigned)'}</span>
+                              <span className="text-[9px] text-gray-400 font-mono">Link Slug: {sub.slug || '(None)'}</span>
                             </div>
                           </div>
 
