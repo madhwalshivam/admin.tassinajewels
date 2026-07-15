@@ -29,21 +29,13 @@ const R2_PUBLIC = 'https://pub-17a03ed838cff7b48ee24c1876e145fc.r2.dev'
 function formatImageUrl(url: string | null): string {
   if (!url) return ''
   url = url.trim()
-  // Already a full HTTPS URL (including the R2 CDN itself) — return as-is
-  if (url.startsWith('https://')) return url
-  // Admin-uploaded R2 images stored as dfix/filename or /dfix/filename
   if (url.includes('dfix/')) {
     const parts = url.split('dfix/')
     const filename = (parts[parts.length - 1] || '').split('?')[0].replace(/^\/+/, '')
-    if (filename) return `${R2_PUBLIC}/tape/dfix/${filename}`
+    if (filename) return `/api/image/dfix/${filename}`
     return ''
   }
-  // Localhost proxy URL baked in during dev — extract the dfix filename
-  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(url)) {
-    const m = url.match(/dfix\/([^?#]+)/)
-    if (m) return `${R2_PUBLIC}/tape/dfix/${m[1]}`
-    return url
-  }
+  if (url.startsWith('https://')) return url
   return url
 }
 
@@ -554,27 +546,6 @@ export default function ProductsPage() {
                     </button>
                   </div>
 
-                  {/* Visual preview of grouped options (Amazon style) */}
-                  {variations.length > 0 && (() => {
-                    const groups: Record<string, Variation[]> = {}
-                    variations.forEach(v => { const g = v.variation_name || 'Option'; if (!groups[g]) groups[g] = []; groups[g].push(v) })
-                    return (
-                      <div className="mb-5 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
-                        <p className="text-[10px] uppercase tracking-wider font-semibold text-emerald-700 mb-3">Storefront Preview</p>
-                        {Object.entries(groups).map(([gName, opts]) => (
-                          <div key={gName} className="mb-3">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mr-3">{gName}:</span>
-                            {opts.map((o, i) => (
-                              <span key={i} className="inline-block text-[11px] font-semibold border-2 rounded-lg px-3 py-1 mr-2 mb-1" style={{ borderColor: o.stock_status === 'out_of_stock' ? '#e5e7eb' : '#1B4332', color: o.stock_status === 'out_of_stock' ? '#9ca3af' : '#1B4332', background: o.stock_status === 'out_of_stock' ? '#fafafa' : '#fff' }}>
-                                {o.option_value || '—'}{o.stock_status === 'out_of_stock' ? ' ✗' : ''}
-                              </span>
-                            ))}
-                          </div>
-                        ))}
-                      </div>
-                    )
-                  })()}
-
                   {variations.length === 0 ? (
                     <div className="border-2 border-dashed border-gray-200 rounded-2xl p-10 text-center">
                       <svg className="w-8 h-8 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
@@ -586,83 +557,35 @@ export default function ProductsPage() {
                         <div key={idx} className="border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-sm">
                           {/* Card header */}
                           <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
-                            <div className="flex items-center gap-2">
-                              <span className="w-5 h-5 rounded-full bg-emerald-700 text-white text-[9px] font-bold flex items-center justify-center">{idx + 1}</span>
-                              <span className="text-[11px] font-semibold text-gray-700">{v.variation_name || 'Variation'}: <span className="text-emerald-800">{v.option_value || 'Value'}</span></span>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="w-5 h-5 rounded-full bg-emerald-700 text-white text-[9px] font-bold flex items-center justify-center shrink-0">{idx + 1}</span>
+                              <span className="text-[11px] font-semibold text-gray-700 truncate">{v.option_value || v.variation_name || 'Variation'}</span>
                             </div>
-                            <button onClick={() => removeVariation(idx)} className="text-[10px] text-red-400 hover:text-red-600 font-medium px-2 py-1 rounded-lg hover:bg-red-50 transition-all">✕ Remove</button>
+                            <button onClick={() => removeVariation(idx)} className="text-[10px] text-red-400 hover:text-red-600 font-medium px-2 py-1 rounded-lg hover:bg-red-50 transition-all shrink-0">✕ Remove</button>
                           </div>
 
-                          <div className="p-4">
-                            <div className="grid grid-cols-12 gap-3">
-                              {/* Left: image */}
-                              <div className="col-span-3">
-                                <label className="block text-[10px] text-gray-400 mb-1.5 font-medium">Featured Image</label>
-                                <label className="block cursor-pointer">
-                                  <div className="aspect-square rounded-xl border-2 border-dashed border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center relative hover:border-emerald-400 transition-colors">
-                                    {v.image_url ? (
-                                      <>
-                                        <img src={formatImageUrl(v.image_url)} alt="" className="w-full h-full object-cover" />
-                                        <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-all flex items-center justify-center opacity-0 hover:opacity-100">
-                                          <span className="text-white text-[10px] font-semibold">Change</span>
-                                        </div>
-                                      </>
-                                    ) : v._uploading ? (
-                                      <div className="w-5 h-5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-                                    ) : (
-                                      <div className="text-center">
-                                        <svg className="w-6 h-6 mx-auto text-gray-300 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01" /></svg>
-                                        <span className="text-[9px] text-gray-400">Upload</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadVariationImage(idx, e.target.files[0])} />
-                                </label>
+                          <div className="p-4 flex items-center gap-4">
+                            {v.image_url ? (
+                              <img src={formatImageUrl(v.image_url)} alt="" className="w-14 h-14 rounded-lg object-cover border border-gray-100 shrink-0" />
+                            ) : (
+                              <div className="w-14 h-14 rounded-lg bg-gray-50 border border-gray-100 shrink-0 flex items-center justify-center text-gray-300">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01" /></svg>
                               </div>
-
-                              {/* Right: fields */}
-                              <div className="col-span-9 grid grid-cols-2 gap-2">
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-gray-500">
+                                {v.option_value && (
+                                  <div><span className="font-medium text-gray-400">Group:</span> {v.variation_name || 'Color'}</div>
+                                )}
+                                {v.price && !isNaN(parseFloat(v.price)) && (
+                                  <div><span className="font-medium text-gray-400">Price:</span> <span className="font-semibold text-emerald-800">${parseFloat(v.price).toFixed(2)}</span></div>
+                                )}
+                                {v.sku && <div><span className="font-medium text-gray-400">SKU:</span> <code className="font-mono">{v.sku}</code></div>}
                                 <div>
-                                  <label className="block text-[10px] text-gray-400 mb-1">Group Name *</label>
-                                  <input value={v.variation_name} onChange={e => updateVariation(idx, 'variation_name', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400" placeholder="Color / Size / Material" />
+                                  <span className={`px-1.5 py-0.5 rounded-md font-medium text-[9px] ${v.stock_status === 'out_of_stock' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}>
+                                    {v.stock_status === 'out_of_stock' ? 'Out of Stock' : 'In Stock'}
+                                  </span>
                                 </div>
-                                <div>
-                                  <label className="block text-[10px] text-gray-400 mb-1">Option Value *</label>
-                                  <input value={v.option_value} onChange={e => updateVariation(idx, 'option_value', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400" placeholder="Gold / Large / 925 Silver" />
-                                </div>
-                                <div>
-                                  <label className="block text-[10px] text-gray-400 mb-1">Price (USD)</label>
-                                  <input type="number" step="0.01" value={v.price} onChange={e => updateVariation(idx, 'price', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400" placeholder="0.00" />
-                                </div>
-                                <div>
-                                  <label className="block text-[10px] text-gray-400 mb-1">Sale Price</label>
-                                  <input type="number" step="0.01" value={v.sale_price} onChange={e => updateVariation(idx, 'sale_price', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400" placeholder="Optional" />
-                                </div>
-                                <div>
-                                  <label className="block text-[10px] text-gray-400 mb-1">SKU</label>
-                                  <input value={v.sku} onChange={e => updateVariation(idx, 'sku', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 font-mono" placeholder="SKU-GLD-L" />
-                                </div>
-                                <div>
-                                  <label className="block text-[10px] text-gray-400 mb-1">Barcode</label>
-                                  <input value={v.barcode} onChange={e => updateVariation(idx, 'barcode', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 font-mono" placeholder="EAN/UPC" />
-                                </div>
-                                <div>
-                                  <label className="block text-[10px] text-gray-400 mb-1">Stock Qty</label>
-                                  <input type="number" value={v.stock_quantity} onChange={e => updateVariation(idx, 'stock_quantity', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400" />
-                                </div>
-                                <div>
-                                  <label className="block text-[10px] text-gray-400 mb-1">Status</label>
-                                  <select value={v.stock_status} onChange={e => updateVariation(idx, 'stock_status', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 bg-white">
-                                    <option value="in_stock">✓ In Stock</option>
-                                    <option value="out_of_stock">✗ Out of Stock</option>
-                                  </select>
-                                </div>
-                              </div>
-
-                              {/* Description spanning full width */}
-                              <div className="col-span-12">
-                                <label className="block text-[10px] text-gray-400 mb-1">Variation Description (optional)</label>
-                                <textarea value={v.description} onChange={e => updateVariation(idx, 'description', e.target.value)} rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 resize-none" placeholder="Specific details shown when customer selects this variation..." />
                               </div>
                             </div>
                           </div>

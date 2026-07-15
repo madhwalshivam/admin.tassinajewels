@@ -37,9 +37,8 @@ export async function POST(req: NextRequest) {
       })
     )
 
-    // Store the public CDN URL — works on the live storefront without the admin running.
-    // Format: https://pub-xxx.r2.dev/tape/dfix/filename.jpg
-    const publicUrl = `${R2_PUBLIC_URL}/${R2_BUCKET}/${key}`
+    // Store the proxy URL path — works via the admin proxy.
+    const publicUrl = `/api/image/${key}`
 
     return NextResponse.json({ url: publicUrl })
   } catch (error: any) {

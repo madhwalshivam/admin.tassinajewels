@@ -9,10 +9,14 @@ const EMPTY_CAT = { name: '', slug: '', image_url: null as string | null, displa
 
 function formatImageUrl(url: string | null): string {
   if (!url) return ''
-  if (url.includes('/dfix/')) {
-    const parts = url.split('/dfix/')
-    return `/api/image/dfix/${parts[1]}`
+  url = url.trim()
+  if (url.includes('dfix/')) {
+    const parts = url.split('dfix/')
+    const filename = (parts[parts.length - 1] || '').split('?')[0].replace(/^\/+/, '')
+    if (filename) return `/api/image/dfix/${filename}`
+    return ''
   }
+  if (url.startsWith('https://')) return url
   return url
 }
 
