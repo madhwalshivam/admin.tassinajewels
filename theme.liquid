@@ -2015,8 +2015,8 @@
     margin-top: auto !important;
     background: #1B4332;
     color: #E3BA45;
-    border: none;
-    border-radius: 8px;
+    border: 1px solid #1B4332;
+    border-radius: 0; /* square, so it matches the wishlist button beside it */
     padding: 8px 0;
     font-size: 9px;
     font-weight: 700;
@@ -2030,6 +2030,38 @@
     background: #E3BA45;
     color: #1B4332;
   }
+  /* Card action row — Book Now and the wishlist button share one silhouette:
+     same square corners, same height (stretch), same 1px green edge. */
+  .tj-card-actions {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+    margin-top: auto;
+  }
+  .tj-bestseller-card .tj-card-actions .tj-product-btn {
+    flex: 1 1 auto;
+    width: auto;
+    margin-top: 0 !important;
+  }
+  .tj-wl-inline {
+    flex: 0 0 auto;
+    width: 34px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--green);
+    border-radius: 0;
+    background: transparent;
+    color: var(--green);
+    cursor: pointer;
+    transition: background 0.22s ease, color 0.22s ease;
+  }
+  .tj-wl-inline:hover { background: rgba(27, 67, 50, 0.07); }
+  .tj-wl-inline.wishlisted { background: var(--green); color: var(--gold); }
+  .tj-wl-inline svg { width: 15px; height: 15px; display: block; }
+
   .tj-star-badge {
     position: absolute;
     top: 12px;
@@ -3639,33 +3671,42 @@
   .tj-pdp-variant-note {
     font-size: 11px; color: #8a8578; margin: 10px 0 0; line-height: 1.5;
   }
-  /* PDP Back Arrow (premium circular) */
+  /* PDP Back control — desktop: quiet labelled pill above the breadcrumb */
   .tj-pdp-back-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
+    gap: 7px;
+    width: auto;
+    height: 36px;
+    padding: 0 15px 0 12px;
+    border-radius: 999px;
     background: #ffffff;
-    border: 1px solid rgba(27,67,50,0.12);
+    border: 1px solid rgba(27,67,50,0.14);
     color: #1B4332;
+    font-family: var(--font-sans, inherit);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
     cursor: pointer;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 14px rgba(27,67,50,0.12);
-    transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(27,67,50,0.07);
+    transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, transform 0.12s ease;
   }
+  .tj-pdp-back-btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
+  .tj-pdp-back-btn .tj-back-label { line-height: 1; }
   .tj-pdp-back-btn:hover {
     background: #1B4332;
+    border-color: #1B4332;
     color: #E3BA45;
-    box-shadow: 0 8px 20px rgba(27,67,50,0.22);
-    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(27,67,50,0.18);
   }
-  .tj-pdp-back-btn:active { transform: scale(0.92); }
-  .tj-pdp-back-btn svg { width: 20px; height: 20px; }
+  .tj-pdp-back-btn:active { transform: scale(0.97); }
+  .tj-pdp-back-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(227,186,69,0.45); }
   /* Thumbnail strip — visible on all screen sizes, scrolls horizontally on mobile */
   #tj-product-detail-page #tj-pdp-thumbnails {
-    display: flex !important;
+    display: none !important;
     gap: 8px;
     overflow-x: auto;
     padding: 12px 0 4px;
@@ -3694,11 +3735,6 @@
     border-color: #E3BA45;
     transform: scale(1.04);
   }
-  @media (max-width: 600px) {
-    .tj-pdp-back-btn { width: 40px; height: 40px; margin-bottom: 12px; }
-    .tj-pdp-back-btn svg { width: 18px; height: 18px; }
-  }
-
   /* ============================================
      PRODUCT DETAILS PAGE — RESPONSIVE ONLY
      (scoped to #tj-product-detail-page; overrides
@@ -3707,6 +3743,23 @@
   #tj-product-detail-page { overflow-x: hidden; }
   #tj-product-detail-page * { box-sizing: border-box; }
   #tj-product-detail-page img { max-width: 100%; }
+
+  /* ── PDP overflow containment ───────────────────────────────
+     `grid-template-columns: 1fr` resolves to minmax(auto, 1fr): the track's
+     floor is min-content, so a wide child (the hero image, the variation
+     strip) drags the column past the viewport instead of being constrained
+     by it. That broke the layout AND the variation swiper — the strip was
+     never narrower than its contents, so it had nothing to scroll. */
+  #tj-product-detail-page .tj-pdp-main-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) !important;
+    max-width: 100%;
+  }
+  #tj-product-detail-page .tj-pdp-gallery-wrap,
+  #tj-product-detail-page .tj-pdp-details-wrap {
+    min-width: 0;
+    max-width: 100%;
+  }
+  #tj-product-detail-page .tj-pdp-main-image-wrap { max-width: 100%; }
 
   /* Laptop / small desktop: tighten the two-column gap */
   @media (max-width: 1200px) {
@@ -3717,7 +3770,7 @@
   @media (max-width: 900px) {
     #tj-product-detail-page { padding: 24px 16px 48px !important; }
     #tj-product-detail-page .tj-pdp-main-grid {
-      grid-template-columns: 1fr !important;
+      grid-template-columns: minmax(0, 1fr) !important;
       gap: 24px !important;
       margin-bottom: 36px !important;
     }
@@ -3759,11 +3812,245 @@
     #tj-product-detail-page .tj-pdp-meta-grid { gap: 12px !important; }
     /* Action buttons stay in a comfortable row */
     #tj-product-detail-page .tj-pdp-actions button:first-child { padding: 14px !important; font-size: 12px !important; }
-    #tj-product-detail-page .tj-pdp-actions #tj-pdp-wishlist-btn { width: 48px !important; height: 48px !important; }
     /* Detail/spec cards padding down */
     #tj-product-detail-page .tj-pdp-spec-card { padding: 20px !important; }
     /* Related section heading */
     #tj-product-detail-page .tj-pdp-related-heading { font-size: 18px !important; }
+  }
+
+  /* ============================================
+     PDP — BREADCRUMB / BACK CONTROL, NARROW SCREENS
+     ============================================ */
+
+  /* Stacked layout puts the breadcrumb straight on top of the hero image,
+     where it is just noise. The back control carries the navigation instead. */
+  @media (max-width: 900px) {
+    #tj-product-detail-page .tj-pdp-breadcrumb,
+    #tj-product-detail-page #tj-pdp-skeleton-crumb { display: none !important; }
+  }
+
+  /* Phone: back arrow becomes a glass circle on the image's top-left,
+     mirroring the wishlist heart on the top-right. */
+  @media (max-width: 600px) {
+    #tj-pdp-shell { position: relative; }
+    #tj-product-detail-page .tj-pdp-back-btn {
+      position: absolute;
+      top: 10px; left: 10px;
+      z-index: 7;
+      width: 38px; height: 38px;
+      padding: 0;
+      margin: 0;
+      gap: 0;
+      border: 1px solid rgba(27,67,50,0.10);
+      border-radius: 50%;
+      background: rgba(255,255,255,0.92);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+    }
+    #tj-product-detail-page .tj-pdp-back-btn svg { width: 19px; height: 19px; stroke-width: 2; }
+    #tj-product-detail-page .tj-pdp-back-btn:hover {
+      background: rgba(255,255,255,0.92);
+      border-color: rgba(27,67,50,0.10);
+      color: #1B4332;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+    }
+    #tj-product-detail-page .tj-pdp-back-btn:active { transform: scale(0.92); }
+    #tj-product-detail-page .tj-back-label { display: none; }
+  }
+
+  /* ============================================
+     PDP — MARKETPLACE-STYLE PRICE / SPEC BLOCK
+     ============================================ */
+
+  /* Wishlist heart — floats on the product image, top-right */
+  .tj-pdp-wish-fab {
+    position: absolute;
+    top: 12px; right: 12px;
+    z-index: 6;
+    width: 42px; height: 42px;
+    padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(27,67,50,0.10);
+    border-radius: 50%;
+    background: rgba(255,255,255,0.92);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+    cursor: pointer;
+    transition: transform 0.16s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .tj-pdp-wish-fab svg {
+    width: 21px; height: 21px;
+    fill: none;
+    stroke: #6f6b60;
+    stroke-width: 1.9;
+    stroke-linejoin: round;
+    transition: fill 0.2s ease, stroke 0.2s ease;
+  }
+  .tj-pdp-wish-fab:hover { transform: scale(1.06); box-shadow: 0 4px 16px rgba(0,0,0,0.18); }
+  .tj-pdp-wish-fab:hover svg { stroke: #E3BA45; }
+  .tj-pdp-wish-fab:active { transform: scale(0.92); }
+  .tj-pdp-wish-fab:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(227,186,69,0.5); }
+  .tj-pdp-wish-fab.is-active { border-color: rgba(227,186,69,0.55); background: #ffffff; }
+  .tj-pdp-wish-fab.is-active svg { fill: #E3BA45; stroke: #E3BA45; animation: tj-wish-pop 0.28s ease; }
+  @keyframes tj-wish-pop { 0% { transform: scale(1); } 45% { transform: scale(1.3); } 100% { transform: scale(1); } }
+
+  /* Price block */
+  .tj-pdp-price-block { margin-bottom: 18px; }
+  .tj-pdp-price-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; }
+  #tj-product-detail-page #tj-pdp-price {
+    font-size: 34px;
+    font-weight: 700;
+    color: #1B4332;
+    line-height: 1.05;
+    letter-spacing: -0.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  #tj-product-detail-page #tj-pdp-price .tj-cur,
+  #tj-product-detail-page #tj-pdp-price .tj-frac {
+    font-size: 0.5em;
+    font-weight: 700;
+    vertical-align: super;
+    letter-spacing: 0;
+  }
+  #tj-product-detail-page #tj-pdp-price .tj-cur { margin-right: 1px; }
+  #tj-product-detail-page #tj-pdp-discount-badge {
+    font-size: 15px;
+    font-weight: 700;
+    color: #C7263E;
+    letter-spacing: 0.2px;
+  }
+  .tj-pdp-price-sub {
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 7px;
+    font-size: 12.5px;
+    color: #8a8578;
+  }
+  .tj-pdp-price-sub .tj-mrp-label { font-weight: 500; }
+  #tj-product-detail-page #tj-pdp-compare-price {
+    font-size: 12.5px;
+    color: #8a8578;
+    text-decoration: line-through;
+    font-variant-numeric: tabular-nums;
+  }
+  .tj-pdp-price-unit {
+    margin-top: 5px;
+    font-size: 11px;
+    color: #9b9689;
+    letter-spacing: 0.2px;
+  }
+
+  /* Spec rows */
+  #tj-product-detail-page .tj-pdp-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 24px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+    padding-top: 16px;
+    margin-bottom: 22px;
+  }
+  .tj-meta-cell { min-width: 0; }
+  .tj-meta-label {
+    display: block;
+    margin-bottom: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #9b9689;
+    text-transform: uppercase;
+    letter-spacing: 0.9px;
+    white-space: nowrap;
+  }
+  .tj-meta-value {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1B4332;
+    line-height: 1.35;
+  }
+  .tj-meta-stock { display: inline-flex; align-items: center; gap: 6px; color: #0f9d58; }
+  #tj-pdp-stock-dot { width: 7px; height: 7px; border-radius: 50%; background: #0f9d58; flex: 0 0 auto; }
+
+  /* Mobile: label <-> value spec table, single CTA */
+  @media (max-width: 600px) {
+    #tj-product-detail-page .tj-pdp-meta-grid {
+      grid-template-columns: 1fr !important;
+      gap: 0 !important;
+    }
+    #tj-product-detail-page .tj-meta-cell {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 9px 0;
+      border-bottom: 1px solid #f2efea;
+    }
+    #tj-product-detail-page .tj-pdp-meta-grid > .tj-meta-cell:last-child { border-bottom: none; }
+    #tj-product-detail-page .tj-meta-label {
+      margin-bottom: 0;
+      flex: 0 0 auto;
+      font-size: 10.5px;
+      letter-spacing: 0.5px;
+    }
+    #tj-product-detail-page .tj-meta-value {
+      flex: 1 1 auto;
+      min-width: 0;
+      text-align: right;
+    }
+    #tj-product-detail-page .tj-meta-stock { justify-content: flex-end; }
+    #tj-product-detail-page .tj-pdp-actions #tj-pdp-book-btn { width: 100%; }
+    .tj-pdp-wish-fab { top: 10px; right: 10px; width: 38px; height: 38px; }
+    .tj-pdp-wish-fab svg { width: 19px; height: 19px; }
+  }
+
+  /* ============================================
+     PDP VARIATIONS — MOBILE
+     Sit directly under the product image and scroll
+     as ONE horizontal row (never wrap to a 2nd row)
+     ============================================ */
+  @media (max-width: 900px) {
+    /* JS relocates the wrap into the gallery column on narrow screens */
+    #tj-product-detail-page .tj-pdp-gallery-wrap > #tj-pdp-variants-wrap {
+      width: 100%;
+      margin-top: 14px !important;
+      margin-bottom: 0 !important;
+    }
+    #tj-product-detail-page .tj-pdp-variation-group { margin-bottom: 12px; }
+    #tj-product-detail-page .tj-pdp-variation-group:last-child { margin-bottom: 0; }
+
+    /* One swipeable row */
+    #tj-product-detail-page .tj-pdp-variation-group { min-width: 0; max-width: 100%; }
+    #tj-product-detail-page .tj-pdp-variation-options {
+      min-width: 0;
+      max-width: 100%;
+      flex-wrap: nowrap !important;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      scroll-snap-type: x proximity;
+      scroll-padding-left: 2px;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      padding: 3px 2px 6px;
+      margin-left: -2px;
+      margin-right: -2px;
+      overscroll-behavior-x: contain;
+    }
+    #tj-product-detail-page .tj-pdp-variation-options::-webkit-scrollbar { display: none; }
+    #tj-product-detail-page .tj-pdp-variant-tile,
+    #tj-product-detail-page .tj-pdp-variant-badge {
+      flex: 0 0 auto;
+      scroll-snap-align: start;
+    }
+    /* Slightly narrower so the 5th tile peeks in = visible "there is more" hint */
+    #tj-product-detail-page .tj-pdp-variant-tile { width: 74px; }
+  }
+  @media (max-width: 480px) {
+    #tj-product-detail-page .tj-pdp-variant-tile { width: 70px; }
+    #tj-product-detail-page .tj-pdp-variant-tile .tj-tile-price { font-size: 10px; }
   }
 
   /* Very small phones */
@@ -3772,7 +4059,47 @@
     #tj-product-detail-page #tj-pdp-price { font-size: 22px !important; }
     #tj-product-detail-page .tj-pdp-actions { flex-wrap: wrap; }
     #tj-product-detail-page .tj-pdp-actions button:first-child { flex: 1 1 100% !important; }
-    #tj-product-detail-page .tj-pdp-actions #tj-pdp-wishlist-btn { width: 100% !important; }
+  }
+
+  /* ============================================
+     BUTTON SYSTEM — one silhouette everywhere
+     Every rectangular button is square-cornered and carries the same
+     1px edge, so filled and outlined buttons read at identical weight.
+     Circular icon controls (FABs, gallery arrows, pagination, floating
+     hearts, the phone back overlay) are a different class of control
+     and deliberately keep their 50%.
+     ============================================ */
+  .tj-btn,
+  .tj-product-btn,
+  .tj-video-btn,
+  .tj-subfilter-btn,
+  .tj-load-more-btn,
+  .tj-form-submit,
+  .tj-trending-cta,
+  .tj-deal-card-cta,
+  .tj-cat-deal-cta,
+  .tj-filter-drawer-toggle,
+  .tj-pdp-back-btn,
+  #tj-preloader-retry-btn,
+  #tj-pdp-book-btn {
+    border-radius: 0 !important;
+  }
+
+  /* Green-filled boxes previously used border:none, so they sat 2px
+     shorter than every outlined button next to them. */
+  .tj-btn-green,
+  .tj-form-submit,
+  .tj-trending-cta,
+  .tj-deal-card-cta,
+  .tj-cat-deal-cta,
+  #tj-pdp-book-btn {
+    border: 1px solid #1B4332 !important;
+  }
+  .tj-video-btn { border: 1px solid var(--gold); }
+
+  /* The phone back control is an icon overlay, not a box — stays round. */
+  @media (max-width: 600px) {
+    #tj-product-detail-page .tj-pdp-back-btn { border-radius: 50% !important; }
   }
 
   </style>
@@ -4068,7 +4395,7 @@
           <div class="tj-deal-slider-row">
             <div class="tj-deal-products-scroll" id="tj-goat-deal-container">
               {% for i in (1..3) %}
-              <div class="tj-deal-card skeleton-item" style="flex: 0 0 78%; min-width: 0; display: inline-block;">
+              <div class="tj-deal-card skeleton-item">
                 <div class="tj-deal-img-wrapper tj-skeleton" style="height: 160px; width: 100%;"></div>
                 <div class="tj-deal-card-body" style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
                   <div class="tj-skeleton" style="height: 8px; width: 30%; border-radius: 4px;"></div>
@@ -4104,7 +4431,7 @@
             <div class="tj-deal-swiper-wrap">
               <div class="tj-deal-products-scroll" id="tj-top-deal-container">
                 {% for i in (1..3) %}
-                <div class="tj-deal-card skeleton-item" style="flex: 0 0 78%; min-width: 0; display: inline-block;">
+                <div class="tj-deal-card skeleton-item">
                   <div class="tj-deal-img-wrapper tj-skeleton" style="height: 160px; width: 100%;"></div>
                   <div class="tj-deal-card-body" style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
                     <div class="tj-skeleton" style="height: 8px; width: 30%; border-radius: 4px;"></div>
@@ -4142,7 +4469,7 @@
             <div class="tj-deal-swiper-wrap">
               <div class="tj-deal-products-scroll" id="tj-cat-slider-container" style="gap: 14px;">
                 {% for i in (1..3) %}
-                <div class="tj-cat-deal-card" style="flex: 0 0 78%;">
+                <div class="tj-cat-deal-card">
                   <div class="tj-cat-deal-img tj-skeleton" style="height: 160px; width: 100%;"></div>
                   <div class="tj-cat-deal-body" style="padding: 12px; display: flex; flex-direction: column; gap: 8px; align-items: center;">
                     <div class="tj-skeleton" style="height: 12px; width: 60%; border-radius: 4px;"></div>
@@ -4696,15 +5023,69 @@
 
       <!-- ===== PRODUCT DETAIL PAGE SECTION (inspired by Amazon) ===== -->
       <section class="tj-section" id="tj-product-detail-page" style="display: none; background: #FAF9F6; min-height: 85vh; padding: 30px 16px 60px;">
-        <div style="max-width: 1280px; margin: 0 auto;">
-          <!-- Back Arrow (Product Details Page) -->
-          <button class="tj-pdp-back-btn" onclick="tjGoBack()" aria-label="Go back" title="Go back">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5m7-7-7 7 7 7"/></svg>
-          </button>
-          <!-- Breadcrumb Navigation -->
-          <div class="tj-pdp-breadcrumb" id="tj-pdp-breadcrumb" style="font-size: 12px; color: #666; margin-bottom: 24px; font-family: var(--font-sans);">
-            <!-- Dynamic breadcrumb (Home > Category > Product Name) -->
+        <div id="tj-pdp-shell" style="max-width: 1280px; margin: 0 auto;">
+          <!-- Product PDP Skeleton Loader -->
+          <div id="tj-pdp-skeleton" style="display: block;">
+            <!-- Breadcrumb Skeleton -->
+            <div id="tj-pdp-skeleton-crumb" class="tj-skeleton" style="height: 14px; width: 200px; margin-bottom: 24px; border-radius: 4px;"></div>
+            
+            <div class="tj-pdp-main-grid" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; margin-bottom: 48px; align-items: start;">
+              <!-- Left Side: Gallery Skeleton -->
+              <div class="tj-pdp-gallery-wrap">
+                <div class="tj-skeleton" style="width: 100%; aspect-ratio: 1; border-radius: 16px;"></div>
+              </div>
+              
+              <!-- Right Side: Details Skeleton -->
+              <div class="tj-pdp-details-wrap">
+                <div style="border-bottom: 1px solid rgba(27,67,50,0.08); padding-bottom: 20px; margin-bottom: 24px;">
+                  <div class="tj-skeleton" style="height: 10px; width: 80px; border-radius: 4px; margin-bottom: 12px;"></div>
+                  <div class="tj-skeleton" style="height: 32px; width: 75%; border-radius: 6px; margin-bottom: 16px;"></div>
+                  <div class="tj-skeleton" style="height: 14px; width: 120px; border-radius: 4px;"></div>
+                </div>
+                
+                <div style="background: #ffffff; border-radius: 16px; padding: 24px; border: 1px solid rgba(27,67,50,0.05); box-shadow: 0 8px 30px rgba(0,0,0,0.02); margin-bottom: 24px;">
+                  <div class="tj-skeleton" style="height: 36px; width: 120px; border-radius: 6px; margin-bottom: 24px;"></div>
+                  
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-top: 1px solid rgba(0,0,0,0.04); padding-top: 16px; margin-bottom: 24px;">
+                    <div>
+                      <div class="tj-skeleton" style="height: 8px; width: 100px; border-radius: 4px; margin-bottom: 8px;"></div>
+                      <div class="tj-skeleton" style="height: 16px; width: 60px; border-radius: 4px;"></div>
+                    </div>
+                    <div>
+                      <div class="tj-skeleton" style="height: 8px; width: 80px; border-radius: 4px; margin-bottom: 8px;"></div>
+                      <div class="tj-skeleton" style="height: 16px; width: 70px; border-radius: 4px;"></div>
+                    </div>
+                    <div>
+                      <div class="tj-skeleton" style="height: 8px; width: 90px; border-radius: 4px; margin-bottom: 8px;"></div>
+                      <div class="tj-skeleton" style="height: 16px; width: 50px; border-radius: 4px;"></div>
+                    </div>
+                    <div>
+                      <div class="tj-skeleton" style="height: 8px; width: 70px; border-radius: 4px; margin-bottom: 8px;"></div>
+                      <div class="tj-skeleton" style="height: 16px; width: 80px; border-radius: 4px;"></div>
+                    </div>
+                  </div>
+                  
+                  <div style="display: flex; gap: 12px;">
+                    <div class="tj-skeleton" style="flex: 1; height: 52px; border-radius: 12px;"></div>
+                    <div class="tj-skeleton" style="width: 52px; height: 52px; border-radius: 12px;"></div>
+                  </div>
+                </div>
+                
+                <div style="margin-bottom: 24px;">
+                  <div class="tj-skeleton" style="height: 10px; width: 60px; border-radius: 4px; margin-bottom: 12px;"></div>
+                  <div class="tj-skeleton" style="height: 14px; width: 90%; border-radius: 4px; margin-bottom: 8px;"></div>
+                  <div class="tj-skeleton" style="height: 14px; width: 85%; border-radius: 4px; margin-bottom: 8px;"></div>
+                  <div class="tj-skeleton" style="height: 14px; width: 60%; border-radius: 4px;"></div>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <div id="tj-pdp-content" style="display: none;">
+            <!-- Breadcrumb Navigation -->
+            <div class="tj-pdp-breadcrumb" id="tj-pdp-breadcrumb" style="font-size: 12px; color: #666; margin-bottom: 24px; font-family: var(--font-sans);">
+              <!-- Dynamic breadcrumb (Home > Category > Product Name) -->
+            </div>
 
           <!-- Product Main Block (Gallery + Info) -->
           <div class="tj-pdp-main-grid" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; margin-bottom: 48px; align-items: start;">
@@ -4723,10 +5104,14 @@
                 </button>
                 <!-- Image counter badge -->
                 <div id="tj-pdp-img-counter" style="position:absolute; bottom:10px; right:12px; background:rgba(0,0,0,0.45); color:#fff; font-size:10px; font-weight:600; padding:3px 9px; border-radius:20px; display:none; letter-spacing:0.5px;"></div>
+                <!-- Wishlist — marketplace convention: floats on the image, top-right -->
+                <button id="tj-pdp-wishlist-btn" class="tj-pdp-wish-fab" type="button" aria-label="Add to wishlist" title="Add to wishlist" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 20.7S3.9 15.6 3.9 9.9C3.9 7.2 6 5.1 8.6 5.1c1.6 0 3 .8 3.4 2 .4-1.2 1.8-2 3.4-2 2.6 0 4.7 2.1 4.7 4.8 0 5.7-8.1 10.8-8.1 10.8z"/></svg>
+                </button>
               </div>
 
               <!-- Thumbnail strip with scroll -->
-              <div style="position:relative; margin-top:14px;">
+              <div style="position:relative; margin-top:14px; display: none;">
                 <div class="tj-pdp-thumbnails" id="tj-pdp-thumbnails" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; scroll-behavior:smooth; scrollbar-width:none;">
                   <!-- Dynamically loaded thumbnails -->
                 </div>
@@ -4748,41 +5133,46 @@
 
               <!-- Price & MOQ Section -->
               <div class="tj-pdp-info-card" style="background: #ffffff; border-radius: 16px; padding: 24px; border: 1px solid rgba(27,67,50,0.05); box-shadow: 0 8px 30px rgba(0,0,0,0.02); margin-bottom: 24px;">
-                <div style="display: flex; align-items: flex-end; gap: 12px; margin-bottom: 16px;">
-                  <span id="tj-pdp-price" style="font-size: 32px; font-weight: 700; color: #1B4332;"></span>
-                  <span id="tj-pdp-compare-price" style="font-size: 16px; color: #999; text-decoration: line-through; display: none;"></span>
-                  <span id="tj-pdp-discount-badge" style="font-size: 12px; font-weight: 700; color: #e63946; background: #fee; padding: 2px 8px; border-radius: 4px; display: none;"></span>
+                <div class="tj-pdp-price-block">
+                  <div class="tj-pdp-price-row">
+                    <span id="tj-pdp-discount-badge" style="display: none;"></span>
+                    <span id="tj-pdp-price"></span>
+                  </div>
+                  <div class="tj-pdp-price-sub" id="tj-pdp-mrp-row" style="display: none;">
+                    <span class="tj-mrp-label">List price:</span>
+                    <span id="tj-pdp-compare-price"></span>
+                  </div>
+                  <div class="tj-pdp-price-unit">Wholesale price per piece &middot; minimum order quantity applies</div>
                 </div>
 
-                <div class="tj-pdp-meta-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-top: 1px solid rgba(0,0,0,0.04); padding-top: 16px; margin-bottom: 24px;">
-                  <div>
-                    <span style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px;">Minimum Order Quantity</span>
-                    <span id="tj-pdp-moq" style="font-size: 14px; font-weight: 600; color: #1B4332;"></span>
+                <div class="tj-pdp-meta-grid">
+                  <div class="tj-meta-cell">
+                    <span class="tj-meta-label">Minimum Order</span>
+                    <span id="tj-pdp-moq" class="tj-meta-value"></span>
                   </div>
-                  <div>
-                    <span style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px;">Material Details</span>
-                    <span id="tj-pdp-material" style="font-size: 14px; font-weight: 600; color: #1B4332;"></span>
+                  <div class="tj-meta-cell">
+                    <span class="tj-meta-label">Material</span>
+                    <span id="tj-pdp-material" class="tj-meta-value"></span>
                   </div>
-                  <div>
-                    <span style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px;">Average Weight</span>
-                    <span id="tj-pdp-weight" style="font-size: 14px; font-weight: 600; color: #1B4332;"></span>
+                  <div class="tj-meta-cell">
+                    <span class="tj-meta-label">Average Weight</span>
+                    <span id="tj-pdp-weight" class="tj-meta-value"></span>
                   </div>
-                  <div>
-                    <span style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px;">Availability</span>
-                    <span id="tj-pdp-stock-status" style="font-size: 14px; font-weight: 600; color: #0f9d58; display: flex; align-items: center; gap: 4px;">
-                      <span id="tj-pdp-stock-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #0f9d58; display: inline-block;"></span>
-                      <span id="tj-pdp-stock-text">In Stock / Wholesale Ready</span>
+                  <div class="tj-meta-cell">
+                    <span class="tj-meta-label">Availability</span>
+                    <span id="tj-pdp-stock-status" class="tj-meta-value tj-meta-stock">
+                      <span id="tj-pdp-stock-dot"></span>
+                      <span id="tj-pdp-stock-text">In Stock</span>
                     </span>
                   </div>
-                  <div id="tj-pdp-sku-wrap" style="display: none;">
-                    <span style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px;">Product SKU</span>
-                    <span id="tj-pdp-sku" style="font-size: 14px; font-weight: 600; color: #1B4332;"></span>
+                  <div id="tj-pdp-sku-wrap" class="tj-meta-cell" style="display: none;">
+                    <span class="tj-meta-label">SKU</span>
+                    <span id="tj-pdp-sku" class="tj-meta-value"></span>
                   </div>
                 </div>
 
                 <div class="tj-pdp-actions" style="display: flex; gap: 12px;">
                   <button id="tj-pdp-book-btn" style="flex: 1; padding: 16px; background: #1B4332; color: #E3BA45; border: none; border-radius: 12px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; cursor: pointer; transition: all 0.25s ease;" onmouseover="this.style.background='#132F23'" onmouseout="this.style.background='#1B4332'">Book Wholesale Order</button>
-                  <button id="tj-pdp-wishlist-btn" style="width: 52px; height: 52px; border: 2px solid #eae6e0; background: #ffffff; border-radius: 12px; cursor: pointer; font-size: 20px; color: #ccc; display: flex; align-items: center; justify-content: center; transition: all 0.25s ease;">♥</button>
                 </div>
               </div>
 
@@ -4861,6 +5251,7 @@
                 <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
               </button>
             </div>
+          </div>
           </div>
         </div>
       </section>
@@ -4959,14 +5350,19 @@
               </div>
               <h3 style="color:var(--green); font-family:Georgia, serif; font-size:20px; margin-top:16px; margin-bottom:8px;">Review Submitted!</h3>
               <p style="font-size:13px; color:#666; font-family:var(--font-sans); margin-bottom: 20px;">Thank you for your feedback. Your review has been submitted successfully.</p>
-              <button type="button" onclick="closeReviewModal()" style="padding:10px 24px; background:#1B4332; color:#E3BA45; border:none; border-radius:8px; font-weight:600; text-transform:uppercase; letter-spacing:1.5px; cursor:pointer; font-size:11px; font-family:var(--font-sans);">Close</button>
+              <button type="button" class="tj-btn tj-btn-green" onclick="closeReviewModal()" style="padding:10px 24px; background:#1B4332; color:#E3BA45; border:none; border-radius:8px; font-weight:600; text-transform:uppercase; letter-spacing:1.5px; cursor:pointer; font-size:11px; font-family:var(--font-sans);">Close</button>
             </div>
           </div>
         </div>
       </div>
     </div>
 
+    {% comment %}
+      Shoplazza's default 'Site-wide promotion' block. It renders on every page
+      (it sits outside .main-content, so the template-index hide rules never caught it)
+      and was pushing placeholder copy under the product view. Uncomment to bring it back.
     {% section 'footer_promotions' %}
+    {% endcomment %}
 
     <!-- ===== CUSTOM FOOTER ===== -->
     <footer class="tj-footer">
@@ -5097,7 +5493,7 @@
           </div>
           <h3>Inquiry Logged</h3>
           <p>We will contact you via WhatsApp or Email within 24 hours.</p>
-          <button onclick="closeModal()" style="margin-top:20px;padding:10px 24px;background:#1B4332;color:#E3BA45;border:none;border-radius:4px;font-weight:500;text-transform:uppercase;letter-spacing:1.5px;cursor:pointer;font-size:11px;">Close</button>
+          <button class="tj-btn tj-btn-green" onclick="closeModal()" style="margin-top:20px;padding:10px 24px;background:#1B4332;color:#E3BA45;border:none;border-radius:4px;font-weight:500;text-transform:uppercase;letter-spacing:1.5px;cursor:pointer;font-size:11px;">Close</button>
         </div>
       </div>
     </div>
@@ -5195,7 +5591,7 @@
       </div>
       <div style="background: #faf9f6; border-radius: 10px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(27,67,50,0.04); margin-bottom: 8px;">
         <span style="font-size: 13px; font-weight: 600; color: var(--green); font-family: var(--font-sans);" id="tj-wechat-val">15986738500</span>
-        <button onclick="copyWeChatId()" style="background: var(--green); color: var(--gold); border: none; border-radius: 6px; padding: 6px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#132F23'" onmouseout="this.style.background='var(--green)'">Copy ID</button>
+        <button class="tj-btn tj-btn-green" onclick="copyWeChatId()" style="background: var(--green); color: var(--gold); border: none; border-radius: 6px; padding: 6px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#132F23'" onmouseout="this.style.background='var(--green)'">Copy ID</button>
       </div>
     </div>
   </div>
@@ -5748,6 +6144,47 @@
   };
 
   // Group the flat variation rows by variation_name, preserving display_order.
+  /* Marketplace price markup: small raised currency symbol + raised cents.
+     textContent stays "$4.72", so existing parsers keep working. */
+  window.tjPriceHTML = function (n) {
+    var s = (Math.max(0, Number(n) || 0)).toFixed(2);
+    var i = s.indexOf('.');
+    return '<span class="tj-cur">$</span>' + s.slice(0, i) +
+           '<span class="tj-frac">' + s.slice(i) + '</span>';
+  };
+
+  /* ── PDP variations placement ──────────────────────────────
+     Narrow screens (<=900px): move the variation strip out of the
+     details column and drop it straight under the product image.
+     Wide screens: put it back in its original spot (under price). */
+  window.tjPlaceVariantsForViewport = function () {
+    var wrap = document.getElementById('tj-pdp-variants-wrap');
+    var gallery = document.querySelector('#tj-pdp-content .tj-pdp-gallery-wrap');
+    if (!wrap || !gallery) return;
+
+    // Remember the desktop home position exactly once.
+    var anchor = document.getElementById('tj-pdp-variants-anchor');
+    if (!anchor) {
+      anchor = document.createElement('div');
+      anchor.id = 'tj-pdp-variants-anchor';
+      anchor.style.display = 'none';
+      if (wrap.parentNode) wrap.parentNode.insertBefore(anchor, wrap);
+    }
+
+    var isNarrow = window.matchMedia('(max-width: 900px)').matches;
+
+    if (isNarrow) {
+      if (wrap.parentNode !== gallery) gallery.appendChild(wrap);
+    } else if (anchor.parentNode && wrap.previousElementSibling !== anchor) {
+      anchor.parentNode.insertBefore(wrap, anchor.nextSibling);
+    }
+  };
+
+  window.addEventListener('resize', function () {
+    clearTimeout(window._tjVarPlaceT);
+    window._tjVarPlaceT = setTimeout(window.tjPlaceVariantsForViewport, 150);
+  });
+
   window.tjGroupVariations = function(variations) {
     const groups = {};
     // Group via tjOptionGroup, not the raw column. When the label itself came from
@@ -5787,16 +6224,30 @@
 
   window.tjVariantUrl = function(product, v) {
     const slug = (product && (product.slug || product.id)) || '';
+    if (v) {
+      const key = v.id || window.tjVariantKey(v);
+      return '/product/' + slug + '?v=' + key;
+    }
     return '/product/' + slug;
   };
 
   window.tjFindProductByVariation = function(v, currentProductId) {
     if (!v || !allProducts || allProducts.length === 0) return null;
-    const vName = String(v.variation_name || '').trim().toLowerCase();
-    if (!vName) return null;
-    const match = allProducts.find(p => String(p.title || '').trim().toLowerCase() === vName);
-    if (match && String(match.id) !== String(currentProductId)) {
-      return match;
+    // 1. Try SKU match first if available
+    const vSku = String(v.sku || '').trim().toLowerCase();
+    if (vSku) {
+      const match = allProducts.find(p => p.sku && String(p.sku).trim().toLowerCase() === vSku);
+      if (match && String(match.id) !== String(currentProductId)) {
+        return match;
+      }
+    }
+    // 2. Fallback to Option Value matching Title
+    const vOptVal = String(window.tjOptionLabel(v) || '').trim().toLowerCase();
+    if (vOptVal) {
+      const match = allProducts.find(p => String(p.title || '').trim().toLowerCase() === vOptVal);
+      if (match && String(match.id) !== String(currentProductId)) {
+        return match;
+      }
     }
     return null;
   };
@@ -6303,6 +6754,20 @@
   window.renderNavigation = function(tree) {
     tree = Array.isArray(tree) ? tree : [];
 
+    function getLinkAttrs(slug, isMobile) {
+      if (!slug) {
+        return `href="#tj-products-section" onclick="${isMobile ? 'toggleMobileMenu(); ' : ''}navigateToCategory('')"`;
+      }
+      const isUrl = /^(https?:\/\/|\/|#)/i.test(slug) || slug === '/';
+      if (isUrl) {
+        if (slug.startsWith('http')) {
+          return `href="${slug}" target="_blank" ${isMobile ? 'onclick="toggleMobileMenu();"' : ''}`;
+        }
+        return `href="${slug}" onclick="event.preventDefault(); ${isMobile ? 'toggleMobileMenu(); ' : ''}tjGoTo('${slug}');"`;
+      }
+      return `href="#tj-products-section" onclick="${isMobile ? 'toggleMobileMenu(); ' : ''}navigateToCategory('${slug}')"`;
+    }
+
     // 1. Desktop Nav Rendering — admin navbar links only
     const navLinks = document.querySelector('.tj-nav-links');
     if (navLinks) {
@@ -6310,19 +6775,19 @@
           if (cat.subcategories && cat.subcategories.length > 0) {
             return `
               <div class="tj-nav-item">
-                <a href="#tj-products-section" onclick="navigateToCategory('${cat.slug}')" class="tj-nav-link-with-arrow">
+                <a ${getLinkAttrs(cat.slug, false)} class="tj-nav-link-with-arrow">
                   ${cat.name}
                   <svg class="tj-dropdown-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-left:4px;display:inline-block;vertical-align:middle;"><path d="m6 9 6 6 6-6"/></svg>
                 </a>
                 <div class="tj-nav-dropdown-content">
                   ${cat.subcategories.map(sub => `
-                    <a href="#tj-products-section" onclick="navigateToCategory('${sub.slug}')">${sub.name}</a>
+                    <a ${getLinkAttrs(sub.slug, false)}>${sub.name}</a>
                   `).join('')}
                 </div>
               </div>
             `;
           } else {
-            return `<a href="#tj-products-section" onclick="navigateToCategory('${cat.slug}')">${cat.name}</a>`;
+            return `<a ${getLinkAttrs(cat.slug, false)}>${cat.name}</a>`;
           }
         }).join('');
     }
@@ -6335,20 +6800,20 @@
             return `
               <div class="tj-drawer-item">
                 <div class="tj-drawer-row">
-                  <a href="#tj-products-section" onclick="toggleMobileMenu(); navigateToCategory('${cat.slug}')">${cat.name}</a>
+                  <a ${getLinkAttrs(cat.slug, true)}>${cat.name}</a>
                   <button class="tj-drawer-toggle-btn" onclick="toggleMobileSubmenu(event, this)">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                 </div>
                 <div class="tj-drawer-submenu">
                   ${cat.subcategories.map(sub => `
-                    <a href="#tj-products-section" onclick="toggleMobileMenu(); navigateToCategory('${sub.slug}')">${sub.name}</a>
+                    <a ${getLinkAttrs(sub.slug, true)}>${sub.name}</a>
                   `).join('')}
                 </div>
               </div>
             `;
           } else {
-            return `<a href="#tj-products-section" onclick="toggleMobileMenu(); navigateToCategory('${cat.slug}')">${cat.name}</a>`;
+            return `<a ${getLinkAttrs(cat.slug, true)}>${cat.name}</a>`;
           }
         }).join('') + `
         <a href="javascript:void(0)" onclick="toggleMobileMenu(); handleAccountNav()">Login</a>
@@ -6974,7 +7439,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="#e63946" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 48px; height: 48px; margin: 0 auto 16px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <p style="font-size:16px; font-weight:600; margin-bottom:8px;">Failed to Load Collections</p>
           <p style="font-size:12px; color:#666; margin-bottom:16px;">We encountered an error loading the collections. Please try again.</p>
-          <button onclick="window.retryLoadFilters()" style="background:#1B4332; color:#E3BA45; border:none; padding:8px 20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; border-radius:20px; cursor:pointer; font-family:var(--font-sans);">Retry</button>
+          <button class="tj-btn tj-btn-green" onclick="window.retryLoadFilters()" style="background:#1B4332; color:#E3BA45; border:none; padding:8px 20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; border-radius:20px; cursor:pointer; font-family:var(--font-sans);">Retry</button>
         </div>
       `;
       return;
@@ -7167,7 +7632,9 @@
 
       renderProductDetailsPage(productParam, variantParam);
       highlightNav('nav-home');
-      window.scrollTo({ top: 0, behavior: 'auto' });
+      if (!window._tjSwitchingVariation) {
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      }
     }
     else if (catParam) {
       currentCategory = catParam;
@@ -7279,42 +7746,54 @@
 
   // variantKey addresses one variation of this product (REQ 2). Absent → parent page.
   window.renderProductDetailsPage = async function(slugOrId, variantKey) {
-    // ── Clear stale data immediately so the visitor never sees the previous
-    //    product's details while the next one is loading. ─────────────────
-    (function clearStalePdp() {
-      const ids = ['tj-pdp-title', 'tj-pdp-price', 'tj-pdp-compare-price',
-                   'tj-pdp-discount-badge', 'tj-pdp-moq', 'tj-pdp-material',
-                   'tj-pdp-weight', 'tj-pdp-sku', 'tj-pdp-short-desc', 'tj-pdp-full-desc',
-                   'tj-pdp-category-badge', 'tj-pdp-breadcrumb', 'tj-pdp-stock-text'];
-      ids.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = '';
-      });
-      // Reset compare-price / discount visibility
-      const cmp = document.getElementById('tj-pdp-compare-price');
-      const dsc = document.getElementById('tj-pdp-discount-badge');
-      if (cmp) cmp.style.display = 'none';
-      if (dsc) dsc.style.display = 'none';
-      // Clear gallery
-      const mainImg = document.getElementById('tj-pdp-main-image');
-      if (mainImg) { mainImg.src = ''; mainImg.alt = ''; }
-      const thumbWrap = document.getElementById('tj-pdp-thumbnails');
-      if (thumbWrap) thumbWrap.innerHTML = '';
-      const prevBtn = document.getElementById('tj-pdp-prev-btn');
-      const nextBtn = document.getElementById('tj-pdp-next-btn');
-      const counter = document.getElementById('tj-pdp-img-counter');
-      if (prevBtn) prevBtn.style.display = 'none';
-      if (nextBtn) nextBtn.style.display = 'none';
-      if (counter) counter.style.display = 'none';
-      // Hide variation wrap
-      const varWrap = document.getElementById('tj-pdp-variants-wrap');
-      if (varWrap) varWrap.style.display = 'none';
-    })();
+    const pdpSkeleton = document.getElementById('tj-pdp-skeleton');
+    const pdpContent = document.getElementById('tj-pdp-content');
+    
+    if (!window._tjSwitchingVariation) {
+      if (pdpSkeleton) pdpSkeleton.style.display = 'block';
+      if (pdpContent) pdpContent.style.display = 'none';
+
+      // ── Clear stale data immediately so the visitor never sees the previous
+      //    product's details while the next one is loading. ─────────────────
+      (function clearStalePdp() {
+        const ids = ['tj-pdp-title', 'tj-pdp-price', 'tj-pdp-compare-price',
+                     'tj-pdp-discount-badge', 'tj-pdp-moq', 'tj-pdp-material',
+                     'tj-pdp-weight', 'tj-pdp-sku', 'tj-pdp-short-desc', 'tj-pdp-full-desc',
+                     'tj-pdp-category-badge', 'tj-pdp-breadcrumb', 'tj-pdp-stock-text'];
+        ids.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = '';
+        });
+        // Reset compare-price / discount visibility
+        const cmp = document.getElementById('tj-pdp-compare-price');
+        const dsc = document.getElementById('tj-pdp-discount-badge');
+        if (cmp) cmp.style.display = 'none';
+        if (dsc) dsc.style.display = 'none';
+        const mrpRow0 = document.getElementById('tj-pdp-mrp-row');
+        if (mrpRow0) mrpRow0.style.display = 'none';
+        // Clear gallery
+        const mainImg = document.getElementById('tj-pdp-main-image');
+        if (mainImg) { mainImg.src = ''; mainImg.alt = ''; }
+        const thumbWrap = document.getElementById('tj-pdp-thumbnails');
+        if (thumbWrap) thumbWrap.innerHTML = '';
+        const prevBtn = document.getElementById('tj-pdp-prev-btn');
+        const nextBtn = document.getElementById('tj-pdp-next-btn');
+        const counter = document.getElementById('tj-pdp-img-counter');
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+        if (counter) counter.style.display = 'none';
+        // Hide variation wrap
+        const varWrap = document.getElementById('tj-pdp-variants-wrap');
+        if (varWrap) varWrap.style.display = 'none';
+      })();
+    }
 
     if (!allProducts || allProducts.length === 0) {
       if (typeof loadProducts === 'function') {
         await loadProducts();
       } else {
+        if (pdpSkeleton) pdpSkeleton.style.display = 'none';
+        if (pdpContent) pdpContent.style.display = 'block';
         return;
       }
     }
@@ -7325,6 +7804,95 @@
 
     // 1. Try direct match in allProducts (exact slug or ID)
     p = allProducts.find(x => String(x.id) === String(slugOrId) || x.slug === slugOrId);
+
+    if (p && window._tjSwitchingVariation) {
+      // Synchronously update basic info to the new product immediately to prevent any perceived lag
+      const titleEl = document.getElementById('tj-pdp-title');
+      if (titleEl) titleEl.textContent = p.title;
+      const priceEl = document.getElementById('tj-pdp-price');
+      if (priceEl) priceEl.innerHTML = window.tjPriceHTML(p.price);
+      const descEl = document.getElementById('tj-pdp-full-desc');
+      if (descEl) descEl.textContent = p.description || '';
+      const shortEl = document.getElementById('tj-pdp-short-desc');
+      if (shortEl) shortEl.textContent = p.short_description || '';
+      const skuEl = document.getElementById('tj-pdp-sku');
+      if (skuEl) skuEl.textContent = p.sku || '';
+      
+      const mainImg = document.getElementById('tj-pdp-main-image');
+      if (mainImg && p.image_url) {
+        mainImg.src = window.tjImgSrc(p.image_url, p);
+      }
+      
+      const compEl = document.getElementById('tj-pdp-compare-price');
+      const badgeEl = document.getElementById('tj-pdp-discount-badge');
+      if (compEl && badgeEl) {
+        if (p.compare_price && p.compare_price > p.price) {
+          compEl.textContent = '$' + p.compare_price.toFixed(2);
+          compEl.style.display = 'inline-block';
+          badgeEl.textContent = '-' + Math.round((1 - p.price / p.compare_price) * 100) + '%';
+          badgeEl.style.display = 'inline-block';
+          const mrpOn = document.getElementById('tj-pdp-mrp-row');
+          if (mrpOn) mrpOn.style.display = 'flex';
+        } else {
+          compEl.style.display = 'none';
+          badgeEl.style.display = 'none';
+          const mrpOff = document.getElementById('tj-pdp-mrp-row');
+          if (mrpOff) mrpOff.style.display = 'none';
+        }
+      }
+
+      const stockDot = document.getElementById('tj-pdp-stock-dot');
+      const stockText = document.getElementById('tj-pdp-stock-text');
+      const isOut = p.stock_status === 'out_of_stock' || (p.stock_quantity != null && Number(p.stock_quantity) <= 0);
+      if (stockDot && stockText) {
+        stockDot.style.background = isOut ? '#E3BA45' : '#0f9d58';
+        stockText.textContent = isOut ? 'Made to Order' : 'In Stock';
+        if (stockText.parentElement) stockText.parentElement.style.color = isOut ? '#B7860B' : '#0f9d58';
+      }
+
+      const matEl = document.getElementById('tj-pdp-material');
+      if (matEl) matEl.textContent = p.material || 'Premium Alloy & Plating';
+      const wEl = document.getElementById('tj-pdp-weight');
+      if (wEl) wEl.textContent = p.weight || 'Standard';
+      const moqEl = document.getElementById('tj-pdp-moq');
+      if (moqEl) moqEl.textContent = (p.moq || 2) + ' pieces';
+      const tblMat = document.getElementById('tj-pdp-table-material');
+      if (tblMat) tblMat.textContent = p.material || 'Premium Gold Plated Alloy';
+      const tblMoq = document.getElementById('tj-pdp-table-moq');
+      if (tblMoq) tblMoq.textContent = (p.moq || 2) + ' Units Minimum';
+
+      // Try resolving variation key synchronously from cached variations if available
+      if (activeVariantKey) {
+        const cachedVars = window.tjVariationsFor(p.id);
+        if (cachedVars && cachedVars.length > 0) {
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(activeVariantKey);
+          let syncVar = null;
+          if (isUuid) {
+            syncVar = cachedVars.find(v => String(v.id) === String(activeVariantKey)) || null;
+          }
+          if (!syncVar) {
+            syncVar = window.tjFindVariation(cachedVars, activeVariantKey);
+          }
+          if (syncVar) {
+            const vPrice = window.tjVariationPrice(syncVar, p);
+            if (priceEl && vPrice.price) priceEl.innerHTML = window.tjPriceHTML(vPrice.price);
+            if (skuEl && syncVar.sku) skuEl.textContent = syncVar.sku;
+            if (mainImg && syncVar.image_url) mainImg.src = window.tjImgSrc(syncVar.image_url, p);
+            if (descEl && syncVar.description) descEl.textContent = syncVar.description;
+          }
+        }
+      }
+
+      try {
+        const metaTitle = p.title + ' | Tassina Jewels';
+        document.title = metaTitle;
+        const metaDesc = p.meta_description || p.short_description || '';
+        let mdEl = document.querySelector('meta[name="description"]');
+        if (mdEl && metaDesc) mdEl.setAttribute('content', String(metaDesc).slice(0, 300));
+        let canonicalEl = document.querySelector('link[rel="canonical"]');
+        if (canonicalEl) canonicalEl.setAttribute('href', window.location.origin + '/product/' + (p.slug || p.id));
+      } catch (e) {}
+    }
 
     // 2. "/product/<slug>" with ?v=<variation-id> — resolve the variation by ID directly.
     //    This is the primary path for variation navigation (reliable, no ambiguity).
@@ -7389,6 +7957,8 @@
     }
 
     if (!p) {
+      if (pdpSkeleton) pdpSkeleton.style.display = 'none';
+      if (pdpContent) pdpContent.style.display = 'block';
       const pdp = document.getElementById('tj-product-detail-page');
       if (pdp) {
         pdp.innerHTML = `<div style="text-align:center; padding: 100px 20px;">
@@ -7749,7 +8319,7 @@
     const titleEl = document.getElementById('tj-pdp-title');
     if (titleEl) titleEl.textContent = displayTitle;
     const priceEl = document.getElementById('tj-pdp-price');
-    if (priceEl) priceEl.textContent = '$' + vPrice.price.toFixed(2);
+    if (priceEl) priceEl.innerHTML = window.tjPriceHTML(vPrice.price);
 
     const compEl = document.getElementById('tj-pdp-compare-price');
     const badgeEl = document.getElementById('tj-pdp-discount-badge');
@@ -7757,11 +8327,15 @@
       if (vPrice.compare && vPrice.compare > vPrice.price) {
         compEl.textContent = '$' + vPrice.compare.toFixed(2);
         compEl.style.display = 'inline-block';
-        badgeEl.textContent = Math.round((1 - vPrice.price / vPrice.compare) * 100) + '% OFF';
+        badgeEl.textContent = '-' + Math.round((1 - vPrice.price / vPrice.compare) * 100) + '%';
         badgeEl.style.display = 'inline-block';
+        var mrpOn = document.getElementById('tj-pdp-mrp-row');
+        if (mrpOn) mrpOn.style.display = 'flex';
       } else {
         compEl.style.display = 'none';
         badgeEl.style.display = 'none';
+        var mrpOff = document.getElementById('tj-pdp-mrp-row');
+        if (mrpOff) mrpOff.style.display = 'none';
       }
     }
 
@@ -7841,7 +8415,7 @@
          (p.stock_quantity !== undefined && p.stock_quantity !== null && Number(p.stock_quantity) <= 0));
     if (stockDot && stockText) {
       stockDot.style.background = pageOut ? '#E3BA45' : '#0f9d58';
-      stockText.textContent = pageOut ? 'Made to Order · Lead time applies' : 'In Stock / Wholesale Ready';
+      stockText.textContent = pageOut ? 'Made to Order' : 'In Stock';
       if (stockText.parentElement) stockText.parentElement.style.color = pageOut ? '#B7860B' : '#0f9d58';
     }
 
@@ -7849,7 +8423,7 @@
     const skuEl = document.getElementById('tj-pdp-sku');
     if (skuWrap && skuEl) {
       const activeSku = (V && V.sku) ? V.sku : p.sku;
-      if (activeSku) { skuEl.textContent = activeSku; skuWrap.style.display = 'block'; }
+      if (activeSku) { skuEl.textContent = activeSku; skuWrap.style.display = ''; }
       else { skuWrap.style.display = 'none'; }
     }
 
@@ -7925,10 +8499,10 @@
 
                 // Resolve to standalone product if it was imported separately.
                 const targetProduct = window.tjFindProductByVariation(v, p.id);
-                const targetUrl = targetProduct ? ('/product/' + (targetProduct.slug || targetProduct.id)) : window.tjVariantUrl(p);
+                const targetUrl = targetProduct ? ('/product/' + (targetProduct.slug || targetProduct.id)) : window.tjVariantUrl(p, v);
                 const onClickAttr = targetProduct 
-                  ? 'onclick="event.preventDefault(); tjGoTo(\'' + targetUrl + '\')"' 
-                  : 'onclick="event.preventDefault(); tjSwitchVariant(this)"';
+                  ? 'onclick="event.preventDefault(); tjSwitchToProduct(\'' + targetUrl + '\')"' 
+                  : 'onclick="event.preventDefault(); tjSwitchToProductInline(this, \'' + targetUrl + '\')"';
 
                 if (useTiles) {
                   const raw = window.tjVariationImage(v);
@@ -7965,24 +8539,30 @@
 
         varBox.innerHTML = html;
       }
+
+      // Mobile: variations sit directly under the product image, single swipe row.
+      if (typeof window.tjPlaceVariantsForViewport === 'function') window.tjPlaceVariantsForViewport();
     }
 
     // Action buttons
     const wlBtn = document.getElementById('tj-pdp-wishlist-btn');
     if (wlBtn) {
       const wlKey = 'tj_wl_' + p.id;
-      const isNow = localStorage.getItem(wlKey) === '1';
-      wlBtn.style.borderColor = isNow ? '#E3BA45' : '#eae6e0';
-      wlBtn.style.background = isNow ? '#fff8e0' : '#ffffff';
-      wlBtn.style.color = isNow ? '#E3BA45' : '#ccc';
-      
+      const paintWl = function () {
+        const on = localStorage.getItem(wlKey) === '1';
+        wlBtn.classList.toggle('is-active', on);
+        wlBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        wlBtn.setAttribute('aria-label', on ? 'Remove from wishlist' : 'Add to wishlist');
+        wlBtn.setAttribute('title', on ? 'Saved to wishlist' : 'Add to wishlist');
+      };
+      paintWl();
+
       const pIdx = allProducts.findIndex(x => x.id === p.id);
-      wlBtn.onclick = function() {
+      // stopPropagation: the button now sits on the image, which owns swipe/zoom.
+      wlBtn.onclick = function (e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         if (typeof toggleWishlistDetail === 'function') toggleWishlistDetail(p.id, pIdx);
-        const isSet = localStorage.getItem(wlKey) === '1';
-        wlBtn.style.borderColor = isSet ? '#E3BA45' : '#eae6e0';
-        wlBtn.style.background = isSet ? '#fff8e0' : '#ffffff';
-        wlBtn.style.color = isSet ? '#E3BA45' : '#ccc';
+        paintWl();
       };
     }
 
@@ -8019,11 +8599,10 @@
             <div class="tj-bestseller-info">
               <div class="tj-stars">★★★★★</div>
               <h3 class="tj-bestseller-title" onclick="${detailAction}" style="cursor:pointer;">${rp.title}</h3>
-              <div class="tj-bestseller-desc">${rp.category || 'Fine Jewelry'} &bull; MOQ: ${moq} pcs</div>
               <div class="tj-bestseller-price">$${parseFloat(rp.price || 0).toFixed(2)}${rp.compare_price ? ` - $${parseFloat(rp.compare_price).toFixed(2)}` : ''}</div>
-              <div style="display: flex; gap: 8px; width: 100%; margin-top: 10px;">
-                <button class="tj-product-btn" style="flex: 1; margin-top: 0; padding: 8px;" onclick="${bookAction}">Book Now</button>
-                <button class="tj-card-wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" id="wl-btn-${rp.id}" onclick="event.stopPropagation(); toggleWishlist('${rp.id}', this)" title="Wishlist" style="width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--green); background: ${isWishlisted ? 'var(--green)' : 'transparent'}; color: ${isWishlisted ? 'var(--gold)' : 'var(--green)'}; cursor: pointer; transition: all 0.3s;">
+              <div class="tj-card-actions">
+                <button class="tj-product-btn" onclick="${bookAction}">Book Now</button>
+                <button class="tj-card-wishlist-btn tj-wl-inline ${isWishlisted ? 'wishlisted' : ''}" id="wl-btn-${rp.id}" onclick="event.stopPropagation(); toggleWishlist('${rp.id}', this)" title="Wishlist" aria-label="Wishlist">
                   <svg width="16" height="16" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
@@ -8036,6 +8615,10 @@
         relGrid.innerHTML = '<div style="text-align:center;width:100%;padding:20px;color:#999;font-size:12px;">No related pieces currently available.</div>';
       }
     }
+
+    if (pdpSkeleton) pdpSkeleton.style.display = 'none';
+    if (pdpContent) pdpContent.style.display = 'block';
+    window._tjSwitchingVariation = false;
   }
 
   window.addEventListener('popstate', () => {
@@ -9206,7 +9789,7 @@
           <div class="tj-trending-img-wrap">
             <img src="${imgUrl}" alt="${p.title}" loading="lazy" onerror="this.src='${getProductFallbackImage(p)}'">
             ${saleBadge}
-            <button class="tj-card-wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" id="wl-btn-${p.id}-trend" onclick="event.stopPropagation(); toggleWishlist('${p.id}', this)" title="Wishlist" style="position: absolute; top: 10px; right: 10px; z-index: 5; width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(27,67,50,0.12); display: flex; align-items: center; justify-content: center; background: ${isWishlisted ? 'var(--green)' : 'rgba(255,255,255,0.92)'}; color: ${isWishlisted ? 'var(--gold)' : 'var(--green)'}; cursor: pointer; transition: all 0.25s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.12);">
+            <button class="tj-card-wishlist-btn tj-wl-float ${isWishlisted ? 'wishlisted' : ''}" id="wl-btn-${p.id}-trend" onclick="event.stopPropagation(); toggleWishlist('${p.id}', this)" title="Wishlist" style="position: absolute; top: 10px; right: 10px; z-index: 5; width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(27,67,50,0.12); display: flex; align-items: center; justify-content: center; background: ${isWishlisted ? 'var(--green)' : 'rgba(255,255,255,0.92)'}; color: ${isWishlisted ? 'var(--gold)' : 'var(--green)'}; cursor: pointer; transition: all 0.25s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.12);">
               <svg width="16" height="16" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
@@ -9248,7 +9831,7 @@
           <div class="tj-trending-img-wrap">
             <img src="${imgUrl}" alt="${p.title}" loading="lazy" onerror="this.src='${getProductFallbackImage(p)}'">
             ${saleBadge}
-            <button class="tj-card-wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" id="wl-btn-${p.id}-bq" onclick="event.stopPropagation(); toggleWishlist('${p.id}', this)" title="Wishlist" style="position: absolute; top: 10px; right: 10px; z-index: 5; width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(27,67,50,0.12); display: flex; align-items: center; justify-content: center; background: ${isWishlisted ? 'var(--green)' : 'rgba(255,255,255,0.92)'}; color: ${isWishlisted ? 'var(--gold)' : 'var(--green)'}; cursor: pointer; transition: all 0.25s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.12);">
+            <button class="tj-card-wishlist-btn tj-wl-float ${isWishlisted ? 'wishlisted' : ''}" id="wl-btn-${p.id}-bq" onclick="event.stopPropagation(); toggleWishlist('${p.id}', this)" title="Wishlist" style="position: absolute; top: 10px; right: 10px; z-index: 5; width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(27,67,50,0.12); display: flex; align-items: center; justify-content: center; background: ${isWishlisted ? 'var(--green)' : 'rgba(255,255,255,0.92)'}; color: ${isWishlisted ? 'var(--gold)' : 'var(--green)'}; cursor: pointer; transition: all 0.25s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.12);">
               <svg width="16" height="16" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
@@ -9396,7 +9979,7 @@
           ${saleBadge}
           <img class="tj-product-image" src="${imgUrl}" alt="${(p.title || '').replace(/"/g, '&quot;')}" loading="lazy"
                onerror="this.onerror=null;this.src='${getProductFallbackImage(p)}'">
-          <button class="tj-card-wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" id="wl-btn-${entryId}"
+          <button class="tj-card-wishlist-btn tj-wl-float ${isWishlisted ? 'wishlisted' : ''}" id="wl-btn-${entryId}"
                   onclick="event.stopPropagation(); toggleWishlist('${entryId}', this)" title="Wishlist"
                   style="position:absolute;top:10px;right:10px;z-index:5;width:32px;height:32px;border-radius:50%;border:1px solid rgba(27,67,50,0.12);display:flex;align-items:center;justify-content:center;background:${isWishlisted ? 'var(--green)' : 'rgba(255,255,255,0.92)'};color:${isWishlisted ? 'var(--gold)' : 'var(--green)'};cursor:pointer;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(0,0,0,0.12);">
             <svg width="16" height="16" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -9411,7 +9994,7 @@
             $${parseFloat(p.price || 0).toFixed(2)}
             ${hasSale ? `<span style="font-size:11px;color:#999;text-decoration:line-through;margin-left:6px;font-weight:400;">$${parseFloat(p.compare_price).toFixed(2)}</span>` : ''}
           </div>
-          <div style="font-size:10px;color:#8a8578;letter-spacing:0.5px;margin-bottom:10px;">MOQ: ${moq} pcs${outOfStock ? ' · Made to order' : ' · Ready to ship'}</div>
+          <div style="font-size:10px;color:#8a8578;letter-spacing:0.5px;margin-bottom:10px;">${outOfStock ? 'Made to order' : 'Ready to ship'}</div>
           <button class="tj-product-btn" onclick="event.stopPropagation(); ${bookAction}">Book Now</button>
         </div>
       </div>`;
@@ -9495,13 +10078,11 @@
         <div class="tj-bestseller-info">
           <div class="tj-stars">★★★★★</div>
           <h3 class="tj-bestseller-title" onclick="${detailAction}" style="cursor:pointer;">${p.title || 'Untitled Piece'}</h3>
-          <div class="tj-bestseller-desc">${p.category || 'Fine Jewelry'} &bull; MOQ: ${moq} pcs</div>
           <div class="tj-bestseller-price">$${parseFloat(p.price || 0).toFixed(2)}</div>
-          <div style="display:flex;gap:8px;width:100%;margin-top:10px;">
-            <button class="tj-product-btn" style="flex:1;margin-top:0;padding:8px;" onclick="event.stopPropagation(); ${bookAction}">Book Now</button>
-            <button class="tj-card-wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" id="wl-new-${entryId}${wlSuffix || ''}"
-                    onclick="event.stopPropagation(); toggleWishlist('${entryId}', this)" title="Wishlist"
-                    style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:1px solid var(--green);background:${isWishlisted ? 'var(--green)' : 'transparent'};color:${isWishlisted ? 'var(--gold)' : 'var(--green)'};cursor:pointer;transition:all 0.3s;">
+          <div class="tj-card-actions">
+            <button class="tj-product-btn" onclick="event.stopPropagation(); ${bookAction}">Book Now</button>
+            <button class="tj-card-wishlist-btn tj-wl-inline ${isWishlisted ? 'wishlisted' : ''}" id="wl-new-${entryId}${wlSuffix || ''}"
+                    onclick="event.stopPropagation(); toggleWishlist('${entryId}', this)" title="Wishlist" aria-label="Wishlist">
               <svg width="16" height="16" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
               </svg>
@@ -9761,8 +10342,9 @@
     
     // Update all wishlist buttons for this product
     document.querySelectorAll(`[id^="wl-btn-${productId}"], [id^="wl-new-${productId}"]`).forEach(b => {
-      const isCircular = b.classList.contains('tj-card-wishlist-btn');
-      const defaultBg = isCircular ? 'rgba(255,255,255,0.92)' : 'transparent';
+      b.classList.toggle('wishlisted', isNowWishlisted);
+      const isFloating = b.classList.contains('tj-wl-float');
+      const defaultBg = isFloating ? 'rgba(255,255,255,0.92)' : 'transparent';
       b.style.background = isNowWishlisted ? 'var(--green)' : defaultBg;
       b.style.color = isNowWishlisted ? 'var(--gold)' : 'var(--green)';
       const svg = b.querySelector('svg');
@@ -9835,7 +10417,7 @@
                   <div style="font-size:13px;color:#1B4332;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;" onclick="document.getElementById('tj-wishlist-drawer').remove();document.body.style.overflow='';openProductDetail(${globalIdx});">${p.title}</div>
                   <div style="font-size:12px;color:#666;margin-top:2px;">MOQ: ${p.moq || 2} pcs</div>
                   <div style="font-size:14px;color:#1B4332;font-weight:600;margin-top:4px;">$${parseFloat(p.price || 0).toFixed(2)}</div>
-                  <button onclick="document.getElementById('tj-wishlist-drawer').remove();document.body.style.overflow='';openProductDetail(${globalIdx});" style="margin-top:8px;background:#1B4332;color:#E3BA45;border:none;padding:7px 14px;font-size:9px;text-transform:uppercase;letter-spacing:1px;cursor:pointer;border-radius:6px;font-weight:600;">Book Now</button>
+                  <button class="tj-btn tj-btn-green" onclick="document.getElementById('tj-wishlist-drawer').remove();document.body.style.overflow='';openProductDetail(${globalIdx});" style="margin-top:8px;background:#1B4332;color:#E3BA45;border:none;padding:7px 14px;font-size:9px;text-transform:uppercase;letter-spacing:1px;cursor:pointer;border-radius:6px;font-weight:600;">Book Now</button>
                 </div>
                 <button onclick="removeFromWishlistDrawer('${p.id}')" title="Remove" style="position:absolute;top:10px;right:10px;background:#fee;border:none;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#e63946;font-size:13px;line-height:1;">✕</button>
               </div>`;
@@ -10634,7 +11216,7 @@
                 <svg style="width:48px;height:48px;color:#ccc;margin:0 auto 12px;display:block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
                 <p style="font-size:13px;color:#888;">No inquiries logged.</p>
                 <p style="font-size:11px;color:#bbb;margin-top:4px;">Request quotes directly on any product page.</p>
-                <button onclick="document.getElementById('tj-account-drawer').remove();document.body.style.overflow='';const s=document.getElementById('tj-products-section');if(s)s.scrollIntoView({behavior:'smooth'});" style="margin-top:16px;background:#1B4332;color:#E3BA45;border:none;padding:8px 16px;font-size:10px;text-transform:uppercase;letter-spacing:1px;border-radius:6px;font-weight:600;cursor:pointer;">Browse Catalog</button>
+                <button class="tj-btn tj-btn-green" onclick="document.getElementById('tj-account-drawer').remove();document.body.style.overflow='';const s=document.getElementById('tj-products-section');if(s)s.scrollIntoView({behavior:'smooth'});" style="margin-top:16px;background:#1B4332;color:#E3BA45;border:none;padding:8px 16px;font-size:10px;text-transform:uppercase;letter-spacing:1px;border-radius:6px;font-weight:600;cursor:pointer;">Browse Catalog</button>
               </div>
             ` : userInquiries.map(inq => {
               const statusColors = {
@@ -10680,7 +11262,7 @@
                     <div style="font-size:12px;color:#1B4332;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;" onclick="document.getElementById('tj-account-drawer').remove();document.body.style.overflow='';openProductDetail(${globalIdx});">${p.title}</div>
                     <div style="font-size:11px;color:#666;margin-top:2px;">MOQ: ${p.moq || 2} pcs</div>
                     <div style="font-size:13px;color:#1B4332;font-weight:700;margin-top:4px;">$${parseFloat(p.price || 0).toFixed(2)}</div>
-                    <button onclick="document.getElementById('tj-account-drawer').remove();document.body.style.overflow='';openProductDetail(${globalIdx});" style="margin-top:8px;background:#1B4332;color:#E3BA45;border:none;padding:6px 12px;font-size:9px;text-transform:uppercase;letter-spacing:1.05px;cursor:pointer;border-radius:5px;font-weight:600;">Book Now</button>
+                    <button class="tj-btn tj-btn-green" onclick="document.getElementById('tj-account-drawer').remove();document.body.style.overflow='';openProductDetail(${globalIdx});" style="margin-top:8px;background:#1B4332;color:#E3BA45;border:none;padding:6px 12px;font-size:9px;text-transform:uppercase;letter-spacing:1.05px;cursor:pointer;border-radius:5px;font-weight:600;">Book Now</button>
                   </div>
                   <button onclick="removeWishlistItemFromDash('${p.id}')" title="Remove" style="position:absolute;top:10px;right:10px;background:#fee;border:none;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#e63946;font-size:11px;">✕</button>
                 </div>
@@ -10713,7 +11295,7 @@
               </div>
             </div>
             
-            <button onclick="signOut()" style="width:100%;padding:12px;background:#fee;border:none;border-radius:10px;color:#c00;font-size:12px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all 0.2s;">Sign Out</button>
+            <button class="tj-btn" onclick="signOut()" style="width:100%;padding:12px;background:#fee;border:none;border-radius:10px;color:#c00;font-size:12px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all 0.2s;">Sign Out</button>
           </div>
         </div>
       `;
@@ -10778,6 +11360,25 @@
     }
   }
 
+  window.tjSwitchToProduct = function(target) {
+    window._tjSwitchingVariation = true;
+    if (typeof window.tjIsClientRoutable === 'function' ? window.tjIsClientRoutable() : true) {
+      window.history.pushState({}, '', target);
+      window.renderPageViews();
+    } else {
+      window.location.href = target;
+    }
+  };
+
+  window.tjSwitchToProductInline = function(btn, target) {
+    if (typeof window.tjIsClientRoutable === 'function' ? window.tjIsClientRoutable() : true) {
+      window.history.pushState({}, '', target);
+      window.tjSwitchVariant(btn);
+    } else {
+      window.location.href = target;
+    }
+  };
+
   // ── In-place variation switcher ─────────────────────────────────────
   // Clicking a variation button updates ALL page fields immediately from the
   // cached variation data — NO navigation, NO URL change, NO page reload.
@@ -10809,7 +11410,7 @@
     // ── Price ──────────────────────────────────────────────────────────
     const vPrice = window.tjVariationPrice(v, p);
     const priceEl = document.getElementById('tj-pdp-price');
-    if (priceEl) priceEl.textContent = '$' + vPrice.price.toFixed(2);
+    if (priceEl) priceEl.innerHTML = window.tjPriceHTML(vPrice.price);
 
     const compEl  = document.getElementById('tj-pdp-compare-price');
     const badgeEl = document.getElementById('tj-pdp-discount-badge');
@@ -10817,11 +11418,15 @@
       if (vPrice.compare && vPrice.compare > vPrice.price) {
         compEl.textContent  = '$' + vPrice.compare.toFixed(2);
         compEl.style.display  = 'inline-block';
-        badgeEl.textContent = Math.round((1 - vPrice.price / vPrice.compare) * 100) + '% OFF';
+        badgeEl.textContent = '-' + Math.round((1 - vPrice.price / vPrice.compare) * 100) + '%';
         badgeEl.style.display = 'inline-block';
+        var mrpOn = document.getElementById('tj-pdp-mrp-row');
+        if (mrpOn) mrpOn.style.display = 'flex';
       } else {
         compEl.style.display  = 'none';
         badgeEl.style.display = 'none';
+        var mrpOff = document.getElementById('tj-pdp-mrp-row');
+        if (mrpOff) mrpOff.style.display = 'none';
       }
     }
 
@@ -10868,7 +11473,7 @@
     const stockText = document.getElementById('tj-pdp-stock-text');
     if (stockDot && stockText) {
       stockDot.style.background = isOut ? '#E3BA45' : '#0f9d58';
-      stockText.textContent = isOut ? 'Made to Order · Lead time applies' : 'In Stock / Wholesale Ready';
+      stockText.textContent = isOut ? 'Made to Order' : 'In Stock';
       if (stockText.parentElement) stockText.parentElement.style.color = isOut ? '#B7860B' : '#0f9d58';
     }
 
@@ -10877,7 +11482,7 @@
     const skuEl   = document.getElementById('tj-pdp-sku');
     if (skuWrap && skuEl) {
       const sku = v.sku || p.sku;
-      if (sku) { skuEl.textContent = sku; skuWrap.style.display = 'block'; }
+      if (sku) { skuEl.textContent = sku; skuWrap.style.display = ''; }
       else { skuWrap.style.display = 'none'; }
     }
 

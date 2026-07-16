@@ -20,7 +20,7 @@ const EMPTY_VARIATION: Variation = { variation_name: '', option_value: '', price
 
 const EMPTY: Omit<Product, 'id' | 'created_at'> = {
   title: '', description: '', price: 0, compare_price: null, image_url: null,
-  category: null, subcategory_id: null, sku: null, moq: 10, tags: null, available: true, featured: false,
+  category: null, subcategory_id: null, sku: null, moq: 1, tags: null, available: true, featured: false,
   stock_quantity: 0, stock_status: 'in_stock',
 }
 
@@ -159,10 +159,10 @@ export default function ProductsPage() {
     const productPayload = {
       title: form.title, description: form.description,
       price: parseFloat(form.price),
-      compare_price: form.compare_price ? parseFloat(form.compare_price) : null,
+      compare_price: null,
       image_url: primaryImg?.image_url || form.image_url || null,
       category: primaryCategorySlug, subcategory_id: null,
-      sku: form.sku, moq: parseInt(form.moq) || 10, tags: form.tags,
+      sku: form.sku || null, moq: 1, tags: form.tags,
       available: form.available, featured: form.featured,
       stock_quantity: parseInt(form.stock_quantity) || 0,
       stock_status: form.stock_status || 'in_stock',
@@ -184,8 +184,195 @@ export default function ProductsPage() {
       await supabase.from('product_images').delete().eq('product_id', productId)
       const validImgs = galleryImages.filter(i => i.image_url && !i._uploading)
       if (validImgs.length > 0) await supabase.from('product_images').insert(validImgs.map((img, idx) => ({ product_id: productId, image_url: img.image_url, is_primary: img.is_primary, display_order: idx, alt_text: img.alt_text || '' })))
-      await supabase.from('product_variations').delete().eq('product_id', productId)
-      if (variations.length > 0) await supabase.from('product_variations').insert(variations.map((v, idx) => ({ product_id: productId, variation_name: v.variation_name, option_value: v.option_value, price: v.price ? parseFloat(v.price) : null, sale_price: v.sale_price ? parseFloat(v.sale_price) : null, sku: v.sku || null, barcode: v.barcode || null, stock_quantity: parseInt(v.stock_quantity) || 0, stock_status: v.stock_status || 'in_stock', image_url: v.image_url || null, description: v.description || null, display_order: idx })))
+      
+      // --- Complete Bidirectional Group Variation Syncing ---
+      // Fetch all products to resolve references
+      const { data: dbProducts } = await supabase.from('products').select('*')
+      const allProds = dbProducts || []
+
+      // Make sure allProds has the newly saved/updated version of the current product
+      const currentProdIdx = allProds.findIndex(p => p.id === productId)
+      const updatedProdObj = { ...productPayload, id: productId } as any
+      if (currentProdIdx !== -1) {
+        allProds[currentProdIdx] = updatedProdObj
+      } else {
+        allProds.push(updatedProdObj)
+      }
+
+      // Helper to match a variation to any product in the database
+      const getTargetProduct = (v: any) => {
+        const skuVal = (v.sku || '').trim().toLowerCase()
+        if (skuVal) {
+          const m = allProds.find(p => p.sku && p.sku.trim().toLowerCase() === skuVal)
+          if (m) return m
+        }
+        const optVal = (v.option_value || '').trim().toLowerCase()
+        if (optVal) {
+          const m = allProds.find(p => (p.title || '').trim().toLowerCase() === optVal)
+          if (m) return m
+        }
+        return null
+      }
+
+      // Helpers for safe type parsing
+      const parseVal = (val: any) => {
+        if (val === null || val === undefined || String(val).trim() === '') return null
+        const n = parseFloat(String(val))
+        return isNaN(n) ? null : n
+      }
+      const parseIntVal = (val: any) => {
+        if (val === null || val === undefined || String(val).trim() === '') return 0
+        const n = parseInt(String(val))
+        return isNaN(n) ? 0 : n
+      }
+
+      // Fetch old variations of this product
+      const { data: oldVarsRes } = await supabase.from('product_variations').select('*').eq('product_id', productId)
+      const oldVars = oldVarsRes || []
+
+      // Map current/new variations to target product IDs
+      const newLinkedIds = new Set<string>()
+      const linkedGroupNameMap = new Map<string, string>()
+      
+      variations.forEach(v => {
+        const target = getTargetProduct(v)
+        if (target && target.id !== productId) {
+          newLinkedIds.add(target.id)
+          linkedGroupNameMap.set(target.id, v.variation_name || 'Color')
+        }
+      })
+
+      // The new connected variation group
+      const G_new = [productId, ...Array.from(newLinkedIds)]
+
+      // Map old variations to target product IDs
+      const prevLinkedIds = new Set<string>()
+      oldVars.forEach(v => {
+        const target = getTargetProduct(v)
+        if (target && target.id !== productId) {
+          prevLinkedIds.add(target.id)
+        }
+      })
+      const G_old = [productId, ...Array.from(prevLinkedIds)]
+
+      // Removed products are those in G_old but not in G_new
+      const removedProductIds = Array.from(prevLinkedIds).filter(id => !newLinkedIds.has(id))
+
+      // Helper to determine the variation group name (e.g. Color, Style) for a target product
+      const getGroupNameFor = (targetId: string, currentPVars: any[], pId: string) => {
+        const existing = currentPVars.find(v => {
+          const target = getTargetProduct(v)
+          return target && target.id === targetId
+        })
+        if (existing && existing.variation_name) return existing.variation_name
+        
+        if (linkedGroupNameMap.has(targetId)) return linkedGroupNameMap.get(targetId) as string
+        if (linkedGroupNameMap.has(pId)) return linkedGroupNameMap.get(pId) as string
+        
+        const firstGroup = currentPVars.find(v => v.variation_name)?.variation_name
+        if (firstGroup) return firstGroup
+
+        return 'Color'
+      }
+
+      // 1. Process all products in the new group (G_new)
+      for (const P_id of G_new) {
+        // Fetch existing variations of product P
+        let pVars: any[] = []
+        if (P_id === productId) {
+          // For the saved product itself, we use the ones from the form/state
+          pVars = variations
+        } else {
+          const { data } = await supabase.from('product_variations').select('*').eq('product_id', P_id)
+          pVars = data || []
+        }
+
+        // Filter out any variations of P that match other products in the database (keeping only text/custom variations)
+        const customVars = pVars.filter(v => {
+          const target = getTargetProduct(v)
+          return !target || target.id === P_id
+        }).map(v => ({
+          variation_name: v.variation_name || 'Color',
+          option_value: v.option_value,
+          price: parseVal(v.price),
+          sale_price: parseVal(v.sale_price),
+          sku: v.sku || null,
+          barcode: v.barcode || null,
+          stock_quantity: parseIntVal(v.stock_quantity),
+          stock_status: v.stock_status || 'in_stock',
+          image_url: v.image_url || null,
+          description: v.description || null,
+        }))
+
+        // Rebuild all product-linking variations for P
+        const finalVars = [...customVars]
+        let displayOrder = finalVars.length
+
+        for (const X_id of G_new) {
+          if (X_id === P_id) continue
+          const X = allProds.find(p => p.id === X_id)
+          if (!X) continue
+
+          const varGroupName = getGroupNameFor(X_id, pVars, P_id)
+
+          finalVars.push({
+            variation_name: varGroupName,
+            option_value: X.title,
+            price: parseVal(X.price),
+            sale_price: parseVal(X.compare_price),
+            sku: X.sku || null,
+            barcode: null,
+            stock_quantity: parseIntVal(X.stock_quantity),
+            stock_status: X.stock_status || 'in_stock',
+            image_url: X.image_url || null,
+            description: X.description || null,
+          })
+        }
+
+        // Delete and overwrite variations for P
+        await supabase.from('product_variations').delete().eq('product_id', P_id)
+        if (finalVars.length > 0) {
+          await supabase.from('product_variations').insert(finalVars.map((v, idx) => ({
+            product_id: P_id,
+            ...v,
+            display_order: idx
+          })))
+        }
+      }
+
+      // 2. Process all removed products (removedProductIds)
+      for (const R_id of removedProductIds) {
+        // Fetch existing variations of removed product R
+        const { data: rVarsRes } = await supabase.from('product_variations').select('*').eq('product_id', R_id)
+        const rVars = rVarsRes || []
+
+        // Filter out any variations of R that link to any product in G_old (the old group)
+        const customRVars = rVars.filter(v => {
+          const target = getTargetProduct(v)
+          return !target || (!G_old.includes(target.id) && target.id !== R_id)
+        }).map(v => ({
+          variation_name: v.variation_name || 'Color',
+          option_value: v.option_value,
+          price: parseVal(v.price),
+          sale_price: parseVal(v.sale_price),
+          sku: v.sku || null,
+          barcode: v.barcode || null,
+          stock_quantity: parseIntVal(v.stock_quantity),
+          stock_status: v.stock_status || 'in_stock',
+          image_url: v.image_url || null,
+          description: v.description || null,
+        }))
+
+        // Delete and overwrite variations for R
+        await supabase.from('product_variations').delete().eq('product_id', R_id)
+        if (customRVars.length > 0) {
+          await supabase.from('product_variations').insert(customRVars.map((v, idx) => ({
+            product_id: R_id,
+            ...v,
+            display_order: idx
+          })))
+        }
+      }
     }
     showToast('Product saved!', { type: 'success' }); setModal(null); load(); setSaving(false)
   }
@@ -238,7 +425,19 @@ export default function ProductsPage() {
     let query = supabase.from('products').select('*').order('created_at', { ascending: false }).limit(30)
     if (q.trim()) query = query.ilike('title', `%${q.trim()}%`)
     const { data } = await query
-    setPickerResults(data || [])
+    
+    // Filter out current product and duplicates
+    const currentId = form?.id
+    const existingTitlesOrSkus = new Set(
+      variations.map(v => (v.option_value || '').trim().toLowerCase())
+    )
+    const filtered = (data || []).filter(p => {
+      if (currentId && p.id === currentId) return false
+      const titleKey = (p.title || '').trim().toLowerCase()
+      return !existingTitlesOrSkus.has(titleKey)
+    })
+
+    setPickerResults(filtered)
     setPickerLoading(false)
   }
 
@@ -283,9 +482,27 @@ export default function ProductsPage() {
   async function del(id: string) {
     const confirmed = await showConfirm('Delete this product?')
     if (!confirmed) return
+    
+    // Fetch product details first to clean up references in other products' variations
+    const { data: prod } = await supabase.from('products').select('title, sku').eq('id', id).maybeSingle()
+    
     const { error } = await supabase.from('products').delete().eq('id', id)
-    if (error) showToast(`Error: ${error.message}`, { type: 'error' })
-    else showToast('Deleted!', { type: 'success' })
+    if (error) {
+      showToast(`Error: ${error.message}`, { type: 'error' })
+    } else {
+      showToast('Deleted!', { type: 'success' })
+      if (prod) {
+        if (prod.sku) {
+          await supabase.from('product_variations')
+            .delete()
+            .or(`sku.eq.${prod.sku},option_value.ilike.${prod.title.trim()}`)
+        } else {
+          await supabase.from('product_variations')
+            .delete()
+            .ilike('option_value', prod.title.trim())
+        }
+      }
+    }
     load()
   }
 
@@ -361,7 +578,6 @@ export default function ProductsPage() {
                   </td>
                   <td className="px-4 py-4 max-w-[180px]">
                     <div className="font-normal text-sm truncate" style={{ color: '#1B4332' }}>{p.title}</div>
-                    {p.sku ? <div className="text-[10px] text-gray-400 font-mono mt-0.5">SKU: {p.sku}</div> : <div className="text-[10px] text-gray-300 mt-0.5">No SKU</div>}
                   </td>
                   <td className="px-4 py-4 text-gray-500 max-w-[160px]">
                     <div className="font-normal truncate text-xs">{assignedCatNames.join(', ') || 'Unassigned'}</div>
@@ -437,21 +653,9 @@ export default function ProductsPage() {
                       <label className="block text-[10px] uppercase tracking-wider font-medium mb-1.5 text-gray-500">Title *</label>
                       <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 font-light" placeholder="Product title" />
                     </div>
-                    <div>
+                    <div className="col-span-2">
                       <label className="block text-[10px] uppercase tracking-wider font-medium mb-1.5 text-gray-500">Base Price *</label>
                       <input type="number" step="0.01" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 font-light" placeholder="0.00" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-wider font-medium mb-1.5 text-gray-500">Compare Price</label>
-                      <input type="number" step="0.01" value={form.compare_price || ''} onChange={e => setForm({ ...form, compare_price: e.target.value || null })} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 font-light" placeholder="0.00" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-wider font-medium mb-1.5 text-gray-500">SKU</label>
-                      <input value={form.sku || ''} onChange={e => setForm({ ...form, sku: e.target.value || null })} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 font-mono text-[11px]" placeholder="SKU-001" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-wider font-medium mb-1.5 text-gray-500">MOQ</label>
-                      <input type="number" value={form.moq} onChange={e => setForm({ ...form, moq: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 font-light" placeholder="10" />
                     </div>
                     <div>
                       <label className="block text-[10px] uppercase tracking-wider font-medium mb-1.5 text-gray-500">Stock Qty</label>
@@ -580,7 +784,6 @@ export default function ProductsPage() {
                                 {v.price && !isNaN(parseFloat(v.price)) && (
                                   <div><span className="font-medium text-gray-400">Price:</span> <span className="font-semibold text-emerald-800">${parseFloat(v.price).toFixed(2)}</span></div>
                                 )}
-                                {v.sku && <div><span className="font-medium text-gray-400">SKU:</span> <code className="font-mono">{v.sku}</code></div>}
                                 <div>
                                   <span className={`px-1.5 py-0.5 rounded-md font-medium text-[9px] ${v.stock_status === 'out_of_stock' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}>
                                     {v.stock_status === 'out_of_stock' ? 'Out of Stock' : 'In Stock'}
@@ -714,7 +917,6 @@ export default function ProductsPage() {
                         <div className="text-xs font-medium truncate" style={{ color: '#1B4332' }}>{prod.title}</div>
                         <div className="flex items-center gap-3 mt-0.5">
                           <span className="text-[10px] font-semibold" style={{ color: '#92620a' }}>${prod.price?.toFixed(2)}</span>
-                          {prod.sku && <span className="text-[10px] text-gray-400 font-mono">SKU: {prod.sku}</span>}
                           <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${prod.stock_status === 'in_stock' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-500'}`}>
                             {prod.stock_status === 'in_stock' ? 'In Stock' : 'Out of Stock'}
                           </span>
