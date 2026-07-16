@@ -82,15 +82,15 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="p-8 font-light max-w-6xl mx-auto">
+    <div className="p-4 md:p-8 font-light max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-2xl font-light uppercase tracking-wide" style={{ color: '#1B4332' }}>Collections</h1>
+          <h1 className="text-xl md:text-2xl font-light uppercase tracking-wide" style={{ color: '#1B4332' }}>Collections</h1>
           <p className="text-xs text-gray-500 mt-1">Manage categories shown on your storefront</p>
         </div>
         <div>
-          <button onClick={openAddCat} className="px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-normal flex items-center gap-2" style={{ background: '#1B4332', color: '#E3BA45' }}>
+          <button onClick={openAddCat} className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl text-xs uppercase tracking-wider font-normal flex items-center justify-center gap-2 min-h-[44px]" style={{ background: '#1B4332', color: '#E3BA45' }}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
             Add Category
           </button>
@@ -142,7 +142,7 @@ export default function CategoriesPage() {
                 <div className="flex gap-2 pt-2 border-t border-gray-50 justify-end">
                   <button
                     onClick={() => openEditCat(c)}
-                    className="px-3.5 py-2 rounded-xl border text-[10px] uppercase tracking-wider font-semibold transition-all hover:bg-emerald-50 flex items-center gap-1.5"
+                    className="px-3.5 py-2.5 rounded-xl border text-[10px] uppercase tracking-wider font-semibold transition-all hover:bg-emerald-50 flex items-center gap-1.5 min-h-[38px]"
                     style={{ borderColor: '#1B4332', color: '#1B4332' }}
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
@@ -150,7 +150,7 @@ export default function CategoriesPage() {
                   </button>
                   <button
                     onClick={() => delCat(c.id)}
-                    className="px-3.5 py-2 rounded-xl text-[10px] uppercase tracking-wider font-semibold bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 transition-all flex items-center gap-1.5"
+                    className="px-3.5 py-2.5 rounded-xl text-[10px] uppercase tracking-wider font-semibold bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 transition-all flex items-center gap-1.5 min-h-[38px]"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     Delete
@@ -170,12 +170,12 @@ export default function CategoriesPage() {
       {/* --- CATEGORY MODAL --- */}
       {catModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl w-full max-w-md p-8 shadow-xl border border-gray-100">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 md:p-8 shadow-xl border border-gray-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
               <h2 className="text-base font-normal tracking-wide uppercase" style={{ color: '#1B4332' }}>
                 {catModal === 'add' ? 'Add Category' : 'Edit Category'}
               </h2>
-              <button onClick={() => setCatModal(null)} className="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-400">
+              <button onClick={() => setCatModal(null)} className="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-400 min-h-[32px] min-w-[32px]">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
@@ -186,7 +186,7 @@ export default function CategoriesPage() {
                 <input
                   value={catForm.name}
                   onChange={e => setCatForm({ ...catForm, name: e.target.value, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 font-light"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 font-light bg-white"
                   placeholder="e.g. Rings"
                   required
                 />
@@ -196,21 +196,21 @@ export default function CategoriesPage() {
                 <input
                   value={catForm.slug}
                   onChange={e => setCatForm({ ...catForm, slug: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 font-mono text-[11px]"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 font-mono text-[11px] bg-white"
                   placeholder="e.g. rings"
                   required
                 />
               </div>
               <div>
                 <label className="block text-[10px] uppercase tracking-wider font-medium mb-1.5 text-gray-500">Image</label>
-                <div className="flex gap-2 items-center">
+                <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
                   <input
                     value={catForm.image_url || ''}
                     onChange={e => setCatForm({ ...catForm, image_url: e.target.value || null })}
-                    className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-[10px] font-mono outline-none focus:border-yellow-400"
+                    className="w-full sm:flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-[10px] font-mono outline-none focus:border-yellow-400 bg-white"
                     placeholder="Paste URL or upload image →"
                   />
-                  <label className="px-3.5 py-2.5 rounded-xl text-[10px] uppercase tracking-wider font-normal border cursor-pointer transition-all hover:bg-gray-50 shrink-0 text-center" style={{ borderColor: '#1B4332', color: '#1B4332' }}>
+                  <label className="w-full sm:w-auto px-3.5 py-2.5 rounded-xl text-[10px] uppercase tracking-wider font-normal border cursor-pointer transition-all hover:bg-gray-50 shrink-0 text-center bg-white min-h-[38px] flex items-center justify-center" style={{ borderColor: '#1B4332', color: '#1B4332' }}>
                     Upload
                     <input
                       type="file"
@@ -253,7 +253,7 @@ export default function CategoriesPage() {
                   type="number"
                   value={catForm.display_order}
                   onChange={e => setCatForm({ ...catForm, display_order: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 font-light"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 font-light bg-white"
                   placeholder="0"
                 />
               </div>
@@ -266,8 +266,8 @@ export default function CategoriesPage() {
             </div>
 
             <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100">
-              <button onClick={() => setCatModal(null)} className="flex-1 py-2.5 rounded-xl text-[10px] uppercase tracking-widest font-normal border text-gray-500 hover:bg-gray-50">Cancel</button>
-              <button onClick={saveCat} disabled={saving || !catForm.name} className="flex-1 py-2.5 rounded-xl text-[10px] uppercase tracking-widest font-normal disabled:opacity-60 transition-all" style={{ background: '#1B4332', color: '#E3BA45' }}>
+              <button onClick={() => setCatModal(null)} className="flex-1 py-3 rounded-xl text-[10px] uppercase tracking-widest font-normal border text-gray-500 hover:bg-gray-50 min-h-[44px]">Cancel</button>
+              <button onClick={saveCat} disabled={saving || !catForm.name} className="flex-1 py-3 rounded-xl text-[10px] uppercase tracking-widest font-normal disabled:opacity-60 transition-all min-h-[44px]" style={{ background: '#1B4332', color: '#E3BA45' }}>
                 {saving ? 'Saving...' : catModal === 'add' ? 'Create' : 'Save'}
               </button>
             </div>

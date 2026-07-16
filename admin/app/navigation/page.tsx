@@ -287,17 +287,17 @@ export default function NavigationPage() {
   }
 
   return (
-    <div className="p-8 font-light max-w-6xl mx-auto">
+    <div className="p-4 md:p-8 font-light max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-2xl font-light uppercase tracking-wide" style={{ color: '#1B4332' }}>Navigation Menu</h1>
+          <h1 className="text-xl md:text-2xl font-light uppercase tracking-wide" style={{ color: '#1B4332' }}>Navigation Menu</h1>
           <p className="text-xs text-gray-500 mt-1">Design and customize exactly how links and dropdowns display on the storefront navbar</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-3 w-full sm:w-auto">
           <button
             onClick={addParentItem}
-            className="px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider font-normal flex items-center gap-2 border border-gray-200 bg-white hover:bg-gray-50 transition-all"
+            className="px-4 py-3 sm:py-2.5 rounded-xl text-xs uppercase tracking-wider font-normal flex items-center justify-center gap-2 border border-gray-200 bg-white hover:bg-gray-50 transition-all min-h-[44px]"
             style={{ color: '#1B4332' }}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -308,7 +308,7 @@ export default function NavigationPage() {
           <button
             onClick={saveMenu}
             disabled={saving}
-            className="px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-normal flex items-center gap-2 transition-all disabled:opacity-60"
+            className="px-5 py-3 sm:py-2.5 rounded-xl text-xs uppercase tracking-wider font-normal flex items-center justify-center gap-2 transition-all disabled:opacity-60 min-h-[44px]"
             style={{ background: '#1B4332', color: '#E3BA45' }}
           >
             {saving ? 'Saving...' : 'Save Configuration'}
@@ -336,7 +336,7 @@ export default function NavigationPage() {
                   }`}
                 >
                   {/* Parent Row */}
-                  <div className="flex items-center justify-between p-4 bg-gray-50/50 rounded-t-2xl border-b border-gray-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50/50 rounded-t-2xl border-b border-gray-100 gap-3">
                     <div className="flex items-center gap-3">
                       {/* Info */}
                       <div>
@@ -351,11 +351,11 @@ export default function NavigationPage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
                       <button
                         disabled={parentIdx === 0}
                         onClick={() => moveParent(parentIdx, 'up')}
-                        className="p-1.5 rounded-lg border border-gray-100 hover:bg-white text-gray-500 hover:text-emerald-700 transition-all disabled:opacity-20 disabled:pointer-events-none"
+                        className="p-2 sm:p-1.5 rounded-lg border border-gray-100 hover:bg-white text-gray-500 hover:text-emerald-700 transition-all disabled:opacity-20 disabled:pointer-events-none min-h-[36px] min-w-[36px] flex items-center justify-center bg-white"
                         title="Move Up"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -365,7 +365,7 @@ export default function NavigationPage() {
                       <button
                         disabled={parentIdx === menuItems.length - 1}
                         onClick={() => moveParent(parentIdx, 'down')}
-                        className="p-1.5 rounded-lg border border-gray-100 hover:bg-white text-gray-500 hover:text-emerald-700 transition-all disabled:opacity-20 disabled:pointer-events-none"
+                        className="p-2 sm:p-1.5 rounded-lg border border-gray-100 hover:bg-white text-gray-500 hover:text-emerald-700 transition-all disabled:opacity-20 disabled:pointer-events-none min-h-[36px] min-w-[36px] flex items-center justify-center bg-white"
                         title="Move Down"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -374,7 +374,7 @@ export default function NavigationPage() {
                       </button>
                       <button
                         onClick={() => toggleParentVisible(item.id)}
-                        className={`p-1.5 rounded-lg border hover:bg-white transition-all ${item.visible ? 'text-gray-500 border-gray-100 hover:text-amber-600' : 'text-amber-600 border-amber-100 bg-amber-50/20'}`}
+                        className={`p-2 sm:p-1.5 rounded-lg border hover:bg-white transition-all min-h-[36px] min-w-[36px] flex items-center justify-center ${item.visible ? 'text-gray-500 border-gray-100 hover:text-amber-600 bg-white' : 'text-amber-600 border-amber-100 bg-amber-50/20'}`}
                         title={item.visible ? 'Hide from navbar' : 'Show on navbar'}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -383,14 +383,14 @@ export default function NavigationPage() {
                       </button>
                       <button
                         onClick={() => editParent(item)}
-                        className="p-1.5 rounded-lg border border-gray-100 hover:bg-white text-gray-500 hover:text-emerald-700 transition-all"
+                        className="p-2 sm:p-1.5 rounded-lg border border-gray-100 hover:bg-white text-gray-500 hover:text-emerald-700 transition-all min-h-[36px] min-w-[36px] flex items-center justify-center bg-white"
                         title="Edit link details"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                       </button>
                       <button
                         onClick={() => addChildItem(item.id)}
-                        className="px-2.5 py-1.5 rounded-lg border border-gray-150 hover:bg-white text-emerald-800 text-[10px] uppercase tracking-wider font-normal flex items-center gap-1"
+                        className="px-3.5 py-2 rounded-lg border border-gray-150 hover:bg-white text-emerald-800 text-[10px] uppercase tracking-wider font-normal flex items-center gap-1 min-h-[36px] bg-white"
                         title="Add dropdown item"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
@@ -398,7 +398,7 @@ export default function NavigationPage() {
                       </button>
                       <button
                         onClick={() => deleteParentItem(item.id)}
-                        className="p-1.5 rounded-lg border border-red-100 text-red-600 hover:bg-red-50/40 transition-all"
+                        className="p-2 sm:p-1.5 rounded-lg border border-red-100 text-red-600 hover:bg-red-50/40 transition-all min-h-[36px] min-w-[36px] flex items-center justify-center bg-white"
                         title="Delete item"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -407,7 +407,7 @@ export default function NavigationPage() {
                   </div>
 
                   {/* Dropdowns list inside parent */}
-                  <div className="p-4 space-y-2 border-t border-gray-50">
+                  <div className="p-4 space-y-2 border-t border-gray-50 bg-gray-50/20">
                     {item.subcategories.length === 0 ? (
                       <div className="py-2.5 text-center text-gray-400 italic text-[11px]">
                         No dropdown submenu items. Displays as a direct header link.
@@ -416,7 +416,7 @@ export default function NavigationPage() {
                       item.subcategories.map((sub, childIdx) => (
                         <div
                           key={sub.id}
-                          className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                          className={`flex flex-col xs:flex-row xs:items-center justify-between p-3 rounded-xl border transition-all gap-2 ${
                             activeChildEdit?.childId === sub.id
                               ? 'border-emerald-600 bg-emerald-50/10 ring-1 ring-emerald-600/30'
                               : 'border-gray-100 bg-white hover:border-gray-200'
@@ -435,11 +435,11 @@ export default function NavigationPage() {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5 justify-start xs:justify-end">
                             <button
                               disabled={childIdx === 0}
                               onClick={() => moveChild(item.id, childIdx, 'up')}
-                              className="p-1 rounded border border-gray-100 text-gray-400 hover:bg-gray-50 hover:text-emerald-700 transition-all disabled:opacity-20 disabled:pointer-events-none"
+                              className="p-2 xs:p-1 rounded border border-gray-100 text-gray-400 hover:bg-gray-50 hover:text-emerald-700 transition-all disabled:opacity-20 disabled:pointer-events-none min-h-[30px] min-w-[30px] flex items-center justify-center bg-white"
                               title="Move Up"
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -449,7 +449,7 @@ export default function NavigationPage() {
                             <button
                               disabled={childIdx === item.subcategories.length - 1}
                               onClick={() => moveChild(item.id, childIdx, 'down')}
-                              className="p-1 rounded border border-gray-100 text-gray-400 hover:bg-gray-50 hover:text-emerald-700 transition-all disabled:opacity-20 disabled:pointer-events-none"
+                              className="p-2 xs:p-1 rounded border border-gray-100 text-gray-400 hover:bg-gray-50 hover:text-emerald-700 transition-all disabled:opacity-20 disabled:pointer-events-none min-h-[30px] min-w-[30px] flex items-center justify-center bg-white"
                               title="Move Down"
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -458,7 +458,7 @@ export default function NavigationPage() {
                             </button>
                             <button
                               onClick={() => toggleChildVisible(item.id, sub.id)}
-                              className={`p-1 rounded border hover:bg-gray-50 transition-all ${sub.visible ? 'text-gray-400 border-gray-100 hover:text-amber-600' : 'text-amber-600 border-amber-100 bg-amber-50/20'}`}
+                              className={`p-2 xs:p-1 rounded border hover:bg-gray-50 transition-all min-h-[30px] min-w-[30px] flex items-center justify-center ${sub.visible ? 'text-gray-400 border-gray-100 hover:text-amber-600 bg-white' : 'text-amber-600 border-amber-100 bg-amber-50/20'}`}
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={sub.visible ? "M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" : "M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"} />
@@ -466,13 +466,13 @@ export default function NavigationPage() {
                             </button>
                             <button
                               onClick={() => editChild(item.id, sub)}
-                              className="p-1 rounded border border-gray-100 text-gray-400 hover:bg-gray-50 hover:text-emerald-700 transition-all"
+                              className="p-2 xs:p-1 rounded border border-gray-100 text-gray-400 hover:bg-gray-50 hover:text-emerald-700 transition-all min-h-[30px] min-w-[30px] flex items-center justify-center bg-white"
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                             </button>
                             <button
                               onClick={() => deleteChildItem(item.id, sub.id)}
-                              className="p-1 rounded border border-red-50 text-red-500 hover:bg-red-50/20 transition-all"
+                              className="p-2 xs:p-1 rounded border border-red-50 text-red-500 hover:bg-red-50/20 transition-all min-h-[30px] min-w-[30px] flex items-center justify-center bg-white"
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                             </button>
@@ -487,13 +487,13 @@ export default function NavigationPage() {
           </div>
 
           {/* Edit Details Sidebar */}
-          <div className="lg:col-span-1">
+          <div className={`${activeParentEdit === null && activeChildEdit === null ? 'hidden lg:block lg:col-span-1' : 'fixed inset-0 z-40 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 lg:static lg:bg-transparent lg:p-0 lg:z-0 lg:flex lg:col-span-1'}`}>
             {activeParentEdit === null && activeChildEdit === null ? (
               <div className="bg-gray-50 rounded-2xl border border-gray-150 p-6 text-center text-gray-400 text-xs italic">
                 Select a menu item or dropdown link to edit its name, link destination, and target category.
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-gray-150 p-6 space-y-5 shadow-xs sticky top-8">
+              <div className="bg-white rounded-2xl border border-gray-150 p-6 space-y-5 shadow-xl lg:shadow-xs w-full max-w-md lg:max-w-none lg:sticky lg:top-8">
                 <div className="border-b border-gray-100 pb-3 flex justify-between items-center">
                   <h3 className="font-normal text-sm" style={{ color: '#1B4332' }}>
                     {activeParentEdit ? 'Edit Main Link' : 'Edit Dropdown Item'}
@@ -503,7 +503,7 @@ export default function NavigationPage() {
                       setActiveParentEdit(null)
                       setActiveChildEdit(null)
                     }}
-                    className="text-gray-400 hover:text-gray-600 text-xs"
+                    className="text-gray-400 hover:text-gray-600 text-xs p-1 min-h-[32px] min-w-[32px] flex items-center justify-center rounded-full hover:bg-gray-50"
                   >
                     Cancel
                   </button>
@@ -516,7 +516,7 @@ export default function NavigationPage() {
                     type="text"
                     value={editForm.name}
                     onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-gray-200 outline-none focus:border-emerald-700 font-light"
+                    className="w-full px-3 py-2.5 text-xs rounded-xl border border-gray-200 outline-none focus:border-emerald-700 font-light bg-white"
                     placeholder="e.g. Vintage Rings"
                   />
                 </div>
@@ -528,7 +528,7 @@ export default function NavigationPage() {
                     <button
                       type="button"
                       onClick={() => setEditForm({ ...editForm, linkType: 'category', slug: categories[0]?.slug || '' })}
-                      className={`py-2 text-center text-[9px] uppercase tracking-wider rounded-lg border font-normal transition-all ${
+                      className={`py-2.5 text-center text-[9px] uppercase tracking-wider rounded-lg border font-normal transition-all ${
                         editForm.linkType === 'category' ? 'border-emerald-600 bg-emerald-50/40 text-emerald-950 font-semibold' : 'border-gray-200 text-gray-500 bg-white'
                       }`}
                     >
@@ -537,7 +537,7 @@ export default function NavigationPage() {
                     <button
                       type="button"
                       onClick={() => setEditForm({ ...editForm, linkType: 'product', slug: products[0] ? `/product/${products[0].id}` : '' })}
-                      className={`py-2 text-center text-[9px] uppercase tracking-wider rounded-lg border font-normal transition-all ${
+                      className={`py-2.5 text-center text-[9px] uppercase tracking-wider rounded-lg border font-normal transition-all ${
                         editForm.linkType === 'product' ? 'border-emerald-600 bg-emerald-50/40 text-emerald-950 font-semibold' : 'border-gray-200 text-gray-500 bg-white'
                       }`}
                     >
@@ -546,7 +546,7 @@ export default function NavigationPage() {
                     <button
                       type="button"
                       onClick={() => setEditForm({ ...editForm, linkType: 'custom', slug: '' })}
-                      className={`py-2 text-center text-[9px] uppercase tracking-wider rounded-lg border font-normal transition-all ${
+                      className={`py-2.5 text-center text-[9px] uppercase tracking-wider rounded-lg border font-normal transition-all ${
                         editForm.linkType === 'custom' ? 'border-emerald-600 bg-emerald-50/40 text-emerald-950 font-semibold' : 'border-gray-200 text-gray-500 bg-white'
                       }`}
                     >
@@ -589,7 +589,7 @@ export default function NavigationPage() {
                       type="text"
                       value={editForm.slug}
                       onChange={e => setEditForm({ ...editForm, slug: e.target.value })}
-                      className="w-full px-3 py-2.5 text-xs rounded-xl border border-gray-200 outline-none focus:border-emerald-700 font-light font-mono"
+                      className="w-full px-3 py-2.5 text-xs rounded-xl border border-gray-200 outline-none focus:border-emerald-700 font-light font-mono bg-white"
                       placeholder="e.g. #deals, /pages/about, etc."
                     />
                   )}
@@ -604,7 +604,7 @@ export default function NavigationPage() {
                     }
                   }}
                   disabled={!editForm.name}
-                  className="w-full py-2.5 rounded-xl text-xs uppercase tracking-wider font-normal transition-all text-white hover:opacity-95"
+                  className="w-full py-3 rounded-xl text-xs uppercase tracking-wider font-normal transition-all text-white hover:opacity-95 min-h-[44px]"
                   style={{ background: '#1B4332' }}
                 >
                   Apply Changes

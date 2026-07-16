@@ -214,9 +214,9 @@ export default function DealsPage() {
   }
 
   return (
-    <div className="p-8 font-light max-w-5xl mx-auto">
+    <div className="p-4 md:p-8 font-light max-w-5xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-light uppercase tracking-wide" style={{ color: '#1B4332' }}>Deals & Campaigns</h1>
+        <h1 className="text-xl md:text-2xl font-light uppercase tracking-wide" style={{ color: '#1B4332' }}>Deals & Campaigns</h1>
         <p className="text-xs text-gray-500 mt-1">Configure products & promotional targets for dynamic homepage sections</p>
       </div>
 
@@ -227,7 +227,7 @@ export default function DealsPage() {
           
           {/* SECTION 1: GOAT DEAL (DEAL OF THE DAY) */}
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-xs">
-            <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-100">
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-emerald-900 flex items-center gap-2">
                   <span>🔥</span> G.O.A.T. Deal (Deal of the Day)
@@ -236,7 +236,7 @@ export default function DealsPage() {
               </div>
               <button
                 onClick={() => setSettings({ ...settings, goat_deal_active: settings.goat_deal_active === 'true' ? 'false' : 'true' })}
-                className="px-3.5 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-semibold transition-all"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-lg text-[10px] uppercase tracking-wider font-semibold transition-all min-h-[38px] text-center justify-center flex items-center"
                 style={{
                   background: settings.goat_deal_active === 'true' ? '#1B4332' : '#f3f4f6',
                   color: settings.goat_deal_active === 'true' ? '#E3BA45' : '#6b7280'
@@ -340,7 +340,7 @@ export default function DealsPage() {
 
           {/* SECTION 2: TOP DEALS */}
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-xs">
-            <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-100">
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-emerald-900 flex items-center gap-2">
                   <span>💎</span> Top Deals Slider
@@ -349,7 +349,7 @@ export default function DealsPage() {
               </div>
               <button
                 onClick={() => setSettings({ ...settings, top_deals_active: settings.top_deals_active === 'true' ? 'false' : 'true' })}
-                className="px-3.5 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-semibold transition-all"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-lg text-[10px] uppercase tracking-wider font-semibold transition-all min-h-[38px] text-center justify-center flex items-center"
                 style={{
                   background: settings.top_deals_active === 'true' ? '#1B4332' : '#f3f4f6',
                   color: settings.top_deals_active === 'true' ? '#E3BA45' : '#6b7280'
@@ -453,7 +453,7 @@ export default function DealsPage() {
 
           {/* SECTION 3: BEST SELLER SECTION */}
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-xs">
-            <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-100">
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-emerald-900 flex items-center gap-2">
                   <span>★</span> Best Seller Section
@@ -462,7 +462,7 @@ export default function DealsPage() {
               </div>
               <button
                 onClick={() => setSettings({ ...settings, bestsellers_active: settings.bestsellers_active === 'true' ? 'false' : 'true' })}
-                className="px-3.5 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-semibold transition-all"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-lg text-[10px] uppercase tracking-wider font-semibold transition-all min-h-[38px] text-center justify-center flex items-center"
                 style={{
                   background: settings.bestsellers_active === 'true' ? '#1B4332' : '#f3f4f6',
                   color: settings.bestsellers_active === 'true' ? '#E3BA45' : '#6b7280'
@@ -566,7 +566,7 @@ export default function DealsPage() {
 
           {/* SECTION 4: BEST QUALITY (2x2 GRID) */}
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-xs">
-            <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-100">
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-emerald-900 flex items-center gap-2">
                   <span>✨</span> Best Quality (2x2 Grid)
@@ -575,7 +575,7 @@ export default function DealsPage() {
               </div>
               <button
                 onClick={() => setSettings({ ...settings, best_quality_active: settings.best_quality_active === 'true' ? 'false' : 'true' })}
-                className="px-3.5 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-semibold transition-all"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-lg text-[10px] uppercase tracking-wider font-semibold transition-all min-h-[38px] text-center justify-center flex items-center"
                 style={{
                   background: settings.best_quality_active === 'true' ? '#1B4332' : '#f3f4f6',
                   color: settings.best_quality_active === 'true' ? '#E3BA45' : '#6b7280'
@@ -679,7 +679,7 @@ export default function DealsPage() {
 
           {/* SECTION 5: TRENDING ITEMS */}
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-xs">
-            <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-100">
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-emerald-900 flex items-center gap-2">
                   <span>🔥</span> Trending Items Section
@@ -688,7 +688,7 @@ export default function DealsPage() {
               </div>
               <button
                 onClick={() => setSettings({ ...settings, trending_active: settings.trending_active === 'true' ? 'false' : 'true' })}
-                className="px-3.5 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-semibold transition-all"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-lg text-[10px] uppercase tracking-wider font-semibold transition-all min-h-[38px] text-center justify-center flex items-center"
                 style={{ background: settings.trending_active === 'true' ? '#1B4332' : '#f3f4f6', color: settings.trending_active === 'true' ? '#E3BA45' : '#6b7280' }}
               >
                 {settings.trending_active === 'true' ? '✓ Enabled' : '✗ Disabled'}
@@ -715,7 +715,7 @@ export default function DealsPage() {
 
           {/* SECTION 6: SHOP BY CATEGORY */}
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-xs">
-            <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-100">
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-emerald-900 flex items-center gap-2">
                   <span>🏷️</span> Shop by Category Section
@@ -724,7 +724,7 @@ export default function DealsPage() {
               </div>
               <button
                 onClick={() => setSettings({ ...settings, shop_by_cat_active: settings.shop_by_cat_active === 'true' ? 'false' : 'true' })}
-                className="px-3.5 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-semibold transition-all"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-lg text-[10px] uppercase tracking-wider font-semibold transition-all min-h-[38px] text-center justify-center flex items-center"
                 style={{
                   background: settings.shop_by_cat_active === 'true' ? '#1B4332' : '#f3f4f6',
                   color: settings.shop_by_cat_active === 'true' ? '#E3BA45' : '#6b7280'
@@ -787,7 +787,7 @@ export default function DealsPage() {
             <button
               onClick={save}
               disabled={saving}
-              className="px-6 py-3 rounded-xl text-[10px] uppercase tracking-widest disabled:opacity-60 transition-all flex items-center gap-2"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl text-[10px] uppercase tracking-widest disabled:opacity-60 transition-all flex items-center justify-center gap-2 min-h-[44px]"
               style={{ background: '#1B4332', color: '#E3BA45' }}
             >
               {saving ? 'Saving...' : '✓ Save Campaign Settings'}

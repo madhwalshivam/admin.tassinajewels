@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
@@ -79,68 +79,115 @@ const nav = [
   },
 ]
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean
+  onClose?: () => void
+}
+
+export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const path = usePathname()
   const router = useRouter()
   const [confirmOpen, setConfirmOpen] = useState(false)
+
+  // Prevent scrolling when sidebar is open on mobile
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
+
+  // Close sidebar on path change
+  useEffect(() => {
+    if (onClose) onClose()
+  }, [path])
 
   async function logout() {
     await fetch('/api/auth', { method: 'DELETE' })
     router.push('/')
   }
 
-  return (
+  const renderContent = () => (
     <>
-      <aside className="w-60 h-screen sticky top-0 flex flex-col font-light shrink-0 overflow-hidden" style={{ background: '#1B4332' }}>
-        {/* Brand Header with Logo */}
-        <div className="p-6 border-b shrink-0" style={{ borderColor: 'rgba(227,186,69,0.15)' }}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden border border-yellow-400 shrink-0">
-              <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <div className="font-normal text-xs uppercase tracking-widest" style={{ color: '#E3BA45' }}>Tassina Jewels</div>
-              <div className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: 'rgba(227,186,69,0.5)' }}>Admin Portal</div>
-            </div>
+      {/* Brand Header with Logo */}
+      <div className="p-6 border-b shrink-0" style={{ borderColor: 'rgba(227,186,69,0.15)' }}>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full overflow-hidden border border-yellow-400 shrink-0">
+            <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
+          </div>
+          <div>
+            <div className="font-normal text-xs uppercase tracking-widest" style={{ color: '#E3BA45' }}>Tassina Jewels</div>
+            <div className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: 'rgba(227,186,69,0.5)' }}>Admin Portal</div>
           </div>
         </div>
+      </div>
 
-        {/* Navigation links */}
-        <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
-          {nav.map(item => {
-            const active = path === item.href || path.startsWith(item.href + '/')
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs uppercase tracking-wider font-light transition-all"
-                style={{
-                  background: active ? 'rgba(227,186,69,0.1)' : 'transparent',
-                  color: active ? '#E3BA45' : 'rgba(227,186,69,0.6)',
-                  borderLeft: active ? '2px solid #E3BA45' : '2px solid transparent',
-                }}
-              >
-                <span className="shrink-0">{item.icon}</span>
-                {item.label}
-              </Link>
-            )
-          })}
-        </nav>
+      {/* Navigation links */}
+      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
+        {nav.map(item => {
+          const active = path === item.href || path.startsWith(item.href + '/')
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs uppercase tracking-wider font-light transition-all"
+              style={{
+                background: active ? 'rgba(227,186,69,0.1)' : 'transparent',
+                color: active ? '#E3BA45' : 'rgba(227,186,69,0.6)',
+                borderLeft: active ? '2px solid #E3BA45' : '2px solid transparent',
+              }}
+            >
+              <span className="shrink-0">{item.icon}</span>
+              {item.label}
+            </Link>
+          )
+        })}
+      </nav>
 
-        {/* Logout button */}
-        <div className="p-4 border-t shrink-0" style={{ borderColor: 'rgba(227,186,69,0.15)' }}>
-          <button
-            onClick={() => setConfirmOpen(true)}
-            className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs uppercase tracking-wider font-light transition-all hover:bg-emerald-950"
-            style={{ color: 'rgba(227,186,69,0.5)' }}
-          >
-            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            Sign Out
-          </button>
-        </div>
+      {/* Logout button */}
+      <div className="p-4 border-t shrink-0" style={{ borderColor: 'rgba(227,186,69,0.15)' }}>
+        <button
+          onClick={() => setConfirmOpen(true)}
+          className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs uppercase tracking-wider font-light transition-all hover:bg-emerald-950"
+          style={{ color: 'rgba(227,186,69,0.5)' }}
+        >
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          Sign Out
+        </button>
+      </div>
+    </>
+  )
+
+  return (
+    <>
+      {/* Desktop Sidebar (unchanged visually) */}
+      <aside className="hidden md:flex w-60 h-screen sticky top-0 flex-col font-light shrink-0 overflow-hidden" style={{ background: '#1B4332' }}>
+        {renderContent()}
       </aside>
+
+      {/* Mobile Drawer Backdrop */}
+      <div 
+        className={`fixed inset-0 bg-emerald-950/40 backdrop-blur-xs z-40 transition-opacity duration-300 md:hidden ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={onClose}
+      />
+
+      {/* Mobile Drawer Content */}
+      <div 
+        className={`fixed inset-y-0 left-0 w-60 z-50 flex flex-col font-light overflow-hidden transition-transform duration-300 ease-in-out md:hidden ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        style={{ background: '#1B4332' }}
+      >
+        {renderContent()}
+      </div>
 
       {/* Confirmation Modal */}
       {confirmOpen && (

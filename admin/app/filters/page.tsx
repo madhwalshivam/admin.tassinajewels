@@ -162,15 +162,15 @@ export default function FiltersPage() {
   }
 
   return (
-    <div className="p-8 font-light max-w-6xl mx-auto">
+    <div className="p-4 md:p-8 font-light max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-light uppercase tracking-wide" style={{ color: '#1B4332' }}>Dynamic Filters</h1>
+          <h1 className="text-xl md:text-2xl font-light uppercase tracking-wide" style={{ color: '#1B4332' }}>Dynamic Filters</h1>
           <p className="text-xs text-gray-500 mt-1">Manage e-commerce product filter groups, values, and assign them per collection</p>
         </div>
         {activeTab === 'groups' && (
-          <button onClick={openAddGroup} className="px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider font-normal flex items-center gap-2" style={{ background: '#1B4332', color: '#E3BA45' }}>
+          <button onClick={openAddGroup} className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl text-xs uppercase tracking-wider font-normal flex items-center justify-center gap-2 min-h-[44px]" style={{ background: '#1B4332', color: '#E3BA45' }}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
             Add Filter Group
           </button>
@@ -178,10 +178,10 @@ export default function FiltersPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b border-gray-200">
+      <div className="flex gap-2 mb-6 border-b border-gray-200 overflow-x-auto scrollbar-none whitespace-nowrap">
         <button
           onClick={() => setActiveTab('groups')}
-          className="px-6 py-3 text-xs uppercase tracking-widest font-normal border-b-2 transition-all"
+          className="px-4 sm:px-6 py-3 text-xs uppercase tracking-widest font-normal border-b-2 transition-all shrink-0"
           style={{
             borderColor: activeTab === 'groups' ? '#1B4332' : 'transparent',
             color: activeTab === 'groups' ? '#1B4332' : '#9ca3af'
@@ -191,7 +191,7 @@ export default function FiltersPage() {
         </button>
         <button
           onClick={() => setActiveTab('categories')}
-          className="px-6 py-3 text-xs uppercase tracking-widest font-normal border-b-2 transition-all"
+          className="px-4 sm:px-6 py-3 text-xs uppercase tracking-widest font-normal border-b-2 transition-all shrink-0"
           style={{
             borderColor: activeTab === 'categories' ? '#1B4332' : 'transparent',
             color: activeTab === 'categories' ? '#1B4332' : '#9ca3af'
@@ -213,49 +213,51 @@ export default function FiltersPage() {
                 {/* Header Row */}
                 <div 
                   onClick={() => setExpandedGroup(isExpanded ? null : g.id)}
-                  className="p-5 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-all select-none"
+                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-gray-50 transition-all select-none"
                 >
-                  <div className="flex items-center gap-4">
-                    <span className="text-[10px] bg-emerald-50 text-emerald-800 font-bold px-2 py-1 rounded-lg">Order: {g.display_order}</span>
-                    <div>
-                      <h4 className="text-sm font-semibold text-emerald-950 capitalize">{g.name}</h4>
-                      <code className="text-[10px] text-gray-400 font-mono">slug: {g.slug}</code>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] bg-emerald-50 text-emerald-800 font-bold px-2 py-1 rounded-lg shrink-0">Order: {g.display_order}</span>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-semibold text-emerald-950 capitalize truncate">{g.name}</h4>
+                      <code className="text-[10px] text-gray-400 font-mono block truncate">slug: {g.slug}</code>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-4" onClick={e => e.stopPropagation()}>
-                    <span className="text-xs text-gray-500">{values.length} values</span>
+                  <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto" onClick={e => e.stopPropagation()}>
+                    <span className="text-xs text-gray-500 shrink-0">{values.length} values</span>
                     
-                    {/* Status Toggle */}
-                    <button 
-                      onClick={() => toggleGroupEnabled(g)} 
-                      className={`w-9 h-5 rounded-full transition-all relative ${g.is_enabled ? 'bg-emerald-600' : 'bg-gray-200'}`}
-                      title={g.is_enabled ? 'Enabled' : 'Disabled'}
-                    >
-                      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${g.is_enabled ? 'left-4.5' : 'left-0.5'}`} />
-                    </button>
+                    <div className="flex items-center gap-3">
+                      {/* Status Toggle */}
+                      <button 
+                        onClick={() => toggleGroupEnabled(g)} 
+                        className={`w-9 h-5 rounded-full transition-all relative shrink-0 ${g.is_enabled ? 'bg-emerald-600' : 'bg-gray-200'}`}
+                        title={g.is_enabled ? 'Enabled' : 'Disabled'}
+                      >
+                        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${g.is_enabled ? 'left-4.5' : 'left-0.5'}`} />
+                      </button>
 
-                    {/* Actions */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => openEditGroup(g)}
-                        className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:border-emerald-600 hover:text-emerald-700 transition-all"
-                        title="Edit Filter Group"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                      </button>
-                      <button
-                        onClick={() => delGroup(g.id)}
-                        className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-all"
-                        title="Delete Filter Group"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      </button>
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openEditGroup(g)}
+                          className="p-2.5 rounded-lg border border-gray-200 text-gray-600 hover:border-emerald-600 hover:text-emerald-700 transition-all min-h-[38px] min-w-[38px] flex items-center justify-center bg-white"
+                          title="Edit Filter Group"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        </button>
+                        <button
+                          onClick={() => delGroup(g.id)}
+                          className="p-2.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-all min-h-[38px] min-w-[38px] flex items-center justify-center"
+                          title="Delete Filter Group"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      </div>
                     </div>
 
                     {/* Caret Icon */}
                     <svg 
-                      className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                      className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
                       fill="none" stroke="currentColor" viewBox="0 0 24 24"
                       onClick={() => setExpandedGroup(isExpanded ? null : g.id)}
                     >
@@ -323,7 +325,7 @@ export default function FiltersPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {categories.map(cat => {
             return (
-              <div key={cat.id} className="bg-white rounded-2xl border border-gray-100 shadow-xs p-5 space-y-4">
+              <div key={cat.id} className="bg-white rounded-2xl border border-gray-100 shadow-xs p-4 sm:p-5 space-y-4">
                 <div className="border-b border-gray-50 pb-3">
                   <h4 className="text-sm font-semibold text-emerald-950 capitalize">{cat.name}</h4>
                   <span className="text-[10px] text-gray-400 font-mono">slug: {cat.slug}</span>
@@ -331,14 +333,14 @@ export default function FiltersPage() {
 
                 <div className="space-y-2">
                   <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Enabled Filters</span>
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {filterGroups.map(g => {
                       const isAssigned = categoryFilters.some(cf => cf.category_id === cat.id && cf.filter_group_id === g.id)
                       
                       return (
                         <label 
                           key={g.id} 
-                          className={`flex items-center gap-2.5 p-2 rounded-xl border text-xs cursor-pointer select-none transition-all ${
+                          className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs cursor-pointer select-none transition-all min-h-[38px] ${
                             isAssigned 
                               ? 'border-emerald-600 bg-emerald-50/50 text-emerald-950 font-normal' 
                               : 'border-gray-150 hover:bg-gray-50 text-gray-600'

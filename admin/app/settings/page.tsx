@@ -104,7 +104,7 @@ export default function SettingsPage() {
   }
 
   const tabStyle = (t: string) => ({
-    padding: '8px 18px',
+    padding: '8px 14px',
     borderRadius: '8px',
     border: 'none',
     cursor: 'pointer',
@@ -123,7 +123,7 @@ export default function SettingsPage() {
       <input
         value={value}
         onChange={e => setSettings({ ...settings, [key]: e.target.value })}
-        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 font-mono"
+        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-yellow-400 font-mono bg-white"
         placeholder={placeholder}
       />
       {hint && <p className="text-[10px] text-gray-400 mt-1 leading-relaxed">{hint}</p>}
@@ -131,14 +131,14 @@ export default function SettingsPage() {
   )
 
   return (
-    <div className="p-8 font-light max-w-3xl mx-auto">
+    <div className="p-4 md:p-8 font-light max-w-3xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-light uppercase tracking-wide" style={{ color: '#1B4332' }}>Storefront Settings</h1>
+        <h1 className="text-xl md:text-2xl font-light uppercase tracking-wide" style={{ color: '#1B4332' }}>Storefront Settings</h1>
         <p className="text-xs text-gray-500 mt-1">Manage hero banners, announcement bar, and shop sections</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 p-1.5 bg-gray-100 rounded-xl w-fit">
+      <div className="flex flex-wrap gap-1.5 mb-6 p-1 bg-gray-150 rounded-xl w-full sm:w-fit">
         {(['hero','announcement','style','video','general'] as const).map(t => (
           <button key={t} style={tabStyle(t)} onClick={() => setTab(t)}>{t === 'style' ? 'Shop Style' : t === 'video' ? 'Video Section' : t.charAt(0).toUpperCase()+t.slice(1)}</button>
         ))}
@@ -147,7 +147,7 @@ export default function SettingsPage() {
       {loading ? (
         <div className="bg-white rounded-2xl p-8 border border-gray-100 text-center text-gray-400 text-xs">Loading settings...</div>
       ) : (
-        <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm space-y-6">
+        <div className="bg-white rounded-2xl p-5 md:p-8 border border-gray-100 shadow-sm space-y-6">
 
           {/* HERO TAB */}
           {tab === 'hero' && (
@@ -161,7 +161,7 @@ export default function SettingsPage() {
 
               <div className="space-y-6">
                 {heroSlides.map((slide, i) => (
-                  <div key={i} className="border border-gray-100 rounded-xl p-4 space-y-3 bg-gray-50/40 relative">
+                  <div key={i} className="border border-gray-150 rounded-xl p-4 space-y-3 bg-gray-50/40 relative">
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-500">Hero Slide {i + 1}</span>
                       {heroSlides.length > 1 && (
@@ -177,7 +177,7 @@ export default function SettingsPage() {
                         value={slide.image}
                         onChange={e => { const s=[...heroSlides]; s[i]={...s[i],image:e.target.value}; setHeroSlides(s); }}
                         placeholder="Paste secure image URL (e.g. https://res.cloudinary.com/...)"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 font-mono"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 font-mono bg-white"
                       />
                       {slide.image && slide.image !== 'Uploading...' && (
                         <div className="mt-2 relative w-full h-32 rounded-lg overflow-hidden border border-gray-100 bg-gray-50">
@@ -191,7 +191,7 @@ export default function SettingsPage() {
                         value={slide.link_url}
                         onChange={e => { const s=[...heroSlides]; s[i]={...s[i],link_url:e.target.value}; setHeroSlides(s); }}
                         placeholder="e.g. /?category=rings or https://..."
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 bg-white"
                       />
                     </div>
                   </div>
@@ -199,7 +199,7 @@ export default function SettingsPage() {
               </div>
               <button
                 onClick={() => setHeroSlides(s => [...s, { image: '', link_url: '' }])}
-                className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-xs text-gray-400 hover:border-yellow-300 hover:text-yellow-600 transition-all uppercase tracking-wider font-semibold"
+                className="w-full py-3.5 border-2 border-dashed border-gray-200 rounded-xl text-xs text-gray-400 hover:border-yellow-300 hover:text-yellow-600 transition-all uppercase tracking-wider font-semibold min-h-[44px]"
               >+ Add New Slide</button>
             </>
           )}
@@ -216,7 +216,7 @@ export default function SettingsPage() {
                 <label className="text-[10px] uppercase tracking-wider font-medium text-gray-500">Show Announcement Bar</label>
                 <button
                   onClick={() => setSettings(s => ({ ...s, announcement_show: s.announcement_show === 'true' ? 'false' : 'true' }))}
-                  className="px-4 py-2 rounded-lg text-[10px] uppercase tracking-wider font-medium transition-all"
+                  className="px-4 py-2.5 rounded-lg text-[10px] uppercase tracking-wider font-medium transition-all min-h-[36px]"
                   style={{ background: settings.announcement_show === 'true' ? '#1B4332' : '#f3f4f6', color: settings.announcement_show === 'true' ? '#E3BA45' : '#6b7280' }}
                 >
                   {settings.announcement_show === 'true' ? '✓ Visible' : '✗ Hidden'}
@@ -245,38 +245,38 @@ export default function SettingsPage() {
 
               <div className="space-y-4">
                 {styleCards.map((card, i) => (
-                  <div key={i} className="border border-gray-100 rounded-xl p-4 space-y-3">
+                  <div key={i} className="border border-gray-150 rounded-xl p-4 space-y-3 bg-gray-50/20">
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] uppercase tracking-wider font-medium text-gray-500">Style Card {i + 1}</span>
                       <button
                         onClick={() => setStyleCards(cards => cards.filter((_, idx) => idx !== i))}
-                        className="text-[10px] text-red-400 hover:text-red-600 uppercase tracking-wider"
+                        className="text-[10px] text-red-500 hover:text-red-700 uppercase tracking-wider font-semibold"
                       >Remove</button>
                     </div>
                     <input
                       value={card.title}
                       onChange={e => { const c=[...styleCards]; c[i]={...c[i],title:e.target.value}; setStyleCards(c); }}
                       placeholder="Style name (e.g. Modern Fusion)"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 bg-white font-light"
                     />
                     <input
                       value={card.image}
                       onChange={e => { const c=[...styleCards]; c[i]={...c[i],image:e.target.value}; setStyleCards(c); }}
                       placeholder="Image URL (Cloudinary, 600×800px recommended)"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 font-mono"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 font-mono bg-white"
                     />
                     <input
                       value={card.filter}
                       onChange={e => { const c=[...styleCards]; c[i]={...c[i],filter:e.target.value}; setStyleCards(c); }}
                       placeholder="Category filter slug (e.g. rings, bracelets — or 'all')"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 bg-white font-light"
                     />
                   </div>
                 ))}
               </div>
               <button
                 onClick={() => setStyleCards(c => [...c, { title: '', image: '', filter: 'all' }])}
-                className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-xs text-gray-400 hover:border-yellow-300 hover:text-yellow-600 transition-all uppercase tracking-wider"
+                className="w-full py-3.5 border-2 border-dashed border-gray-200 rounded-xl text-xs text-gray-400 hover:border-yellow-300 hover:text-yellow-600 transition-all uppercase tracking-wider font-semibold min-h-[44px]"
               >+ Add Style Card</button>
             </>
           )}
@@ -291,7 +291,7 @@ export default function SettingsPage() {
 
               <div className="space-y-6">
                 {reelsVideos.map((video, i) => (
-                  <div key={i} className="border border-gray-100 rounded-xl p-4 space-y-3 bg-gray-50/40 relative">
+                  <div key={i} className="border border-gray-150 rounded-xl p-4 space-y-3 bg-gray-50/40 relative">
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-500">Video {i + 1}</span>
                       {reelsVideos.length > 1 && (
@@ -304,65 +304,67 @@ export default function SettingsPage() {
 
                     <div>
                       <label className="block text-[9px] uppercase tracking-wider font-medium mb-1.5 text-gray-400">Option 1: Upload Video</label>
-                      <div className="flex gap-2 items-center">
+                      <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
                         <input
                           value={video.upload_url || ''}
                           readOnly
-                          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 bg-gray-50 font-mono"
+                          className="w-full sm:flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 bg-gray-50 font-mono"
                           placeholder="Upload a video file (MP4/WebM) →"
                         />
-                        <label className="px-3 py-2 rounded-lg text-xs border cursor-pointer transition-all hover:bg-gray-50 shrink-0 text-center font-normal" style={{ borderColor: '#1B4332', color: '#1B4332' }}>
-                          {video.upload_url?.startsWith('Uploading') ? 'Uploading...' : 'Choose File'}
-                          <input
-                            type="file"
-                            accept="video/mp4,video/webm"
-                            className="hidden"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0]
-                              if (!file) return
-                              const formData = new FormData()
-                              formData.append('file', file)
-                              
-                              const originalUrl = video.upload_url
-                              const updated = [...reelsVideos]
-                              updated[i] = { ...updated[i], upload_url: 'Uploading...' }
-                              setReelsVideos(updated)
-                              
-                              try {
-                                const res = await fetch('/api/upload', { method: 'POST', body: formData })
-                                const data = await res.json()
-                                if (data.url) {
-                                  const successList = [...reelsVideos]
-                                  successList[i] = { ...successList[i], upload_url: data.url }
-                                  setReelsVideos(successList)
-                                  showToast('Video uploaded successfully!', { type: 'success' })
-                                } else {
-                                  showToast(data.error || 'Upload failed', { type: 'error' })
+                        <div className="flex gap-2 w-full sm:w-auto shrink-0">
+                          <label className="flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-xs border cursor-pointer transition-all hover:bg-gray-50 text-center font-normal min-h-[38px] flex items-center justify-center bg-white" style={{ borderColor: '#1B4332', color: '#1B4332' }}>
+                            {video.upload_url?.startsWith('Uploading') ? 'Uploading...' : 'Choose File'}
+                            <input
+                              type="file"
+                              accept="video/mp4,video/webm"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0]
+                                if (!file) return
+                                const formData = new FormData()
+                                formData.append('file', file)
+                                
+                                const originalUrl = video.upload_url
+                                const updated = [...reelsVideos]
+                                updated[i] = { ...updated[i], upload_url: 'Uploading...' }
+                                setReelsVideos(updated)
+                                
+                                try {
+                                  const res = await fetch('/api/upload', { method: 'POST', body: formData })
+                                  const data = await res.json()
+                                  if (data.url) {
+                                    const successList = [...reelsVideos]
+                                    successList[i] = { ...successList[i], upload_url: data.url }
+                                    setReelsVideos(successList)
+                                    showToast('Video uploaded successfully!', { type: 'success' })
+                                  } else {
+                                    showToast(data.error || 'Upload failed', { type: 'error' })
+                                    const failList = [...reelsVideos]
+                                    failList[i] = { ...failList[i], upload_url: originalUrl || '' }
+                                    setReelsVideos(failList)
+                                  }
+                                } catch (err) {
+                                  showToast('Upload error', { type: 'error' })
                                   const failList = [...reelsVideos]
                                   failList[i] = { ...failList[i], upload_url: originalUrl || '' }
                                   setReelsVideos(failList)
                                 }
-                              } catch (err) {
-                                showToast('Upload error', { type: 'error' })
-                                const failList = [...reelsVideos]
-                                failList[i] = { ...failList[i], upload_url: originalUrl || '' }
-                                setReelsVideos(failList)
-                              }
-                            }}
-                          />
-                        </label>
-                        {video.upload_url && video.upload_url !== 'Uploading...' && (
-                          <button
-                            onClick={() => {
-                              const updated = [...reelsVideos]
-                              updated[i] = { ...updated[i], upload_url: '' }
-                              setReelsVideos(updated)
-                            }}
-                            className="px-3 py-2 border border-red-200 text-red-500 rounded-lg text-xs hover:bg-red-50 transition-all shrink-0 text-center font-normal"
-                          >
-                            Clear
-                          </button>
-                        )}
+                              }}
+                            />
+                          </label>
+                          {video.upload_url && video.upload_url !== 'Uploading...' && (
+                            <button
+                              onClick={() => {
+                                const updated = [...reelsVideos]
+                                updated[i] = { ...updated[i], upload_url: '' }
+                                setReelsVideos(updated)
+                              }}
+                              className="flex-1 sm:flex-none px-4 py-2.5 border border-red-200 text-red-500 rounded-lg text-xs hover:bg-red-50 transition-all text-center font-normal min-h-[38px]"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -376,7 +378,7 @@ export default function SettingsPage() {
                           setReelsVideos(updated)
                         }}
                         placeholder="Paste Direct MP4 URL, YouTube or Vimeo Link"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 font-mono"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-yellow-400 font-mono bg-white"
                       />
                     </div>
                   </div>
@@ -385,7 +387,7 @@ export default function SettingsPage() {
 
               <button
                 onClick={() => setReelsVideos(vids => [...vids, { upload_url: '', url: '' }])}
-                className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-xs text-gray-400 hover:border-yellow-300 hover:text-yellow-600 transition-all uppercase tracking-wider font-semibold"
+                className="w-full py-3.5 border-2 border-dashed border-gray-200 rounded-xl text-xs text-gray-400 hover:border-yellow-300 hover:text-yellow-600 transition-all uppercase tracking-wider font-semibold min-h-[44px]"
               >+ Add Video</button>
             </>
           )}
@@ -406,7 +408,7 @@ export default function SettingsPage() {
             <button
               onClick={save}
               disabled={saving}
-              className="px-6 py-3 rounded-xl text-[10px] uppercase tracking-widest disabled:opacity-60 transition-all flex items-center gap-2"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl text-[10px] uppercase tracking-widest disabled:opacity-60 transition-all flex items-center justify-center gap-2 min-h-[44px]"
               style={{ background: '#1B4332', color: '#E3BA45' }}
             >
               {saving ? 'Saving...' : '✓ Save All Settings'}
