@@ -1,6 +1,9 @@
 import { supabaseAdmin } from '@/lib/supabase'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 async function getStats() {
   const [products, inquiries] = await Promise.all([
     supabaseAdmin.from('products').select('id', { count: 'exact' }),
